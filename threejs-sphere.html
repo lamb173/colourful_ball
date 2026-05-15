@@ -168,7 +168,7 @@
   <!-- Game Over 覆盖层 -->
   <div id="gameover">
     <h1>GAME OVER</h1>
-    <p>颜色不匹配，球碎了！</p>
+    <p id="gameover-msg">颜色不匹配，球碎了！</p>
     <button id="restart-btn">再来一次 ↺</button>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -534,6 +534,7 @@
     const sphereMat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(0.5, 0.7, 1.0), roughness: 0.2, metalness: 0.1,
       clearcoat: 1.0, clearcoatRoughness: 0.1, reflectivity: 0.8,
+      transparent: true,
     });
     const sphere = new THREE.Mesh(sphereGeo, sphereMat);
     sphere.castShadow = true;
@@ -581,7 +582,7 @@
     const BOUNCE_FLOOR    = PLAT_Y + BALL_RADIUS;
     const BOUNCE_HEIGHT   = 3.5;
     const JUMP_DURATION   = 0.8;
-    const MOUSE_SENSITIVITY = 0.025;
+    const MOUSE_SENSITIVITY = 0.04;
 
     window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
@@ -803,6 +804,41 @@
     let   burstTimer     = 0;
     const BURST_DURATION = 1.0;
 
+    // ── 自由落体 Game Over 状态 ──
+    let missFallActive = false;
+    let missFallVelY   = 0;
+    let missFallTimer  = 0;
+    const MISS_FALL_DURATION = 1.2;
+
+    function triggerMissFall() {
+      missFallActive = true;
+      missFallVelY   = 0;
+      missFallTimer  = 0;
+      sphere.visible = true;
+      ring.visible   = false;
+      shadowCircle.visible = false;
+      document.getElementById('gameover-msg').textContent = '啊哦，球未落到轨道上~';
+    }
+
+    function updateMissFall(dt) {
+      if (!missFallActive) return;
+      missFallTimer += dt;
+      missFallVelY -= 25 * dt;
+      sphere.position.y += missFallVelY * dt;
+      // 球缩小淡出
+      const fade = Math.max(0, 1 - missFallTimer / MISS_FALL_DURATION);
+      sphereMat.opacity = fade;
+      sphere.scale.setScalar(fade);
+      sphere.rotation.x += dt * 8;
+      sphere.rotation.z += dt * 5;
+
+      if (missFallTimer >= MISS_FALL_DURATION) {
+        missFallActive = false;
+        sphere.visible = false;
+        document.getElementById('gameover').classList.add('show');
+      }
+    }
+
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const size = 0.08 + Math.random() * 0.22;
       const geo  = new THREE.IcosahedronGeometry(size, 0);
@@ -999,6 +1035,9 @@
       particleMeshes.forEach(m => { m.visible = false; });
       burstActive = false;
       burstTimer  = 0;
+      missFallActive = false;
+      missFallTimer  = 0;
+      missFallVelY   = 0;
 
       // 重置涟漪
       ripples.forEach(r => {
@@ -1056,6 +1095,7 @@
       // ── 粒子更新（始终运行，即使 gameOver）
       updateBurst(dt);
       updateRipples(dt);
+      updateMissFall(dt);
 
       if (gameOver) {
         renderer.render(scene, camera);
@@ -1124,6 +1164,24 @@
         if (landed) {
           const g = landed.group;
 
+          // ── 落点 X 范围检测 ──
+          let onTrack = false;
+          if (g.type === 1) {
+            onTrack = Math.abs(ballX) <= LONG_W / 2;
+          } else {
+            g.parts.forEach(p => {
+              if (Math.abs(ballX - p.mesh.position.x) <= SQ_W / 2) onTrack = true;
+            });
+          }
+          if (!onTrack) {
+            gameOver = true;
+            hideCombo();
+            // 自由落体 Game Over
+            triggerMissFall();
+            renderer.render(scene, camera);
+            return;
+          }
+
           // ── 触发与平台同形的方形涟漪（颜色用轨道本身的颜色）──
           if (g.type === 1) {
             // 长直轨道
@@ -1149,6 +1207,7 @@
             const safe = checkLandColorMatch(g, currentBallColorKey);
             if (!safe) {
               gameOver = true;
+              document.getElementById('gameover-msg').textContent = '颜色不匹配，球碎了！';
               triggerBurst(sphere.position.clone(), sphereMat.color.clone());
               hideCombo();
               renderer.render(scene, camera);
