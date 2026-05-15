@@ -174,6 +174,8 @@
         depthWrite: false,
         side: THREE.FrontSide,
       });
+      // 禁止 ToneMapping 压暗白色纹理
+      overlayMat.toneMapped = false;
       const overlay = new THREE.Mesh(overlayGeo, overlayMat);
       // 放在方块顶面上方一点点
       overlay.rotation.x = -Math.PI / 2;
