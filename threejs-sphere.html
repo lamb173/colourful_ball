@@ -50,6 +50,41 @@
       text-shadow: 0 0 8px var(--combo-glow, #88aaff), 0 0 20px var(--combo-glow, #88aaff);
     }
 
+    /* ── 右上角计分板 ── */
+    #score-board {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      text-align: right;
+      pointer-events: none;
+      user-select: none;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .score-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.5);
+    }
+    .score-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #ffffff;
+      min-width: 28px;
+      text-align: left;
+    }
+    #perfect-row .score-label { color: rgba(255,230,100,0.85); }
+    #perfect-row .score-value { color: #ffe664; text-shadow: 0 0 8px rgba(255,230,100,0.5); }
+    #great-row .score-label { color: rgba(130,180,255,0.85); }
+    #great-row .score-value { color: #82b4ff; text-shadow: 0 0 8px rgba(130,180,255,0.5); }
+
     /* ── Game Over 覆盖层 ── */
     #gameover {
       display: none;
@@ -116,6 +151,18 @@
   <div id="combo-container">
     <div id="combo-text">PERFECT</div>
     <div id="combo-count">x1</div>
+  </div>
+
+  <!-- 右上角计分板 -->
+  <div id="score-board">
+    <div class="score-row" id="perfect-row">
+      <span class="score-label">PERFECT</span>
+      <span class="score-value" id="perfect-count">0</span>
+    </div>
+    <div class="score-row" id="great-row">
+      <span class="score-label">GREAT</span>
+      <span class="score-value" id="great-count">0</span>
+    </div>
   </div>
 
   <!-- Game Over 覆盖层 -->
@@ -830,24 +877,31 @@
 
     // ── 连击鼓励 UI ──
     let comboCount = 0;
+    let perfectCount = 0;
+    let greatCount = 0;
     let comboHideTimer = null;
     const comboContainer = document.getElementById('combo-container');
     const comboTextEl    = document.getElementById('combo-text');
     const comboCountEl   = document.getElementById('combo-count');
+    const perfectUIEl    = document.getElementById('perfect-count');
+    const greatUIEl      = document.getElementById('great-count');
 
-    function showCombo(text, count, glowColor, resetTimer) {
+    function updateScoreUI() {
+      perfectUIEl.textContent = perfectCount;
+      greatUIEl.textContent = greatCount;
+    }
+
+    function showCombo(text, count, glowColor) {
       comboTextEl.textContent = text;
       comboCountEl.textContent = 'x' + count;
       comboContainer.style.setProperty('--combo-glow', glowColor);
       comboContainer.classList.add('show');
-      // 弹出动画
       comboTextEl.style.animation = 'none';
-      comboTextEl.offsetHeight; // reflow
+      comboTextEl.offsetHeight;
       comboTextEl.style.animation = 'pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both';
       comboCountEl.style.animation = 'none';
       comboCountEl.offsetHeight;
       comboCountEl.style.animation = 'pop-in 0.3s 0.05s cubic-bezier(0.34, 1.56, 0.64, 1) both';
-      // 自动隐藏
       if (comboHideTimer) clearTimeout(comboHideTimer);
       comboHideTimer = setTimeout(() => { comboContainer.classList.remove('show'); }, 1500);
     }
@@ -971,6 +1025,9 @@
       jumpTimer = 0;
       mouseNX = 0;
       comboCount = 0;
+      perfectCount = 0;
+      greatCount = 0;
+      updateScoreUI();
       hideCombo();
 
       const first = groups[0];
@@ -1099,21 +1156,51 @@
             }
           }
 
-          // ── 连击鼓励 ──
-          comboCount++;
+          // ── 连击鼓励（基于落点精度）──
           const glowCSS = '#' + sphereMat.color.getHexString();
-          const isVisible = comboContainer.classList.contains('show');
-          if (!isVisible) {
-            // 字已消失，弹出完整显示
-            const rating = Math.random() < 0.8 ? 'PERFECT' : 'GREAT';
-            showCombo(rating, comboCount, glowCSS, true);
+          let offsetX = 0;
+          if (g.type === 1) {
+            // 长直轨道：中心 x=0
+            offsetX = Math.abs(ballX);
           } else {
-            // 字还在，只更新数字和颜色
-            comboCountEl.textContent = 'x' + comboCount;
-            comboContainer.style.setProperty('--combo-glow', glowCSS);
-            // 刷新自动隐藏计时
-            if (comboHideTimer) clearTimeout(comboHideTimer);
-            comboHideTimer = setTimeout(() => { comboContainer.classList.remove('show'); }, 1500);
+            // 方形轨道：以最近方块中心为原点
+            offsetX = Infinity;
+            g.parts.forEach(p => {
+              const d = Math.abs(ballX - p.mesh.position.x);
+              if (d < offsetX) offsetX = d;
+            });
+          }
+
+          // 长直轨道半宽4，方形方块半宽1.2，用轨道半宽归一化
+          const halfW = g.type === 1 ? LONG_W / 2 : SQ_W / 2;
+          const ratio = offsetX / halfW; // 0=正中, 1=边缘
+          let rating = null;
+          if (ratio <= 1.0) {
+            rating = 'PERFECT';
+            perfectCount++;
+          } else if (ratio <= 1.25) {
+            rating = 'GREAT';
+            greatCount++;
+          }
+          // 超出1.25倍半宽不弹鼓励（但仍安全着陆）
+
+          if (rating) {
+            comboCount++;
+            const isVisible = comboContainer.classList.contains('show');
+            if (!isVisible) {
+              showCombo(rating, comboCount, glowCSS);
+            } else {
+              comboTextEl.textContent = rating;
+              comboCountEl.textContent = 'x' + comboCount;
+              comboContainer.style.setProperty('--combo-glow', glowCSS);
+              // 文字弹出动画
+              comboTextEl.style.animation = 'none';
+              comboTextEl.offsetHeight;
+              comboTextEl.style.animation = 'pop-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both';
+              if (comboHideTimer) clearTimeout(comboHideTimer);
+              comboHideTimer = setTimeout(() => { comboContainer.classList.remove('show'); }, 1500);
+            }
+            updateScoreUI();
           }
 
           // ── 长直轨道 → 球变色
