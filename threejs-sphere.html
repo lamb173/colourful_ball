@@ -152,21 +152,74 @@
     const actx = arrowCanvas.getContext('2d');
     actx.clearRect(0, 0, 128, 128);
     // 画一个白色向前箭头（canvas Y 向下，所以 Y 增大 = 前/-Z）
+    actx.clearRect(0, 0, 128, 128);
+    // 外层发光描边（模糊阴影）
+    actx.save();
+    actx.shadowColor = '#ffffff';
+    actx.shadowBlur = 12;
+    actx.strokeStyle = 'rgba(255,255,255,0.7)';
+    actx.lineWidth = 4;
+    actx.beginPath();
+    actx.moveTo(64, 108);
+    actx.lineTo(100, 63);
+    actx.lineTo(76, 63);
+    actx.lineTo(76, 20);
+    actx.lineTo(52, 20);
+    actx.lineTo(52, 63);
+    actx.lineTo(28, 63);
+    actx.closePath();
+    actx.stroke(); // 触发 shadowBlur
+    actx.restore();
+    // 箭头填充
     actx.fillStyle = '#ffffff';
     actx.beginPath();
-    actx.moveTo(64, 108);  // 箭头尖端（下方 = 前方/-Z）
-    actx.lineTo(100, 63);  // 右翼
-    actx.lineTo(76, 63);   // 右内
-    actx.lineTo(76, 20);   // 右上
-    actx.lineTo(52, 20);   // 左上
-    actx.lineTo(52, 63);   // 左内
-    actx.lineTo(28, 63);   // 左翼
+    actx.moveTo(64, 108);
+    actx.lineTo(100, 63);
+    actx.lineTo(76, 63);
+    actx.lineTo(76, 20);
+    actx.lineTo(52, 20);
+    actx.lineTo(52, 63);
+    actx.lineTo(28, 63);
     actx.closePath();
     actx.fill();
+    // 白色描边
+    actx.strokeStyle = '#ffffff';
+    actx.lineWidth = 3;
+    actx.beginPath();
+    actx.moveTo(64, 108);
+    actx.lineTo(100, 63);
+    actx.lineTo(76, 63);
+    actx.lineTo(76, 20);
+    actx.lineTo(52, 20);
+    actx.lineTo(52, 63);
+    actx.lineTo(28, 63);
+    actx.closePath();
+    actx.stroke();
 
     const arrowTex = new THREE.CanvasTexture(arrowCanvas);
 
     function addArrowOverlay(platformPart) {
+      // 底层：发光光晕（Additive 混合）
+      const glowGeo = new THREE.PlaneGeometry(SQ_W * 0.7, SQ_D * 0.7);
+      const glowMat = new THREE.MeshBasicMaterial({
+        map: arrowTex,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false,
+        side: THREE.FrontSide,
+        blending: THREE.AdditiveBlending,
+      });
+      glowMat.toneMapped = false;
+      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      glowMesh.rotation.x = -Math.PI / 2;
+      glowMesh.position.set(
+        platformPart.mesh.position.x,
+        PLAT_Y - PLAT_H / 2 + PLAT_H + 0.003,
+        platformPart.mesh.position.z
+      );
+      scene.add(glowMesh);
+
+      // 主层：箭头本体
       const overlayGeo = new THREE.PlaneGeometry(SQ_W * 0.6, SQ_D * 0.6);
       const overlayMat = new THREE.MeshBasicMaterial({
         map: arrowTex,
@@ -174,18 +227,17 @@
         depthWrite: false,
         side: THREE.FrontSide,
       });
-      // 禁止 ToneMapping 压暗白色纹理
       overlayMat.toneMapped = false;
       const overlay = new THREE.Mesh(overlayGeo, overlayMat);
-      // 放在方块顶面上方一点点
       overlay.rotation.x = -Math.PI / 2;
       overlay.position.set(
         platformPart.mesh.position.x,
-        PLAT_Y - PLAT_H / 2 + PLAT_H + 0.005,
+        PLAT_Y - PLAT_H / 2 + PLAT_H + 0.006,
         platformPart.mesh.position.z
       );
       scene.add(overlay);
       platformPart.arrowOverlay = overlay;
+      platformPart.arrowGlow = glowMesh;
     }
 
     function createPlatform(x, y, z, w, d, color) {
@@ -330,6 +382,11 @@
             p.arrowOverlay.geometry.dispose();
             p.arrowOverlay.material.dispose();
           }
+          if (p.arrowGlow) {
+            scene.remove(p.arrowGlow);
+            p.arrowGlow.geometry.dispose();
+            p.arrowGlow.material.dispose();
+          }
           p.edges.forEach(e => {
             scene.remove(e); e.geometry.dispose(); e.material.dispose();
           });
@@ -361,6 +418,11 @@
             scene.remove(p.arrowOverlay);
             p.arrowOverlay.geometry.dispose();
             p.arrowOverlay.material.dispose();
+          }
+          if (p.arrowGlow) {
+            scene.remove(p.arrowGlow);
+            p.arrowGlow.geometry.dispose();
+            p.arrowGlow.material.dispose();
           }
           p.edges.forEach(e => {
             scene.remove(e); e.geometry.dispose(); e.material.dispose();
