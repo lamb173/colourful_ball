@@ -142,6 +142,58 @@
       from { opacity: 0; transform: scale(0.6) translateY(20px); }
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
+
+    /* ── 胜利覆盖层 ── */
+    #victory {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 20, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #victory.show { display: flex; }
+    #victory h1 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #a855f7 0%, #f472b6 40%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4em;
+      animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory p {
+      font-family: 'Segoe UI', sans-serif;
+      color: rgba(255,255,255,0.55);
+      font-size: 1.05rem;
+      margin-bottom: 2.2em;
+      letter-spacing: 0.05em;
+      animation: pop-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #0a0a1a;
+      background: linear-gradient(135deg, #a855f7, #f472b6, #fbbf24);
+      border: none;
+      border-radius: 50px;
+      padding: 0.8em 2.6em;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(244, 114, 182, 0.3);
+      transition: transform 0.12s, box-shadow 0.12s;
+      animation: pop-in 0.55s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory-btn:hover  { transform: scale(1.07); box-shadow: 0 0 40px rgba(168,85,247,0.8), 0 0 80px rgba(244,114,182,0.4); }
+    #victory-btn:active { transform: scale(0.96); }
   </style>
 </head>
 <body>
@@ -170,6 +222,13 @@
     <h1>GAME OVER</h1>
     <p id="gameover-msg">颜色不匹配，球碎了！</p>
     <button id="restart-btn">再来一次 ↺</button>
+  </div>
+
+  <!-- 胜利覆盖层 -->
+  <div id="victory">
+    <h1>VICTORY!</h1>
+    <p>成功穿越黑洞，你赢了！</p>
+    <button id="victory-btn">再开一局 ↺</button>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
@@ -794,6 +853,233 @@
     const LAND_BOUNCE_DUR  = 0.35; // 缓冲动画时长（秒）
 
     // ═══════════════════════════════════════════════════════
+    //  黑洞系统（漩涡盘面 + 吸入粒子 + 事件视界）
+    // ═══════════════════════════════════════════════════════
+    const BLACKHOLE_RADIUS = 2.5;
+    const WIN_SCORE = 25;
+    let blackhole = null;        // 黑洞对象引用
+    let blackholeActive = false;
+    let blackholeSpawned = false;
+    let victoryTriggered = false;
+
+    function createBlackhole(z) {
+      const group = new THREE.Group();
+      group.position.set(0, PLAT_Y, z);
+
+      // 1) 事件视界（黑色圆盘）
+      const eventHorizon = new THREE.Mesh(
+        new THREE.CircleGeometry(BLACKHOLE_RADIUS * 0.45, 64),
+        new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide })
+      );
+      eventHorizon.rotation.x = -Math.PI / 2;
+      eventHorizon.position.y = 0.01;
+      group.add(eventHorizon);
+
+      // 2) 漩涡吸积盘（shader 材质）
+      const diskVert = `
+        varying vec2 vUv;
+        varying float vAngle;
+        varying float vDist;
+        void main() {
+          vUv = uv;
+          vec2 centered = uv - 0.5;
+          vAngle = atan(centered.y, centered.x);
+          vDist = length(centered) * 2.0;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `;
+      const diskFrag = `
+        uniform float uTime;
+        varying vec2 vUv;
+        varying float vAngle;
+        varying float vDist;
+        void main() {
+          // 漩涡：螺旋臂
+          float spiral = sin(vAngle * 3.0 + vDist * 8.0 - uTime * 4.0) * 0.5 + 0.5;
+          // 径向渐变：中心暗、边缘亮
+          float radial = smoothstep(0.0, 0.3, vDist) * smoothstep(1.0, 0.5, vDist);
+          // 颜色：紫→蓝→橙
+          vec3 col = mix(vec3(0.65, 0.3, 1.0), vec3(0.2, 0.4, 1.0), spiral);
+          col = mix(col, vec3(1.0, 0.5, 0.1), smoothstep(0.6, 0.95, vDist) * 0.7);
+          float alpha = radial * (0.6 + 0.4 * spiral);
+          // 中心黑洞遮罩
+          alpha *= smoothstep(0.2, 0.35, vDist);
+          gl_FragColor = vec4(col * 1.6, alpha);
+        }
+      `;
+      const diskMat = new THREE.ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: diskVert,
+        fragmentShader: diskFrag,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      });
+      diskMat.toneMapped = false;
+      const disk = new THREE.Mesh(new THREE.PlaneGeometry(BLACKHOLE_RADIUS * 2.2, BLACKHOLE_RADIUS * 2.2), diskMat);
+      disk.rotation.x = -Math.PI / 2;
+      disk.position.y = 0.02;
+      group.add(disk);
+
+      // 3) 外圈光环
+      const ringGeo = new THREE.TorusGeometry(BLACKHOLE_RADIUS * 0.9, 0.08, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x9966ff,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending,
+      });
+      ringMat.toneMapped = false;
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.02;
+      group.add(ringMesh);
+
+      // 4) 吸入粒子
+      const vortexParticles = [];
+      const VORTEX_COUNT = 80;
+      for (let i = 0; i < VORTEX_COUNT; i++) {
+        const size = 0.03 + Math.random() * 0.06;
+        const pGeo = new THREE.SphereGeometry(size, 8, 8);
+        const pMat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setHSL(0.7 + Math.random() * 0.2, 0.8, 0.7),
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+        });
+        pMat.toneMapped = false;
+        const pMesh = new THREE.Mesh(pGeo, pMat);
+        pMesh.visible = false;
+        group.add(pMesh);
+        vortexParticles.push({
+          mesh: pMesh, geo: pGeo, mat: pMat,
+          angle: Math.random() * Math.PI * 2,
+          radius: BLACKHOLE_RADIUS * (0.5 + Math.random() * 1.2),
+          y: Math.random() * 2 - 0.5,
+          speed: 0.8 + Math.random() * 2.0,
+          inwardSpeed: 0.3 + Math.random() * 0.5,
+        });
+      }
+
+      // 5) 光晕
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0x6633cc,
+        transparent: true,
+        opacity: 0.2,
+        blending: THREE.AdditiveBlending,
+      });
+      glowMat.toneMapped = false;
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(BLACKHOLE_RADIUS * 1.5, 64), glowMat);
+      glow.rotation.x = -Math.PI / 2;
+      glow.position.y = -0.01;
+      group.add(glow);
+
+      scene.add(group);
+
+      return {
+        group, eventHorizon, disk, diskMat, ringMesh, ringMat,
+        vortexParticles, glow, glowMat,
+        timer: 0, fadeInDuration: 1.5,
+      };
+    }
+
+    function updateBlackhole(dt) {
+      if (!blackhole) return;
+      blackhole.timer += dt;
+      const t = blackhole.timer;
+
+      // 淡入
+      const fadeIn = Math.min(t / blackhole.fadeInDuration, 1);
+
+      // 旋转漩涡
+      blackhole.diskMat.uniforms.uTime.value = t;
+      blackhole.disk.material.opacity = fadeIn;
+      blackhole.ringMesh.rotation.z = t * 0.5;
+
+      // 光晕呼吸
+      blackhole.glowMat.opacity = 0.15 + 0.08 * Math.sin(t * 2) * fadeIn;
+
+      // 吸入粒子
+      if (fadeIn > 0.3) {
+        blackhole.vortexParticles.forEach(p => {
+          p.mesh.visible = true;
+          p.angle += p.speed * dt;
+          p.radius -= p.inwardSpeed * dt;
+          // 到达中心后重置到外围
+          if (p.radius < 0.1) {
+            p.radius = BLACKHOLE_RADIUS * (0.8 + Math.random() * 1.2);
+            p.angle = Math.random() * Math.PI * 2;
+            p.y = Math.random() * 2 - 0.5;
+          }
+          const px = Math.cos(p.angle) * p.radius;
+          const pz = Math.sin(p.angle) * p.radius;
+          p.mesh.position.set(px, p.y * (p.radius / BLACKHOLE_RADIUS), pz);
+          p.mat.opacity = fadeIn * Math.min(1, p.radius / (BLACKHOLE_RADIUS * 0.5));
+          p.mesh.scale.setScalar(0.5 + 0.5 * (p.radius / BLACKHOLE_RADIUS));
+        });
+      }
+    }
+
+    function removeBlackhole() {
+      if (!blackhole) return;
+      scene.remove(blackhole.group);
+      blackhole.disk.geometry.dispose();
+      blackhole.diskMat.dispose();
+      blackhole.eventHorizon.geometry.dispose();
+      blackhole.eventHorizon.material.dispose();
+      blackhole.ringMesh.geometry.dispose();
+      blackhole.ringMat.dispose();
+      blackhole.glow.geometry.dispose();
+      blackhole.glowMat.dispose();
+      blackhole.vortexParticles.forEach(p => {
+        p.geo.dispose();
+        p.mat.dispose();
+      });
+      blackhole = null;
+      blackholeActive = false;
+      blackholeSpawned = false;
+    }
+
+    // ── 胜利动画（球被吸入）──
+    let victoryAnimActive = false;
+    let victoryAnimTimer = 0;
+    const VICTORY_ANIM_DUR = 1.5;
+
+    function triggerVictoryAnim() {
+      victoryAnimActive = true;
+      victoryAnimTimer = 0;
+      ring.visible = false;
+      shadowCircle.visible = false;
+    }
+
+    function updateVictoryAnim(dt) {
+      if (!victoryAnimActive || !blackhole) return;
+      victoryAnimTimer += dt;
+      const p = Math.min(victoryAnimTimer / VICTORY_ANIM_DUR, 1);
+      const ease = p * p * p; // 加速吸入
+
+      // 球飞向黑洞中心
+      const targetX = blackhole.group.position.x;
+      const targetY = blackhole.group.position.y;
+      const targetZ = blackhole.group.position.z;
+      sphere.position.x += (targetX - sphere.position.x) * ease * 0.15;
+      sphere.position.y += (targetY - sphere.position.y) * ease * 0.15;
+      sphere.position.z += (targetZ - sphere.position.z) * ease * 0.08;
+      // 旋转加速 + 缩小
+      sphere.rotation.x += dt * (5 + p * 30);
+      sphere.rotation.z += dt * (3 + p * 20);
+      sphere.scale.setScalar(Math.max(0.01, 1 - ease));
+      sphereMat.opacity = Math.max(0, 1 - ease);
+
+      if (p >= 1) {
+        victoryAnimActive = false;
+        sphere.visible = false;
+        document.getElementById('victory').classList.add('show');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
     //  粒子碎裂系统
     // ═══════════════════════════════════════════════════════
     const PARTICLE_COUNT = 60;
@@ -1028,6 +1314,11 @@
       restartGame();
     });
 
+    document.getElementById('victory-btn').addEventListener('click', () => {
+      document.getElementById('victory').classList.remove('show');
+      restartGame();
+    });
+
     function restartGame() {
       initGroups();
 
@@ -1038,6 +1329,14 @@
       missFallActive = false;
       missFallTimer  = 0;
       missFallVelY   = 0;
+
+      // 重置黑洞
+      removeBlackhole();
+      blackholeSpawned = false;
+      blackholeActive = false;
+      victoryTriggered = false;
+      victoryAnimActive = false;
+      victoryAnimTimer = 0;
 
       // 重置涟漪
       ripples.forEach(r => {
@@ -1096,6 +1395,8 @@
       updateBurst(dt);
       updateRipples(dt);
       updateMissFall(dt);
+      updateBlackhole(dt);
+      updateVictoryAnim(dt);
 
       if (gameOver) {
         renderer.render(scene, camera);
@@ -1260,6 +1561,29 @@
               comboHideTimer = setTimeout(() => { comboContainer.classList.remove('show'); }, 1500);
             }
             updateScoreUI();
+          }
+
+          // ── 达到25次：在前方生成黑洞 ──
+          if (!blackholeSpawned && (perfectCount + greatCount) >= WIN_SCORE) {
+            blackholeSpawned = true;
+            blackholeActive = true;
+            // 黑洞放在当前球前方 3-4 个 group 的位置
+            const bhZ = ballZ + (GROUP_GAP + LONG_D) * 3.5;
+            blackhole = createBlackhole(bhZ);
+          }
+
+          // ── 黑洞跳入检测 ──
+          if (blackholeActive && blackhole && !victoryTriggered) {
+            const bhPos = blackhole.group.position;
+            const dx = sphere.position.x - bhPos.x;
+            const dy = sphere.position.y - bhPos.y;
+            const dz = sphere.position.z - bhPos.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist < BLACKHOLE_RADIUS * 0.5) {
+              victoryTriggered = true;
+              gameOver = true;
+              triggerVictoryAnim();
+            }
           }
 
           // ── 长直轨道 → 球变色
