@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Three.js 弹跳球 · 多彩跳板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; overflow: hidden; }
+    canvas { display: block; }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.55);
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 13px;
+      letter-spacing: 1px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Game Over 覆盖层 ── */
+    #gameover {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 20, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #gameover.show { display: flex; }
+
+    #gameover h1 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #ff6ab0 0%, #ffe066 50%, #5599ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4em;
+      animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #gameover p {
+      font-family: 'Segoe UI', sans-serif;
+      color: rgba(255,255,255,0.55);
+      font-size: 1.05rem;
+      margin-bottom: 2.2em;
+      letter-spacing: 0.05em;
+      animation: pop-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #restart-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #0a0a1a;
+      background: linear-gradient(135deg, #ff6ab0, #ffe066, #5599ff);
+      border: none;
+      border-radius: 50px;
+      padding: 0.8em 2.6em;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(255, 106, 176, 0.6), 0 0 60px rgba(85, 153, 255, 0.3);
+      transition: transform 0.12s, box-shadow 0.12s;
+      animation: pop-in 0.55s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #restart-btn:hover  { transform: scale(1.07); box-shadow: 0 0 40px rgba(255,106,176,0.8), 0 0 80px rgba(85,153,255,0.4); }
+    #restart-btn:active { transform: scale(0.96); }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.6) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="info">🏀 跳跳跳…</div>
+
+  <!-- Game Over 覆盖层 -->
+  <div id="gameover">
+    <h1>GAME OVER</h1>
+    <p>颜色不匹配，球碎了！</p>
+    <button id="restart-btn">再来一次 ↺</button>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // ═══════════════════════════════════════════════════════
+    //  基础场景
+    // ═══════════════════════════════════════════════════════
+    const scene  = new THREE.Scene();
+    scene.fog    = new THREE.FogExp2(0x0a0a1a, 0.014);
+
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600);
+    camera.position.set(0, 4, -10);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+    renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.body.appendChild(renderer.domElement);
+
+    const CAM_OFFSET = new THREE.Vector3(0, 5.5, -13);
+
+    // ═══════════════════════════════════════════════════════
+    //  星空
+    // ═══════════════════════════════════════════════════════
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(2500 * 3);
+    for (let i = 0; i < starPos.length; i++) starPos[i] = (Math.random() - 0.5) * 400;
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo,
+      new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, sizeAttenuation: true })));
+
+    // ═══════════════════════════════════════════════════════
+    //  颜色定义
+    // ═══════════════════════════════════════════════════════
+    const COLORS = {
+      pink:   new THREE.Color(1.0, 0.55, 0.78),
+      yellow: new THREE.Color(1.0, 0.88, 0.3),
+      blue:   new THREE.Color(0.35, 0.52, 1.0),
+    };
+    const COLOR_KEYS = ['pink', 'yellow', 'blue'];
+
+    // ═══════════════════════════════════════════════════════
+    //  轨道系统
+    // ═══════════════════════════════════════════════════════
+    const PLAT_H   = 0.25;
+    const PLAT_Y   = -1.2;
+    const GROUP_GAP = 4;
+
+    const LONG_W = 8, LONG_D = 3.6;
+    const SQ_W = 2.4, SQ_D = 2.4;
+    const SQ_GAP_X = 1.2;
+
+    function longTotalZ()   { return LONG_D + GROUP_GAP; }
+    function tripleTotalZ() { return SQ_D   + GROUP_GAP; }
+    function doubleTotalZ() { return SQ_D   + GROUP_GAP; }
+
+    function createPlatform(x, y, z, w, d, color) {
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.3 });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, PLAT_H, d), mat);
+      mesh.receiveShadow = true;
+      mesh.position.set(x, y - PLAT_H / 2, z);
+      scene.add(mesh);
+
+      const edgeMat = new THREE.MeshBasicMaterial({
+        color: color.clone().multiplyScalar(0.6), transparent: true, opacity: 0.9,
+      });
+      const hw = w / 2 - 0.02, hd = d / 2 - 0.02;
+      const edges = [];
+      [-hw, hw].forEach(ex => {
+        const e = new THREE.Mesh(new THREE.BoxGeometry(0.06, PLAT_H + 0.03, d), edgeMat);
+        e.position.set(x + ex, y - PLAT_H / 2 + 0.015, z);
+        scene.add(e); edges.push(e);
+      });
+      [-hd, hd].forEach(ez => {
+        const e = new THREE.Mesh(new THREE.BoxGeometry(w, PLAT_H + 0.03, 0.06), edgeMat);
+        e.position.set(x, y - PLAT_H / 2 + 0.015, z + ez);
+        scene.add(e); edges.push(e);
+      });
+      return { mesh, edges, colorKey: null };
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function createLongPlatform(startZ) {
+      const colorKey = COLOR_KEYS[Math.floor(Math.random() * 3)];
+      const color = COLORS[colorKey];
+      const part = createPlatform(0, PLAT_Y, startZ + LONG_D / 2, LONG_W, LONG_D, color);
+      part.colorKey = colorKey;
+      return {
+        type: 1, parts: [part], totalZ: longTotalZ(),
+        landZ: startZ + LONG_D / 2, color: color.clone(), colorKey,
+        partColorKeys: [colorKey],
+      };
+    }
+
+    function createTriplePlatform(startZ) {
+      const keys = shuffle(COLOR_KEYS);
+      const parts = [];
+      const totalW = SQ_W * 3 + SQ_GAP_X * 2;
+      for (let i = 0; i < 3; i++) {
+        const x = -totalW / 2 + SQ_W / 2 + i * (SQ_W + SQ_GAP_X);
+        const p = createPlatform(x, PLAT_Y, startZ + SQ_D / 2, SQ_W, SQ_D, COLORS[keys[i]]);
+        p.colorKey = keys[i];
+        parts.push(p);
+      }
+      return {
+        type: 2, parts, totalZ: tripleTotalZ(),
+        landZ: startZ + SQ_D / 2,
+        partColorKeys: keys.slice(),
+      };
+    }
+
+    function createDoublePlatform(startZ, forceColorKey) {
+      let keys;
+      if (forceColorKey) {
+        const others = COLOR_KEYS.filter(k => k !== forceColorKey);
+        keys = shuffle([forceColorKey, others[Math.floor(Math.random() * others.length)]]);
+      } else {
+        keys = shuffle(COLOR_KEYS).slice(0, 2);
+      }
+      const parts = [];
+      const totalW = SQ_W * 2 + SQ_GAP_X;
+      for (let i = 0; i < 2; i++) {
+        const x = -totalW / 2 + SQ_W / 2 + i * (SQ_W + SQ_GAP_X);
+        const p = createPlatform(x, PLAT_Y, startZ + SQ_D / 2, SQ_W, SQ_D, COLORS[keys[i]]);
+        p.colorKey = keys[i];
+        parts.push(p);
+      }
+      return {
+        type: 3, parts, totalZ: doubleTotalZ(),
+        landZ: startZ + SQ_D / 2,
+        partColorKeys: keys.slice(),
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  平台管理：滚动生成
+    //  颜色连通性保证规则（核心）：
+    //    从长直轨道 A 到长直轨道 B 之间的所有 type 3 两块方形，
+    //    必须包含长直轨道 A 的颜色。
+    //
+    //    实现方式：每个 type 3 在生成时记录它所属段的颜色（segColorKey）。
+    //    段颜色在 appendGroup 内部维护：生成长直轨道时更新段颜色，
+    //    后续 type 3 使用该段颜色。
+    //    这样即使 ensureGroupsAhead 提前生成远处的平台，
+    //    段颜色也是按空间顺序正确传播的。
+    // ═══════════════════════════════════════════════════════
+    const MIN_GROUPS = 15;
+    const TRAIL_KEEP = 40;
+    const groups = [];
+
+    let activeColorKey = 'blue'; // 段安全色，由 appendGroup 内部更新
+
+    function appendGroup() {
+      let z = 0;
+      if (groups.length > 0) {
+        const last = groups[groups.length - 1];
+        z = last.startZ + last.totalZ;
+      }
+
+      const r = Math.random();
+      let group;
+      if (r < 0.33) {
+        group = createLongPlatform(z);
+        activeColorKey = group.colorKey; // 段颜色在这里更新
+      } else if (r < 0.66) {
+        group = createTriplePlatform(z); // 三色全包，天然安全
+      } else {
+        group = createDoublePlatform(z, activeColorKey); // 用当前段颜色
+      }
+
+      group.startZ = z;
+      groups.push(group);
+    }
+
+    function removeOldGroups() {
+      // 从头部删除球后方太远的平台（始终保留至少 MIN_GROUPS 个）
+      let removedCount = 0;
+      while (groups.length > MIN_GROUPS && groups[0] && groups[0].startZ + groups[0].totalZ < ballZ - TRAIL_KEEP) {
+        const grp = groups.shift();
+        grp.parts.forEach(p => {
+          scene.remove(p.mesh);
+          p.mesh.geometry.dispose();
+          p.mesh.material.dispose();
+          p.edges.forEach(e => {
+            scene.remove(e); e.geometry.dispose(); e.material.dispose();
+          });
+        });
+        removedCount++;
+      }
+      // shift 导致数组索引前移，同步 currentGroupIdx
+      if (removedCount > 0) {
+        currentGroupIdx = Math.max(0, currentGroupIdx - removedCount);
+      }
+    }
+
+    function ensureGroupsAhead() {
+      // 确保前方始终有 MIN_GROUPS + 5 个平台，留余量让 removeOldGroups 能工作
+      const target = MIN_GROUPS + 5;
+      while (groups.length < target) {
+        appendGroup();
+      }
+    }
+
+    function initGroups() {
+      // 清空
+      groups.forEach(grp => {
+        grp.parts.forEach(p => {
+          scene.remove(p.mesh);
+          p.mesh.geometry.dispose();
+          p.mesh.material.dispose();
+          p.edges.forEach(e => {
+            scene.remove(e); e.geometry.dispose(); e.material.dispose();
+          });
+        });
+      });
+      groups.length = 0;
+      activeColorKey = 'blue';
+
+      // 第一组强制长直轨道
+      const first = createLongPlatform(0);
+      first.startZ = 0;
+      groups.push(first);
+      activeColorKey = first.colorKey;
+
+      // 后续随机生成
+      while (groups.length < MIN_GROUPS) {
+        appendGroup();
+      }
+    }
+    initGroups();
+
+    // ═══════════════════════════════════════════════════════
+    //  球体
+    // ═══════════════════════════════════════════════════════
+    const sphereGeo = new THREE.SphereGeometry(1, 96, 96);
+    const sphereMat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(0.5, 0.7, 1.0), roughness: 0.2, metalness: 0.1,
+      clearcoat: 1.0, clearcoatRoughness: 0.1, reflectivity: 0.8,
+    });
+    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere.castShadow = true;
+    scene.add(sphere);
+
+    sphere.add(new THREE.Mesh(
+      new THREE.SphereGeometry(1.002, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x88ccff, wireframe: true, transparent: true, opacity: 0.05 })
+    ));
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.45, 0.012, 16, 120),
+      new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.55 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    scene.add(ring);
+
+    const shadowCircle = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 32),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthWrite: false })
+    );
+    shadowCircle.rotation.x = -Math.PI / 2;
+    shadowCircle.position.y = PLAT_Y + 0.01;
+    scene.add(shadowCircle);
+
+    // ═══════════════════════════════════════════════════════
+    //  灯光
+    // ═══════════════════════════════════════════════════════
+    const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.set(2048, 2048);
+    scene.add(mainLight);
+    scene.add(mainLight.target);
+
+    const fillLight = new THREE.PointLight(0x4466ff, 2.5, 20);
+    scene.add(fillLight);
+    const backLight = new THREE.PointLight(0xff8844, 1.8, 16);
+    scene.add(backLight);
+    scene.add(new THREE.AmbientLight(0x223366, 0.8));
+
+    // ═══════════════════════════════════════════════════════
+    //  运动参数
+    // ═══════════════════════════════════════════════════════
+    const BALL_RADIUS     = 1;
+    const BOUNCE_FLOOR    = PLAT_Y + BALL_RADIUS;
+    const BOUNCE_HEIGHT   = 3.5;
+    const JUMP_DURATION   = 0.8;
+    const MOUSE_SENSITIVITY = 0.025;
+
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ═══════════════════════════════════════════════════════
+    //  涟漪系统（一整片发光方形扩散波纹 + 边缘粒子）
+    // ═══════════════════════════════════════════════════════
+    const RIPPLE_COUNT = 3;
+    const RIPPLE_PARTICLE_PER_EDGE = 6;
+    const ripples = [];
+
+    // 涟漪 plane shader — 羽化发光扩散
+    const rippleVert = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+    const rippleFrag = `
+      uniform float uOpacity;
+      uniform float uTime;
+      uniform vec3  uColor;
+      varying vec2 vUv;
+      void main() {
+        // 从中心向边缘羽化：方形，四边渐变
+        vec2 d = abs(vUv - 0.5) * 2.0;              // 0 at center, 1 at edge
+        float edgeFade = 1.0 - smoothstep(0.25, 1.0, max(d.x, d.y));
+        // 边缘高亮描边
+        float edge = smoothstep(0.88, 0.96, max(d.x, d.y));
+        float glow = edge * 0.6 + edgeFade * 0.5;
+        // 轻微呼吸闪烁
+        glow *= 0.85 + 0.15 * sin(uTime * 12.0);
+        gl_FragColor = vec4(uColor * 1.4, glow * uOpacity);
+      }
+    `;
+
+    function makeRipple() {
+      const geo = new THREE.PlaneGeometry(1, 1);
+      const mat = new THREE.ShaderMaterial({
+        uniforms: {
+          uOpacity: { value: 0 },
+          uTime:    { value: 0 },
+          uColor:   { value: new THREE.Color(1, 1, 1) },
+        },
+        vertexShader:   rippleVert,
+        fragmentShader: rippleFrag,
+        transparent: true,
+        depthWrite:  false,
+        blending:    THREE.AdditiveBlending,
+        side:        THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2; // 平放在 XZ 平面
+      mesh.visible = false;
+      scene.add(mesh);
+
+      // 边缘粒子
+      const particles = [];
+      for (let i = 0; i < RIPPLE_PARTICLE_PER_EDGE * 4; i++) {
+        const pGeo = new THREE.IcosahedronGeometry(0.045 + Math.random() * 0.035, 0);
+        const pMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff, transparent: true, opacity: 0,
+          depthWrite: false, blending: THREE.AdditiveBlending,
+        });
+        const pMesh = new THREE.Mesh(pGeo, pMat);
+        pMesh.visible = false;
+        scene.add(pMesh);
+        particles.push({
+          mesh: pMesh, geo: pGeo, mat: pMat,
+          vel: new THREE.Vector3(),
+          life: 0,
+        });
+      }
+
+      return {
+        mesh, geo, mat, particles,
+        active: false, timer: 0, duration: 0.8,
+        baseW: 1, baseD: 1,
+      };
+    }
+
+    for (let i = 0; i < RIPPLE_COUNT; i++) {
+      ripples.push(makeRipple());
+    }
+
+    function triggerRipple(cx, cz, color, platW, platD) {
+      const delays = [0, 0.15, 0.30];
+      // 扩散目标尺寸（从方块大小扩大到 3 倍左右）
+      const expandScale = 3.0;
+      const targetW = platW * expandScale;
+      const targetD = platD * expandScale;
+
+      ripples.forEach((r, i) => {
+        r.active   = true;
+        r.timer    = -delays[i];
+        r.baseW    = platW;
+        r.baseD    = platD;
+
+        // 重建 plane geometry 匹配最终扩散尺寸
+        r.geo.dispose();
+        r.geo = new THREE.PlaneGeometry(targetW, targetD);
+        r.mesh.geometry = r.geo;
+
+        // 起始时缩到方块原始大小，然后 scale 到 1（即目标大小）
+        const initScaleX = platW / targetW;
+        const initScaleZ = platD / targetD;
+        r.mesh.scale.set(initScaleX, initScaleZ, 1);
+
+        // 位置：放在方块底面以下
+        r.mesh.position.set(cx, PLAT_Y - PLAT_H / 2 - 0.03, cz);
+
+        r.mat.uniforms.uOpacity.value = 0;
+        r.mat.uniforms.uColor.value.copy(color);
+        r.mat.uniforms.uTime.value = 0;
+        r.mesh.visible = true;
+
+        // 边缘粒子初始化
+        r.particles.forEach(p => { p.mesh.visible = false; });
+      });
+
+      // 为第一个涟漪生成边缘粒子（延迟为0的那个）
+      spawnEdgeParticles(ripples[0], cx, cz, color, platW, platD);
+    }
+
+    function spawnEdgeParticles(ripple, cx, cz, color, w, d) {
+      const hw = w / 2, hd = d / 2;
+      const count = ripple.particles.length;
+      const perEdge = count / 4;
+      let idx = 0;
+
+      // 四条边：前、后、左、右
+      const edgeDef = [
+        (t) => [cx + (t - 0.5) * w, cz - hd,  0, -1],   // 前边
+        (t) => [cx + (t - 0.5) * w, cz + hd,  0,  1],   // 后边
+        (t) => [cx - hw, cz + (t - 0.5) * d, -1,  0],   // 左边
+        (t) => [cx + hw, cz + (t - 0.5) * d,  1,  0],   // 右边
+      ];
+
+      edgeDef.forEach((fn, ei) => {
+        for (let j = 0; j < perEdge; j++) {
+          const t = (j + 0.5) / perEdge;
+          const [px, pz, dx, dz] = fn(t);
+          const p = ripple.particles[idx++];
+          const speed = 2.5 + Math.random() * 3.5;
+          p.mesh.position.set(px, PLAT_Y - PLAT_H / 2 - 0.03, pz);
+          p.vel.set(
+            dx * speed + (Math.random() - 0.5) * 0.8,
+            (Math.random() - 0.3) * 1.5,
+            dz * speed + (Math.random() - 0.5) * 0.8
+          );
+          p.life = 1;
+          p.mat.color.copy(color);
+          p.mat.opacity = 0.9;
+          p.mesh.visible = true;
+          p.mesh.scale.setScalar(0.6 + Math.random() * 0.8);
+        }
+      });
+    }
+
+    function updateRipples(dt) {
+      const time = clock.elapsedTime;
+      ripples.forEach(r => {
+        if (!r.active) return;
+        r.timer += dt;
+        if (r.timer < 0) return;
+
+        const p = Math.min(r.timer / r.duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+
+        // scale 从方块原始大小扩散到目标大小
+        const scaleX = (r.baseW / (r.baseW * 3)) + ease * (1 - r.baseW / (r.baseW * 3));
+        const scaleZ = (r.baseD / (r.baseD * 3)) + ease * (1 - r.baseD / (r.baseD * 3));
+        r.mesh.scale.set(scaleX, scaleZ, 1);
+
+        // opacity：快速升 -> 缓慢降
+        const fadeP = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
+        r.mat.uniforms.uOpacity.value = fadeP * 0.85;
+        r.mat.uniforms.uTime.value = time;
+
+        // 边缘粒子更新
+        r.particles.forEach(pt => {
+          if (!pt.mesh.visible) return;
+          pt.vel.y -= 6 * dt;
+          pt.mesh.position.addScaledVector(pt.vel, dt);
+          pt.life -= dt / r.duration;
+          pt.mat.opacity = Math.max(0, pt.life) * 0.7;
+          pt.mesh.scale.multiplyScalar(0.97);
+          if (pt.life <= 0) {
+            pt.mesh.visible = false;
+          }
+        });
+
+        if (p >= 1) {
+          r.active = false;
+          r.mesh.visible = false;
+          r.mat.uniforms.uOpacity.value = 0;
+          r.particles.forEach(pt => { pt.mesh.visible = false; });
+        }
+      });
+    }
+
+    // ── 落地缓冲（下陷弹起）参数 ──
+    let landBounceTimer    = 0;
+    let landBounceActive   = false;
+    const LAND_BOUNCE_DUR  = 0.35; // 缓冲动画时长（秒）
+
+    // ═══════════════════════════════════════════════════════
+    //  粒子碎裂系统
+    // ═══════════════════════════════════════════════════════
+    const PARTICLE_COUNT = 60;
+    const particleGeos   = [];
+    const particleMeshes = [];
+    const particleVels   = [];
+    let   burstActive    = false;
+    let   burstTimer     = 0;
+    const BURST_DURATION = 1.0;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const size = 0.08 + Math.random() * 0.22;
+      const geo  = new THREE.IcosahedronGeometry(size, 0);
+      const mat  = new THREE.MeshPhysicalMaterial({
+        roughness: 0.3, metalness: 0.2,
+        clearcoat: 1.0, transparent: true, opacity: 1,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      scene.add(mesh);
+      particleGeos.push(geo);
+      particleMeshes.push(mesh);
+      particleVels.push(new THREE.Vector3());
+    }
+
+    function triggerBurst(pos, color) {
+      burstActive = true;
+      burstTimer  = 0;
+      sphere.visible = false;
+      ring.visible   = false;
+      shadowCircle.visible = false;
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const m = particleMeshes[i];
+        m.position.copy(pos);
+        m.visible = true;
+        m.material.color.copy(color);
+        m.material.opacity = 1;
+        m.material.emissive = color.clone().multiplyScalar(0.4);
+
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const speed = 3 + Math.random() * 8;
+        particleVels[i].set(
+          Math.sin(phi) * Math.cos(theta) * speed,
+          Math.sin(phi) * Math.sin(theta) * speed * 0.8 + 3,
+          Math.cos(phi) * speed * 0.5
+        );
+        m.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, 0);
+      }
+    }
+
+    function updateBurst(dt) {
+      if (!burstActive) return;
+      burstTimer += dt;
+      const progress = burstTimer / BURST_DURATION;
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const m = particleMeshes[i];
+        if (!m.visible) continue;
+
+        particleVels[i].y -= 18 * dt;
+        m.position.addScaledVector(particleVels[i], dt);
+
+        m.rotation.x += particleVels[i].length() * dt * 0.8;
+        m.rotation.z += particleVels[i].length() * dt * 0.5;
+
+        m.material.opacity = Math.max(0, 1 - progress * 1.2);
+        if (m.material.opacity <= 0) m.visible = false;
+      }
+
+      if (burstTimer >= BURST_DURATION) {
+        burstActive = false;
+        document.getElementById('gameover').classList.add('show');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  游戏状态
+    // ═══════════════════════════════════════════════════════
+    let gameOver = false;
+
+    // ═══════════════════════════════════════════════════════
+    //  鼠标控制
+    // ═══════════════════════════════════════════════════════
+    let mouseNX = 0;
+    document.addEventListener('mousemove', (e) => {
+      mouseNX = -(e.clientX / innerWidth - 0.5) * 2;
+    });
+    document.addEventListener('touchmove', (e) => {
+      mouseNX = -(e.touches[0].clientX / innerWidth - 0.5) * 2;
+    }, { passive: true });
+
+    // ═══════════════════════════════════════════════════════
+    //  动画辅助
+    // ═══════════════════════════════════════════════════════
+    const _v3 = new THREE.Vector3();
+
+    function findGroupAt(z) {
+      for (let i = 0; i < groups.length; i++) {
+        const g = groups[i];
+        if (z >= g.startZ && z < g.startZ + g.totalZ) return { index: i, group: g };
+      }
+      return null;
+    }
+
+    // 选择下一个跳跃目标组（按 Z 顺序向后找）
+    function pickNextGroup(fromIdx) {
+      for (let i = fromIdx + 1; i < groups.length; i++) {
+        if (groups[i].landZ > ballZ) return { index: i, group: groups[i] };
+      }
+      // 不应该到这里，但防御一下
+      return { index: Math.min(fromIdx + 1, groups.length - 1), group: groups[Math.min(fromIdx + 1, groups.length - 1)] };
+    }
+
+    // ── 判断球落到方形轨道时是否颜色匹配 ──
+    function checkLandColorMatch(group, ballColorKey) {
+      if (group.type === 1) return true;
+      if (!group.partColorKeys) return true;
+
+      const bx = ballX;
+      let closestIdx = 0;
+      let closestDist = Infinity;
+      group.parts.forEach((p, i) => {
+        const dist = Math.abs(bx - p.mesh.position.x);
+        if (dist < closestDist) { closestDist = dist; closestIdx = i; }
+      });
+      return group.partColorKeys[closestIdx] === ballColorKey;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  初始化跳跃
+    // ═══════════════════════════════════════════════════════
+    const clock = new THREE.Clock();
+    let ballZ = 0;
+    let ballX = 0;
+    let jumpTimer = 0;
+    let jumpFromZ = 0;
+    let jumpToZ   = 0;
+    let currentGroupIdx = 0;
+    let currentBallColorKey = 'blue';
+
+    (function initJump() {
+      const first = groups[0]; // 第一组一定是长直轨道
+      // 球站在第一个长直轨道上，获取其颜色
+      currentBallColorKey = first.colorKey;
+      sphereMat.color.copy(first.color);
+      // activeColorKey 已经由 initGroups 的 appendGroup 内部正确设置
+
+      jumpFromZ = first.landZ;
+      ballZ     = jumpFromZ;
+      const next = pickNextGroup(0);
+      jumpToZ   = next.group.landZ;
+    })();
+
+    // ═══════════════════════════════════════════════════════
+    //  重新开始
+    // ═══════════════════════════════════════════════════════
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      document.getElementById('gameover').classList.remove('show');
+      restartGame();
+    });
+
+    function restartGame() {
+      initGroups();
+
+      // 重置粒子
+      particleMeshes.forEach(m => { m.visible = false; });
+      burstActive = false;
+      burstTimer  = 0;
+
+      // 重置涟漪
+      ripples.forEach(r => {
+        r.active = false;
+        r.mesh.visible = false;
+        r.mat.uniforms.uOpacity.value = 0;
+        r.particles.forEach(p => { p.mesh.visible = false; });
+      });
+      landBounceActive = false;
+      landBounceTimer  = 0;
+
+      // 重置球
+      sphere.visible = true;
+      ring.visible   = true;
+      shadowCircle.visible = true;
+      sphere.scale.set(1, 1, 1);
+      sphereMat.color.set(0.5, 0.7, 1.0);
+      sphereMat.opacity = 1;
+
+      // 重置状态
+      gameOver = false;
+      ballZ = 0;
+      ballX = 0;
+      jumpTimer = 0;
+      mouseNX = 0;
+
+      const first = groups[0];
+      // 球站在第一个长直轨道上，获取其颜色
+      currentBallColorKey = first.colorKey;
+      sphereMat.color.copy(first.color);
+      // activeColorKey 已经由 initGroups 的 appendGroup 内部正确设置
+
+      jumpFromZ = first.landZ;
+      ballZ     = jumpFromZ;
+      const next = pickNextGroup(0);
+      jumpToZ   = next.group.landZ;
+      currentGroupIdx = 0;
+
+      camera.position.set(0, 4, -10);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  动画主循环
+    // ═══════════════════════════════════════════════════════
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const t  = clock.elapsedTime;
+
+      // ── 粒子更新（始终运行，即使 gameOver）
+      updateBurst(dt);
+      updateRipples(dt);
+
+      if (gameOver) {
+        renderer.render(scene, camera);
+        return;
+      }
+
+      jumpTimer += dt;
+      const localPhase = Math.min(jumpTimer / JUMP_DURATION, 1);
+
+      ballZ = jumpFromZ + (jumpToZ - jumpFromZ) * localPhase;
+
+      const targetX = mouseNX * MOUSE_SENSITIVITY * innerWidth * 0.5;
+      ballX += (targetX - ballX) * 0.1;
+
+      const ballY_base = BOUNCE_FLOOR + BOUNCE_HEIGHT * 4 * localPhase * (1 - localPhase);
+
+      // 落地缓冲：球触地后的下陷弹起偏移
+      let landOffsetY = 0;
+      let landSquashExtra = 1;
+      if (landBounceActive) {
+        landBounceTimer += dt;
+        const lp = Math.min(landBounceTimer / LAND_BOUNCE_DUR, 1);
+        // 先下压后弹起，使用衰减振荡
+        const sink = Math.sin(lp * Math.PI) * (1 - lp);
+        landOffsetY = -0.28 * sink;                 // 最大下陷约 0.28 单位
+        landSquashExtra = 1 - 0.18 * Math.sin(lp * Math.PI) * (1 - lp); // Y 轴额外压扁
+        if (lp >= 1) landBounceActive = false;
+      }
+
+      const ballY = ballY_base + landOffsetY;
+      sphere.position.set(ballX, ballY, ballZ);
+
+      const groundRatio = Math.pow(1 - 4 * localPhase * (1 - localPhase), 2);
+      const squash = (1 - 0.15 * groundRatio) * landSquashExtra;
+      sphere.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
+      sphere.rotation.x = -ballZ;
+
+      ring.position.copy(sphere.position);
+      ring.rotation.z = t * 0.4;
+      ring.rotation.y = Math.sin(t * 0.5) * 0.3;
+
+      shadowCircle.position.set(0, PLAT_Y + 0.01, ballZ);
+      shadowCircle.material.opacity = groundRatio * 0.5;
+      shadowCircle.scale.setScalar(0.5 + groundRatio * 0.8);
+
+      mainLight.position.set(ballZ + 5, 8, ballZ + 6);
+      mainLight.target.position.set(ballZ, 0, ballZ);
+      mainLight.target.updateMatrixWorld();
+      fillLight.position.set(ballZ - 4, 2, ballZ - 3);
+      backLight.position.set(ballZ + 3, -2, ballZ - 4);
+
+      _v3.copy(sphere.position).add(CAM_OFFSET);
+      camera.position.lerp(_v3, 0.06);
+      camera.lookAt(sphere.position);
+
+      // ── 落地判定
+      if (localPhase >= 1) {
+        jumpTimer = 0;
+        jumpFromZ = jumpToZ;
+
+        // ── 落地缓冲动画
+        landBounceActive = true;
+        landBounceTimer  = 0;
+
+        const landed = findGroupAt(jumpToZ);
+        if (landed) {
+          const g = landed.group;
+
+          // ── 触发与平台同形的方形涟漪（颜色用轨道本身的颜色）──
+          if (g.type === 1) {
+            // 长直轨道
+            triggerRipple(0, g.landZ, g.color.clone(), LONG_W, LONG_D);
+          } else {
+            // 方形轨道（type2/3）：找最近的那块
+            let closestPart = g.parts[0];
+            let closestDist = Infinity;
+            g.parts.forEach(p => {
+              const d = Math.abs(ballX - p.mesh.position.x);
+              if (d < closestDist) { closestDist = d; closestPart = p; }
+            });
+            triggerRipple(
+              closestPart.mesh.position.x,
+              g.landZ,
+              closestPart.mesh.material.color.clone(),
+              SQ_W, SQ_D
+            );
+          }
+
+          // ── 颜色碰撞检测（仅方形轨道）
+          if (g.type === 2 || g.type === 3) {
+            const safe = checkLandColorMatch(g, currentBallColorKey);
+            if (!safe) {
+              gameOver = true;
+              triggerBurst(sphere.position.clone(), sphereMat.color.clone());
+              renderer.render(scene, camera);
+              return;
+            }
+          }
+
+          // ── 长直轨道 → 球变色
+          if (g.type === 1 && g.color) {
+            sphereMat.color.copy(g.color);
+            currentBallColorKey = g.colorKey;
+            // 注意：不更新 activeColorKey！
+            // activeColorKey 完全由 appendGroup 内部按空间顺序维护。
+            // appendGroup 是按 Z 从小到大连续生成的，它内部的长直轨道
+            // 会正确更新 activeColorKey，保证后续 type 3 包含段安全色。
+            // 如果落地处也更新 activeColorKey，会和 appendGroup 的内部
+            // 状态冲突，导致后续追加的 type 3 用错颜色。
+          }
+
+          currentGroupIdx = landed.index;
+        }
+
+        const next = pickNextGroup(currentGroupIdx);
+        jumpToZ = next.group.landZ;
+        currentGroupIdx = next.index;
+      }
+
+      // ── 滚动管理：每帧维护平台数量 ──
+      // 确保前方有足够平台（不只落地时，每帧都检查）
+      ensureGroupsAhead();
+      // 删除球后方太远的平台（释放资源）
+      removeOldGroups();
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
