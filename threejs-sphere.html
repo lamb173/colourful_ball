@@ -146,6 +146,46 @@
     function tripleTotalZ() { return SQ_D   + GROUP_GAP; }
     function doubleTotalZ() { return SQ_D   + GROUP_GAP; }
 
+    // ── 向前箭头纹理（正方形方块上底面装饰）──
+    const arrowCanvas = document.createElement('canvas');
+    arrowCanvas.width = 128; arrowCanvas.height = 128;
+    const actx = arrowCanvas.getContext('2d');
+    actx.clearRect(0, 0, 128, 128);
+    // 画一个白色向上箭头（canvas 坐标 Y 向下，所以向上 = Y 减小）
+    actx.fillStyle = 'rgba(255,255,255,0.65)';
+    actx.beginPath();
+    actx.moveTo(64, 20);   // 箭头尖端
+    actx.lineTo(100, 65);  // 右翼
+    actx.lineTo(76, 65);   // 右内
+    actx.lineTo(76, 108);  // 右下
+    actx.lineTo(52, 108);  // 左下
+    actx.lineTo(52, 65);   // 左内
+    actx.lineTo(28, 65);   // 左翼
+    actx.closePath();
+    actx.fill();
+
+    const arrowTex = new THREE.CanvasTexture(arrowCanvas);
+
+    function addArrowOverlay(platformPart) {
+      const overlayGeo = new THREE.PlaneGeometry(SQ_W * 0.6, SQ_D * 0.6);
+      const overlayMat = new THREE.MeshBasicMaterial({
+        map: arrowTex,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.FrontSide,
+      });
+      const overlay = new THREE.Mesh(overlayGeo, overlayMat);
+      // 放在方块顶面上方一点点
+      overlay.rotation.x = -Math.PI / 2;
+      overlay.position.set(
+        platformPart.mesh.position.x,
+        PLAT_Y - PLAT_H / 2 + PLAT_H + 0.005,
+        platformPart.mesh.position.z
+      );
+      scene.add(overlay);
+      platformPart.arrowOverlay = overlay;
+    }
+
     function createPlatform(x, y, z, w, d, color) {
       const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.3 });
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, PLAT_H, d), mat);
@@ -168,7 +208,7 @@
         e.position.set(x, y - PLAT_H / 2 + 0.015, z + ez);
         scene.add(e); edges.push(e);
       });
-      return { mesh, edges, colorKey: null };
+      return { mesh, edges, colorKey: null, arrowOverlay: null };
     }
 
     function shuffle(arr) {
@@ -200,6 +240,7 @@
         const x = -totalW / 2 + SQ_W / 2 + i * (SQ_W + SQ_GAP_X);
         const p = createPlatform(x, PLAT_Y, startZ + SQ_D / 2, SQ_W, SQ_D, COLORS[keys[i]]);
         p.colorKey = keys[i];
+        addArrowOverlay(p);
         parts.push(p);
       }
       return {
@@ -223,6 +264,7 @@
         const x = -totalW / 2 + SQ_W / 2 + i * (SQ_W + SQ_GAP_X);
         const p = createPlatform(x, PLAT_Y, startZ + SQ_D / 2, SQ_W, SQ_D, COLORS[keys[i]]);
         p.colorKey = keys[i];
+        addArrowOverlay(p);
         parts.push(p);
       }
       return {
@@ -281,6 +323,11 @@
           scene.remove(p.mesh);
           p.mesh.geometry.dispose();
           p.mesh.material.dispose();
+          if (p.arrowOverlay) {
+            scene.remove(p.arrowOverlay);
+            p.arrowOverlay.geometry.dispose();
+            p.arrowOverlay.material.dispose();
+          }
           p.edges.forEach(e => {
             scene.remove(e); e.geometry.dispose(); e.material.dispose();
           });
@@ -308,6 +355,11 @@
           scene.remove(p.mesh);
           p.mesh.geometry.dispose();
           p.mesh.material.dispose();
+          if (p.arrowOverlay) {
+            scene.remove(p.arrowOverlay);
+            p.arrowOverlay.geometry.dispose();
+            p.arrowOverlay.material.dispose();
+          }
           p.edges.forEach(e => {
             scene.remove(e); e.geometry.dispose(); e.material.dispose();
           });
