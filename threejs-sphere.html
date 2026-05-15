@@ -151,16 +151,16 @@
     arrowCanvas.width = 128; arrowCanvas.height = 128;
     const actx = arrowCanvas.getContext('2d');
     actx.clearRect(0, 0, 128, 128);
-    // 画一个白色向上箭头（canvas 坐标 Y 向下，所以向上 = Y 减小）
-    actx.fillStyle = 'rgba(255,255,255,0.65)';
+    // 画一个白色向前箭头（canvas Y 向下，所以 Y 增大 = 前/-Z）
+    actx.fillStyle = 'rgba(255,255,255,0.9)';
     actx.beginPath();
-    actx.moveTo(64, 20);   // 箭头尖端
-    actx.lineTo(100, 65);  // 右翼
-    actx.lineTo(76, 65);   // 右内
-    actx.lineTo(76, 108);  // 右下
-    actx.lineTo(52, 108);  // 左下
-    actx.lineTo(52, 65);   // 左内
-    actx.lineTo(28, 65);   // 左翼
+    actx.moveTo(64, 108);  // 箭头尖端（下方 = 前方/-Z）
+    actx.lineTo(100, 63);  // 右翼
+    actx.lineTo(76, 63);   // 右内
+    actx.lineTo(76, 20);   // 右上
+    actx.lineTo(52, 20);   // 左上
+    actx.lineTo(52, 63);   // 左内
+    actx.lineTo(28, 63);   // 左翼
     actx.closePath();
     actx.fill();
 
