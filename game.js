@@ -388,8 +388,10 @@
       } catch(e) { return null; }
     })();
     if (!_stageProgress || typeof _stageProgress.unlocked !== 'number') {
-      _stageProgress = { unlocked: STAGE_CONFIGS.length, stars: {} }; // 测试阶段全解锁
+      _stageProgress = { unlocked: STAGE_CONFIGS.length, stars: {} };
     }
+    // 测试阶段强制全解锁（覆盖旧 localStorage）
+    _stageProgress.unlocked = STAGE_CONFIGS.length;
     function saveStageProgress() {
       localStorage.setItem(STAGE_PROGRESS_KEY, JSON.stringify(_stageProgress));
     }
