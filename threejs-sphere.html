@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- v2026-05-22-2342 -->
+  <!-- v2026-05-23-2351 -->
   <title>Three.js 弹跳球 · 多彩跳板</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -936,30 +936,27 @@
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // v2026-05-22-2342 — colorKey crash fix
-    // 全局错误捕获：显示在页面上方便调试
+    // v2026-05-23-2351 — 统一错误处理，不强制跳回欢迎页
     var _gameError = null;
     var _welcomeTimeoutId = null;
+    var _errorShown = false;
+    function showFatalError(msg) {
+      if (_errorShown) return; _errorShown = true;
+      console.error('[FATAL]', msg);
+      // 创建独立错误覆盖层，不破坏现有页面结构
+      var errDiv = document.createElement('div');
+      errDiv.id = 'fatal-error';
+      errDiv.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(5,0,10,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:\"Segoe UI\",\"PingFang SC\",sans-serif;';
+      errDiv.innerHTML = '<h1 style="font-size:1.6rem;color:#ff6688;margin-bottom:0.5em;letter-spacing:0.06em;">⚠ 出错了</h1>'
+        + '<p style="font-size:0.95rem;color:rgba(255,255,255,0.6);max-width:80vw;text-align:center;line-height:1.6;margin-bottom:2em;word-break:break-all;">' + msg + '</p>'
+        + '<button id="fatal-retry" style="font-size:1.05rem;font-weight:700;color:#fff;background:linear-gradient(135deg,#6633cc,#cc3388);border:none;border-radius:12px;padding:12px 32px;cursor:pointer;letter-spacing:0.08em;">刷新页面 ↻</button>';
+      document.body.appendChild(errDiv);
+      document.getElementById('fatal-retry').addEventListener('click', function() { location.reload(); });
+    }
     window.addEventListener('error', function(e) {
       _gameError = e.error || e.message;
-      var msg = _gameError.message || String(_gameError);
-      console.error('[FATAL]', msg, e.error && e.error.stack);
-      // 取消欢迎页自动跳转
-      if (_welcomeTimeoutId) { clearTimeout(_welcomeTimeoutId); _welcomeTimeoutId = null; }
-      // 隐藏模式选择页，显示欢迎页并展示错误
-      var mp = document.getElementById('mode-page');
-      if (mp) { mp.style.display = 'none'; mp.classList.remove('active'); }
-      var el = document.getElementById('welcome-page');
-      if (el) {
-        el.querySelector('h1').textContent = '⚠ ' + msg;
-        el.querySelector('h1').style.fontSize = '0.9rem';
-        el.querySelector('h1').style.whiteSpace = 'pre-wrap';
-        el.querySelector('h1').style.wordBreak = 'break-all';
-        el.style.background = 'rgba(50,0,0,0.95)';
-        el.style.display = 'flex';
-        el.classList.add('active');
-        el.classList.remove('fade-out');
-      }
+      var msg = _gameError && _gameError.message ? _gameError.message : String(_gameError);
+      showFatalError(msg);
     });
     console.log('[GAME] Script starting, THREE available:', typeof THREE !== 'undefined');
     if (typeof THREE === 'undefined') {
@@ -3289,7 +3286,13 @@
 
     document.getElementById('start-btn').addEventListener('click', () => {
       playUIStartGame();
-      restartGame();
+      try {
+        restartGame();
+      } catch(e) {
+        console.error('[GAME] restartGame crashed:', e.message, e.stack);
+        showFatalError('游戏初始化失败: ' + e.message + '\n请刷新页面重试');
+        return;
+      }
       gameStarted = false;
       renderer.domElement.style.display = 'none'; // 画布全程隐藏，直到倒计时结束
       const screen = document.getElementById('start-screen');
@@ -4037,7 +4040,7 @@
       } else {
         document.getElementById('gameover').classList.remove('show');
         renderer.domElement.style.display = 'none';
-        restartGame();
+        try { restartGame(); } catch(e) { console.error('[GAME] restartGame crashed:', e); showFatalError('游戏重启失败: ' + e.message); return; }
         gameStarted = false;
         showStartScreen();
       }
@@ -4059,7 +4062,7 @@
     document.getElementById('victory-btn').addEventListener('click', () => {
       document.getElementById('victory').classList.remove('show');
       renderer.domElement.style.display = 'none';
-      restartGame();
+      try { restartGame(); } catch(e) { console.error('[GAME] restartGame crashed:', e); showFatalError('游戏重启失败: ' + e.message); return; }
       gameStarted = false;
       showStartScreen();
     });
@@ -4756,16 +4759,6 @@
 }
     animate();
     console.log('[GAME] Init complete. animate() started. start-btn handler registered.');
-    // 全局错误捕获：卡在欢迎页时，错误会在这里显示
-    window.addEventListener('error', function(e) {
-      console.error('[GAME CRASH]', e.message, 'at', e.filename, 'line', e.lineno);
-      const el = document.getElementById('welcome-page');
-      if (el) {
-        el.style.background = 'rgba(50,0,0,0.95)';
-        const h1 = el.querySelector('h1');
-        if (h1) h1.textContent = '⚠ 游戏加载出错，请刷新页面';
-      }
-    });
   </script>
 </body>
 </html>
