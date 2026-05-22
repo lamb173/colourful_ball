@@ -2383,17 +2383,25 @@
       hideShieldBar();
     }
 
-    function switchPage(fromId, toId, delay) {
+    // ── 页面切换管理（统一用 switchPage，取消未完成的过渡）──
+    let _pendingSwitchTimer = null;
+    function switchPage(fromId, toId, cb) {
+      // 取消前一个未完成的切换
+      if (_pendingSwitchTimer) { clearTimeout(_pendingSwitchTimer); _pendingSwitchTimer = null; }
       const from = document.getElementById(fromId);
       const to   = document.getElementById(toId);
+      if (!from || !to) return;
       from.classList.remove('active');
       from.classList.add('fade-out');
-      setTimeout(() => {
+      _pendingSwitchTimer = setTimeout(() => {
+        _pendingSwitchTimer = null;
         from.style.display = 'none';
+        from.classList.remove('fade-out');
         to.style.display = 'flex';
         to.classList.remove('fade-out');
         to.classList.add('active');
-      }, delay || 500);
+        if (cb) cb();
+      }, 500);
     }
 
     // ② 模式选择页：点击任一模式进入开始界面
@@ -2457,17 +2465,11 @@
 
     function enterStageSelect() {
       modeParticles && modeParticles.stop();
-      const modePage = document.getElementById('mode-page');
-      modePage.classList.remove('active');
-      modePage.classList.add('fade-out');
-      setTimeout(() => {
-        modePage.style.display = 'none';
-        const sp = document.getElementById('stage-select-page');
-        sp.style.display = 'flex';
-        sp.classList.remove('fade-out');
-        sp.classList.add('active');
+      switchPage('mode-page', 'stage-select-page', () => {
         buildStageCards();
-      }, 500);
+        // 重新初始化关卡选择粒子
+        modeParticles = initParticles('stage-select-particles', 'rgba(255,200,60,1)', 'rgba(85,153,255,1)', 40);
+      });
     }
 
     function exitToStageSelect() {
@@ -2497,7 +2499,8 @@
       shieldRing.visible = false;
       shieldRingMat.opacity = 0;
 
-      const sp = document.getElementById('stage-select-page');
+      // 直接显示关卡选择页（不走 switchPage，因为 start-screen 不一定可见）
+      var sp = document.getElementById('stage-select-page');
       sp.style.display = 'flex';
       sp.classList.remove('fade-out');
       sp.classList.add('active');
@@ -2507,33 +2510,20 @@
     // 关卡选择页返回按钮
     document.getElementById('stage-select-back').addEventListener('click', () => {
       playUIBack();
-      const sp = document.getElementById('stage-select-page');
-      sp.classList.remove('active');
-      sp.classList.add('fade-out');
-      setTimeout(() => {
-        sp.style.display = 'none';
-        const mp = document.getElementById('mode-page');
-        mp.style.display = 'flex';
-        mp.classList.remove('fade-out');
-        mp.classList.add('active');
+      switchPage('stage-select-page', 'mode-page', () => {
         modeParticles = initParticles('mode-particles', 'rgba(168,85,247,1)', 'rgba(255,106,176,1)', 50);
-      }, 500);
+      });
     });
 
     function enterStartScreen(stage) {
       modeParticles && modeParticles.stop();
-      const modePage = document.getElementById('mode-page');
-      modePage.classList.remove('active');
-      modePage.classList.add('fade-out');
-      setTimeout(() => {
-        modePage.style.display = 'none';
-        const sp = document.getElementById('stage-select-page');
-        if (sp) sp.style.display = 'none';
-        const startScreen = document.getElementById('start-screen');
+      // 根据当前在哪页，决定从哪切过来
+      var fromId = (gameMode === 'stages') ? 'stage-select-page' : 'mode-page';
+      switchPage(fromId, 'start-screen', function() {
         // 更新模式徽章
-        const badge = document.getElementById('start-mode-badge');
-        const stageNameEl = document.getElementById('start-stage-name');
-        const exitBtn = document.getElementById('exit-stage-btn');
+        var badge = document.getElementById('start-mode-badge');
+        var stageNameEl = document.getElementById('start-stage-name');
+        var exitBtn = document.getElementById('exit-stage-btn');
         if (gameMode === 'endless') {
           badge.textContent = '∞ 无尽模式';
           badge.className = 'start-mode-badge endless-badge';
@@ -2541,7 +2531,7 @@
           stageNameEl.style.display = 'none';
           exitBtn.style.display = 'none';
         } else {
-          const sc = stage || _currentStage;
+          var sc = stage || _currentStage;
           badge.textContent = '★ 闯关模式';
           badge.className = 'start-mode-badge stages-badge';
           if (sc) {
@@ -2553,12 +2543,10 @@
           }
           exitBtn.style.display = '';
         }
-        startScreen.style.display = 'flex';
-        startScreen.classList.remove('hidden');
-      }, 500);
+        document.getElementById('start-screen').classList.remove('hidden');
+      });
     }
 
-    // ④ 开始界面按钮 → 倒计时 → 游戏开始
     function startCountdown(callback) {
       const overlay = document.getElementById('countdown');
       const numEl   = document.getElementById('countdown-num');
