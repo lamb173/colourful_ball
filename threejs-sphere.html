@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- v2026-05-22-2336 -->
+  <!-- v2026-05-22-2342 -->
   <title>Three.js 弹跳球 · 多彩跳板</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -936,7 +936,7 @@
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // v2026-05-22-2336 — global error capture
+    // v2026-05-22-2342 — colorKey crash fix
     // 全局错误捕获：显示在页面上方便调试
     var _gameError = null;
     var _welcomeTimeoutId = null;
@@ -1865,7 +1865,12 @@
 
       // 后续随机生成
       while (groups.length < MIN_GROUPS) {
-        appendGroup();
+        try {
+          appendGroup();
+        } catch(e) {
+          console.error('[GAME] appendGroup #' + groups.length + ' FAILED:', e.message, e.stack);
+          break; // 出错就停，不再继续尝试
+        }
       }
     }
     console.log('[GAME] initGroups starting...');
@@ -3057,8 +3062,13 @@
     let currentGroupIdx = 0;
     let currentBallColorKey = 'blue';
 
-    (function initJump() {
+    function initJump() {
+      if (groups.length === 0) { console.warn('[GAME] initJump skipped: groups empty'); return; }
       const first = groups[0]; // 第一组一定是长直轨道
+      if (!first || first.colorKey === undefined || first.colorKey === null) {
+        console.warn('[GAME] initJump skipped: first group has no colorKey');
+        return;
+      }
       // 球站在第一个长直轨道上，获取其颜色
       currentBallColorKey = first.colorKey;
       sphereMat.color.copy(first.color);
@@ -3068,7 +3078,8 @@
       ballZ     = jumpFromZ;
       const next = pickNextGroup(0);
       jumpToZ   = next.group.landZ;
-    })();
+    }
+    initJump();
 
     // ═══════════════════════════════════════════════════════
     //  引导流程：欢迎 → 模式选择 → 开始 → 倒计时
@@ -4059,6 +4070,21 @@
 
     function restartGame() {
       initGroups();
+
+      // fallback: 如果 initGroups 完全失败，强制创建基础平台
+      if (groups.length === 0) {
+        console.warn('[GAME] restartGame: initGroups produced 0 groups, creating fallback');
+        const fallback = createLongPlatform(0);
+        fallback.startZ = 0;
+        groups.push(fallback);
+        activeColorKey = fallback.colorKey;
+        while (groups.length < MIN_GROUPS) {
+          const z = groups[groups.length - 1].startZ + groups[groups.length - 1].totalZ;
+          const g = createLongPlatform(z);
+          g.startZ = z;
+          groups.push(g);
+        }
+      }
 
       // 重置粒子
       particleMeshes.forEach(m => { m.visible = false; });
