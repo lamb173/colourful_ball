@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- v2026-05-22-2330 -->
+  <!-- v2026-05-22-2336 -->
   <title>Three.js 弹跳球 · 多彩跳板</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -936,12 +936,37 @@
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // v2026-05-22-2330 — cache-bust, welcome handler FIRST
+    // v2026-05-22-2336 — global error capture
+    // 全局错误捕获：显示在页面上方便调试
+    var _gameError = null;
+    var _welcomeTimeoutId = null;
+    window.addEventListener('error', function(e) {
+      _gameError = e.error || e.message;
+      var msg = _gameError.message || String(_gameError);
+      console.error('[FATAL]', msg, e.error && e.error.stack);
+      // 取消欢迎页自动跳转
+      if (_welcomeTimeoutId) { clearTimeout(_welcomeTimeoutId); _welcomeTimeoutId = null; }
+      // 隐藏模式选择页，显示欢迎页并展示错误
+      var mp = document.getElementById('mode-page');
+      if (mp) { mp.style.display = 'none'; mp.classList.remove('active'); }
+      var el = document.getElementById('welcome-page');
+      if (el) {
+        el.querySelector('h1').textContent = '⚠ ' + msg;
+        el.querySelector('h1').style.fontSize = '0.9rem';
+        el.querySelector('h1').style.whiteSpace = 'pre-wrap';
+        el.querySelector('h1').style.wordBreak = 'break-all';
+        el.style.background = 'rgba(50,0,0,0.95)';
+        el.style.display = 'flex';
+        el.classList.add('active');
+        el.classList.remove('fade-out');
+      }
+    });
     console.log('[GAME] Script starting, THREE available:', typeof THREE !== 'undefined');
     if (typeof THREE === 'undefined') {
       document.getElementById('welcome-page').querySelector('h1').textContent = '⚠ Three.js 加载失败，请检查网络';
       document.getElementById('welcome-page').style.background = 'rgba(50,0,0,0.95)';
-      throw new Error('THREE is not defined');
+      console.error('[FATAL] THREE not loaded');
+      // 不 throw，让后续错误处理器接管
     }
 
     // ★ 欢迎页跳转 — 放在脚本最前面，保证无论后面代码怎么崩都能跳转
@@ -961,7 +986,7 @@
         }, 500);
       }
       // 3.2s 自动跳转
-      setTimeout(doGo, 3200);
+      _welcomeTimeoutId = setTimeout(doGo, 3200);
       // 点击任意位置跳转
       document.getElementById('welcome-page').addEventListener('click', doGo);
       console.log('[GAME] Welcome timeout + click registered');
@@ -1848,9 +1873,9 @@
       initGroups();
       console.log('[GAME] initGroups OK, groups:', groups.length);
     } catch(e) {
-      console.error('[GAME] initGroups FAILED:', e);
-      document.getElementById('welcome-page').querySelector('h1').textContent = '⚠ 初始化失败，请刷新页面';
-      document.getElementById('welcome-page').style.background = 'rgba(50,0,0,0.95)';
+      console.error('[GAME] initGroups FAILED:', e.message, e.stack);
+      // 标记错误但继续执行，让模式选择页等 UI 正常加载
+      _gameError = e;
     }
 
     // ═══════════════════════════════════════════════════════
