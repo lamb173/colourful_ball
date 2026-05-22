@@ -379,6 +379,38 @@
       { id:10, name:'Beyond Singularity', nameCN:'奇点彼岸',     targetDist:1506, hasBoost:true,  boostFreq:0.28, hasIce:true,  iceFreq:0.22, hasWind:true,  gapMul:0.80 },
     ];
 
+    // ── 闯关模式进度管理 ──
+    const STAGE_PROGRESS_KEY = 'bounceGameStageProgress';
+    let _stageProgress = (function() {
+      try {
+        var raw = localStorage.getItem(STAGE_PROGRESS_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch(e) { return null; }
+    })();
+    if (!_stageProgress || typeof _stageProgress.unlocked !== 'number') {
+      _stageProgress = { unlocked: 1, stars: {} };
+    }
+    function saveStageProgress() {
+      localStorage.setItem(STAGE_PROGRESS_KEY, JSON.stringify(_stageProgress));
+    }
+    function isStageUnlocked(stageId) { return stageId <= _stageProgress.unlocked; }
+    function getStageStars(stageId) { return _stageProgress.stars[String(stageId)] || 0; }
+    function setStageStars(stageId, starCount) {
+      var key = String(stageId);
+      var current = _stageProgress.stars[key] || 0;
+      if (starCount > current) { _stageProgress.stars[key] = starCount; }
+      // 通关自动解锁下一关
+      if (starCount >= 1 && stageId >= _stageProgress.unlocked && stageId < STAGE_CONFIGS.length) {
+        _stageProgress.unlocked = stageId + 1;
+      }
+      saveStageProgress();
+    }
+    function getTotalStageStars() {
+      var total = 0;
+      for (var k in _stageProgress.stars) { total += _stageProgress.stars[k]; }
+      return total;
+    }
+
     // ── 冰霜段参数（type5）──
     const ICE_W = 2.5;                // 冰霜段宽度
     const ICE_D = 24.0;               // 长深度：24 米，滑行时间约 3 秒
@@ -1524,15 +1556,47 @@
       if (shrink <= 0.05 || p >= 1) {
         victoryAnimActive = false;
         sphere.visible = false;
-        // 闯关模式：更新胜利消息 + 显示退出按钮
+        // 闯关模式：计算星级 + 保存进度 + 更新消息
         const vExitBtn = document.getElementById('victory-exit-btn');
+        const vNextBtn = document.getElementById('victory-btn');
         const vMsg = document.getElementById('victory-msg');
+        const vStars = document.getElementById('go-stars-earned');
         if (gameMode === 'stages' && _currentStage) {
+          // 星级计算：基于完美着陆比例
+          var totalLand = Math.max(1, perfectCount + greatCount);
+          var perfRatio = perfectCount / totalLand;
+          var stageStars = 0;
+          if (perfRatio >= 0.70) stageStars = 3;
+          else if (perfRatio >= 0.40) stageStars = 2;
+          else stageStars = 1;
+          // 如果距离目标太远（没到黑洞就死了），降星
+          var finalDist = Math.round(sphere.position.z);
+          if (finalDist < _currentStage.targetDist * 0.8) stageStars = Math.max(1, stageStars - 1);
+          setStageStars(_currentStage.id, stageStars);
+          // 更新消息
           vMsg.textContent = '第' + _currentStage.id + '关 · ' + _currentStage.nameCN + ' 通关！';
+          vMsg.style.marginBottom = '0.5em';
+          vStars.textContent = '★'.repeat(stageStars) + '★'.repeat(3 - stageStars).replace(/★/g, '<span style="opacity:0.2">★</span>');
+          vStars.style.display = '';
+          vStars.style.fontSize = '1.6rem';
           vExitBtn.style.display = '';
+          // 下一关按钮
+          var nextId = _currentStage.id + 1;
+          if (nextId <= STAGE_CONFIGS.length && nextId <= _stageProgress.unlocked) {
+            vNextBtn.textContent = '下一关 →';
+            vNextBtn.style.display = '';
+          } else {
+            vNextBtn.textContent = '返回关卡选择';
+            vNextBtn.style.display = '';
+          }
+          updateModeStarsUI();
         } else {
           vMsg.textContent = '成功穿越黑洞，你赢了！';
+          vMsg.style.marginBottom = '';
+          vStars.style.display = 'none';
           vExitBtn.style.display = 'none';
+          vNextBtn.textContent = '再开一局 ↺';
+          vNextBtn.style.display = '';
         }
         document.getElementById('victory').classList.add('show');
       }
@@ -2351,25 +2415,40 @@
       if (!grid) return;
       grid.innerHTML = '';
       STAGE_CONFIGS.forEach(sc => {
+        const unlocked = isStageUnlocked(sc.id);
+        const earnedStars = getStageStars(sc.id);
         const card = document.createElement('div');
         card.className = 'stage-card';
+        if (!unlocked) card.classList.add('locked');
+        if (earnedStars >= 3) card.classList.add('completed-3');
+        else if (earnedStars >= 1) card.classList.add('completed');
         const icons = [];
         if (sc.hasBoost) icons.push('🚀');
         if (sc.hasIce)   icons.push('❄️');
         if (sc.hasWind)  icons.push('💨');
+        // 星级显示
+        var starsHTML = '';
+        if (!unlocked) {
+          starsHTML = '<div class="card-lock">🔒</div>';
+        } else if (earnedStars > 0) {
+          starsHTML = '<div class="card-stars-earned">' + '★'.repeat(earnedStars) + '<span class="stars-dim">' + '★'.repeat(3 - earnedStars) + '</span></div>';
+        }
         card.innerHTML =
-          '<div class="card-number">' + sc.id + '</div>' +
+          '<div class="card-number">' + (unlocked ? sc.id : '🔒') + '</div>' +
           '<div class="card-name-en">' + sc.name + '</div>' +
           '<div class="card-name-cn">' + sc.nameCN + '</div>' +
           '<div class="card-meta">' +
             '<span class="card-dist">🎯 ' + sc.targetDist + 'm</span>' +
             '<span class="card-icons">' + (icons.join(' ') || '🟢') + '</span>' +
-          '</div>';
-        card.addEventListener('click', () => {
-          playUIClick();
-          _currentStage = sc;
-          enterStartScreen(sc);
-        });
+          '</div>' +
+          starsHTML;
+        if (unlocked) {
+          card.addEventListener('click', () => {
+            playUIClick();
+            _currentStage = sc;
+            enterStartScreen(sc);
+          });
+        }
         grid.appendChild(card);
       });
     }
@@ -3087,9 +3166,13 @@
 
     // 显示 Game Over 覆盖层时，更新内容
     function showGameOver() {
-      // 闯关模式：显示"再来一次" + "退出本关"
+      // 闯关模式：显示进度 + "再来一次" + "退出本关"
       if (gameMode === 'stages') {
-        document.getElementById('go-stars-earned').textContent = '';
+        var finalDist = Math.round(ballZ);
+        var targetDist = _currentStage ? _currentStage.targetDist : 100;
+        var pct = Math.min(100, Math.round(finalDist / targetDist * 100));
+        document.getElementById('go-stars-earned').textContent = '进度 ' + pct + '% (' + finalDist + 'm / ' + targetDist + 'm)';
+        document.getElementById('go-stars-earned').style.fontSize = '1rem';
         document.getElementById('exit-endless-btn').textContent = '再来一次 ↺';
         document.getElementById('exit-endless-btn').classList.add('restart-mode');
         document.getElementById('exit-endless-btn').classList.remove('exit-btn');
@@ -3109,6 +3192,7 @@
       }
       // 无尽模式：更新内容并显示
       document.getElementById('go-stars-earned').textContent = '★ ' + sessionStars;
+      document.getElementById('go-stars-earned').style.fontSize = '';
       document.getElementById('exit-endless-btn').textContent = '退出无尽模式';
       document.getElementById('exit-endless-btn').classList.remove('restart-mode');
       document.getElementById('exit-endless-btn').classList.add('exit-btn');
@@ -3317,9 +3401,22 @@
     document.getElementById('victory-btn').addEventListener('click', () => {
       document.getElementById('victory').classList.remove('show');
       renderer.domElement.style.display = 'none';
-      try { restartGame(); } catch(e) { console.error('[GAME] restartGame crashed:', e); showFatalError('游戏重启失败: ' + e.message); return; }
-      gameStarted = false;
-      showStartScreen();
+      if (gameMode === 'stages' && _currentStage) {
+        // 闯关模式：如果有下一关且已解锁 → 进入下一关
+        var nextId = _currentStage.id + 1;
+        if (nextId <= STAGE_CONFIGS.length && isStageUnlocked(nextId)) {
+          _currentStage = STAGE_CONFIGS[nextId - 1];
+          try { restartGame(); } catch(e) { console.error('[GAME] restartGame crashed:', e); showFatalError('游戏重启失败: ' + e.message); return; }
+          gameStarted = false;
+          showStartScreen();
+        } else {
+          exitToStageSelect();
+        }
+      } else {
+        try { restartGame(); } catch(e) { console.error('[GAME] restartGame crashed:', e); showFatalError('游戏重启失败: ' + e.message); return; }
+        gameStarted = false;
+        showStartScreen();
+      }
     });
 
     // Victory 退出按钮（闯关模式专属）

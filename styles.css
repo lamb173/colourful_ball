@@ -948,9 +948,38 @@
       font-weight: 700;
       color: rgba(180, 200, 255, 0.6);
     }
-    .stage-card .card-icons {
-      font-size: 0.85rem;
-      letter-spacing: 0.04em;
+    .stage-card.locked {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.6);
+      border-color: rgba(255,255,255,0.04);
+    }
+    .stage-card.locked:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: rgba(255,255,255,0.04);
+    }
+    .stage-card.completed {
+      border-color: rgba(100, 220, 100, 0.3);
+      box-shadow: 0 0 15px rgba(100, 220, 100, 0.1);
+    }
+    .stage-card.completed-3 {
+      border-color: rgba(255, 200, 60, 0.4);
+      box-shadow: 0 0 25px rgba(255, 200, 60, 0.15);
+    }
+    .stage-card .card-stars-earned {
+      font-size: 1.2rem;
+      letter-spacing: 0.06em;
+      margin-top: 6px;
+      color: #ffd700;
+    }
+    .stage-card .card-stars-earned .stars-dim {
+      opacity: 0.2;
+    }
+    .stage-card .card-lock {
+      font-size: 1.4rem;
+      margin-top: 4px;
+      opacity: 0.5;
     }
     .stage-back-btn {
       position: fixed;
