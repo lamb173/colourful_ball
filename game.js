@@ -31,23 +31,38 @@
     // ★ 欢迎页跳转 — 放在脚本最前面，保证无论后面代码怎么崩都能跳转
     (function setupWelcomeTransition() {
       var _moved = false;
+
+      // 强制确保欢迎页可见（防止 CSS 权重问题）
+      var wpForce = document.getElementById('welcome-page');
+      if (wpForce) {
+        wpForce.style.opacity = '1';
+        wpForce.style.display = 'flex';
+        console.log('[GAME] welcome-page forced visible');
+      }
+
       function doGo() {
         if (_moved) return; _moved = true;
         console.log('[GAME] Welcome → Mode transition triggered');
         var wp = document.getElementById('welcome-page');
         var mp = document.getElementById('mode-page');
-        if (!wp || !mp) return;
+        if (!wp) { console.error('[GAME] welcome-page NOT found'); return; }
+        if (!mp) { console.error('[GAME] mode-page NOT found'); return; }
         wp.classList.remove('active'); wp.classList.add('fade-out');
         setTimeout(function() {
           wp.style.display = 'none';
           mp.style.display = 'flex';
           mp.classList.remove('fade-out'); mp.classList.add('active');
+          console.log('[GAME] Mode page should now be visible');
         }, 500);
       }
       // 3.2s 自动跳转
       _welcomeTimeoutId = setTimeout(doGo, 3200);
-      // 点击任意位置跳转
-      document.getElementById('welcome-page').addEventListener('click', doGo);
+      // 点击任意位置跳转（绑定到 document，防止 welcome-page 被 canvas 遮挡）
+      document.addEventListener('click', function handler() {
+        console.log('[GAME] document clicked, calling doGo()');
+        doGo();
+        document.removeEventListener('click', handler);
+      });
       console.log('[GAME] Welcome timeout + click registered');
     })();
 
