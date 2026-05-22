@@ -1620,6 +1620,8 @@
     const MIN_GROUPS = 15;
     const TRAIL_KEEP = 40;
     const groups = [];
+    let windZones = [];
+    let windNextZoneAt = WIND_FIRST_ZONE_AT;
 
     let activeColorKey = 'blue'; // 段安全色，由 appendGroup 内部更新
 
