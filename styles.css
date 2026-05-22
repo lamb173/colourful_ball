@@ -863,9 +863,10 @@
     /* ── 关卡选择页 ── */
     #stage-select-page {
       flex-direction: column;
-      gap: 30px;
+      gap: 20px;
       overflow-y: auto;
-      padding: 40px 20px;
+      overflow-x: hidden;
+      padding: 30px 0;
     }
     #stage-select-page h2 {
       font-family: 'Segoe UI', 'PingFang SC', sans-serif;
@@ -876,23 +877,44 @@
       text-shadow: 0 0 20px rgba(255, 120, 170, 0.3);
     }
     .stage-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 18px;
-      max-width: 600px;
-      width: 100%;
-      padding: 0 10px 40px;
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 10px 24px 16px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    .stage-cards-grid::-webkit-scrollbar {
+      height: 4px;
+    }
+    .stage-cards-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .stage-cards-grid::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
     }
     .stage-card {
+      flex: 0 0 200px;
+      width: 200px;
+      min-height: 180px;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 22px;
-      padding: 22px 18px;
+      padding: 22px 16px;
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
       text-align: center;
       position: relative;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
     .stage-card::before {
       content: '';
@@ -910,7 +932,7 @@
     .stage-card:active { transform: translateY(0) scale(0.97); }
     .stage-card .card-number {
       font-family: 'Segoe UI', sans-serif;
-      font-size: 3rem;
+      font-size: 2.2rem;
       font-weight: 900;
       background: linear-gradient(135deg, #ff6ab0, #a855f7);
       -webkit-background-clip: text;

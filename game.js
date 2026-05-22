@@ -388,7 +388,7 @@
       } catch(e) { return null; }
     })();
     if (!_stageProgress || typeof _stageProgress.unlocked !== 'number') {
-      _stageProgress = { unlocked: 1, stars: {} };
+      _stageProgress = { unlocked: STAGE_CONFIGS.length, stars: {} }; // 测试阶段全解锁
     }
     function saveStageProgress() {
       localStorage.setItem(STAGE_PROGRESS_KEY, JSON.stringify(_stageProgress));
