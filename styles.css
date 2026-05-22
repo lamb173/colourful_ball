@@ -1,0 +1,1000 @@
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; overflow: hidden; }
+    canvas { display: block; }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.55);
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 13px;
+      letter-spacing: 1px;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 10;
+    }
+    #info.visible { opacity: 1; }
+
+    #combo-container {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      z-index: 10;
+      transform: translateX(-50%);
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #combo-container.show { opacity: 1; }
+    #combo-container.game-ui { opacity: 0; }
+    #combo-container.game-ui.show { opacity: 1; }
+    #combo-text {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+      text-shadow: 0 0 12px var(--combo-glow, #88aaff), 0 0 30px var(--combo-glow, #88aaff), 0 0 50px var(--combo-glow, #88aaff);
+    }
+    #combo-count {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 2px;
+      text-shadow: 0 0 8px var(--combo-glow, #88aaff), 0 0 20px var(--combo-glow, #88aaff);
+    }
+
+    /* ── 加速提示 ── */
+    #boost-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 10;
+      transform: translate(-50%, -50%) scale(0.5);
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      color: #ffffff;
+      text-shadow: 0 0 20px #fff, 0 0 40px #aaddff, 0 0 80px #88ccff;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    #boost-hint.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* ── 右上角计分板 ── */
+    #score-board {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      text-align: right;
+      pointer-events: none;
+      user-select: none;
+      font-family: 'Segoe UI', sans-serif;
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 10;
+    }
+    #score-board.visible { opacity: 1; }
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .score-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.5);
+    }
+    .score-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #ffffff;
+      min-width: 28px;
+      text-align: left;
+    }
+    #perfect-row .score-label { color: rgba(255,230,100,0.85); }
+    #perfect-row .score-value { color: #ffe664; text-shadow: 0 0 8px rgba(255,230,100,0.5); }
+    #great-row .score-label { color: rgba(130,180,255,0.85); }
+    #great-row .score-value { color: #82b4ff; text-shadow: 0 0 8px rgba(130,180,255,0.5); }
+
+    /* ── Game Over 覆盖层 ── */
+    #gameover {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 20, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #gameover.show { display: flex; }
+
+    #gameover h1 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #ff6ab0 0%, #ffe066 50%, #5599ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4em;
+      animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #gameover p {
+      font-family: 'Segoe UI', sans-serif;
+      color: rgba(255,255,255,0.55);
+      font-size: 1.05rem;
+      margin-bottom: 0.5em;
+      letter-spacing: 0.05em;
+      animation: pop-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #gameover .go-stars {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #ffe066;
+      text-shadow: 0 0 12px rgba(255, 230, 100, 0.5);
+      margin-bottom: 1.8em;
+      animation: pop-in 0.5s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .go-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .go-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 36px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      min-width: 220px;
+      text-align: center;
+    }
+    .go-btn:hover  { transform: scale(1.04); }
+    .go-btn:active { transform: scale(0.97); }
+    .go-btn.exit-btn {
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: pop-in 0.55s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .go-btn.exit-btn:hover { background: rgba(255,255,255,0.14); }
+    .go-btn.ad-btn {
+      color: #fff;
+      background: linear-gradient(135deg, #22aa44, #44cc66);
+      box-shadow: 0 0 20px rgba(34, 170, 68, 0.3);
+      animation: pop-in 0.55s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .go-btn.ad-btn:hover { box-shadow: 0 0 30px rgba(34,170,68,0.5); }
+    .go-btn.star-btn {
+      color: #0a0a1a;
+      background: linear-gradient(135deg, #ffe066, #ffbb22);
+      box-shadow: 0 0 20px rgba(255, 230, 100, 0.3);
+      animation: pop-in 0.55s 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .go-btn.star-btn:hover { box-shadow: 0 0 30px rgba(255,230,100,0.5); }
+    .go-btn.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.6) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ── 胜利覆盖层 ── */
+    #victory {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 20, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #victory.show { display: flex; }
+    #victory h1 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #a855f7 0%, #f472b6 40%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4em;
+      animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory p {
+      font-family: 'Segoe UI', sans-serif;
+      color: rgba(255,255,255,0.55);
+      font-size: 1.05rem;
+      margin-bottom: 2.2em;
+      letter-spacing: 0.05em;
+      animation: pop-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #0a0a1a;
+      background: linear-gradient(135deg, #a855f7, #f472b6, #fbbf24);
+      border: none;
+      border-radius: 50px;
+      padding: 0.8em 2.6em;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(244, 114, 182, 0.3);
+      transition: transform 0.12s, box-shadow 0.12s;
+      animation: pop-in 0.55s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory-btn:hover  { transform: scale(1.07); box-shadow: 0 0 40px rgba(168,85,247,0.8), 0 0 80px rgba(244,114,182,0.4); }
+    #victory-btn:active { transform: scale(0.96); }
+
+    /* ── 左上角距离显示 ── */
+    #distance-board {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      pointer-events: none;
+      user-select: none;
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 10;
+    }
+    #distance-board.visible { opacity: 1; }
+    #dist-current {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: #e0e8ff;
+      text-shadow: 0 0 16px rgba(100, 140, 255, 0.6), 0 0 40px rgba(100, 140, 255, 0.3);
+      line-height: 1;
+    }
+    #dist-current .dist-unit {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: rgba(180, 200, 255, 0.7);
+      margin-left: 2px;
+    }
+    #dist-stars-row {
+      margin-top: 6px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #ffe066;
+      text-shadow: 0 0 10px rgba(255, 230, 100, 0.5);
+    }
+    #dist-stars-row .star-icon {
+      display: inline-block;
+      font-size: 0.95rem;
+      margin-right: 1px;
+    }
+    #dist-target-row {
+      margin-top: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: rgba(180, 200, 255, 0.45);
+    }
+    #dist-target-row .dist-arrow {
+      margin: 0 4px;
+      color: rgba(180, 200, 255, 0.3);
+    }
+    #dist-target-val {
+      color: rgba(200, 160, 255, 0.7);
+      text-shadow: 0 0 8px rgba(160, 120, 255, 0.4);
+      font-weight: 700;
+      min-width: 50px;
+      display: inline-block;
+      text-align: left;
+    }
+    #dist-target-val.revealed {
+      color: rgba(220, 180, 255, 0.9);
+      text-shadow: 0 0 12px rgba(180, 140, 255, 0.6);
+    }
+    #dist-target-val.completed {
+      color: rgba(255, 220, 140, 0.95);
+      text-shadow: 0 0 14px rgba(255, 200, 100, 0.6), 0 0 30px rgba(255, 180, 80, 0.3);
+    }
+    /* ── 页面通用（欢迎、取名、模式选择） ── */
+    .intro-page {
+      position: fixed;
+      inset: 0;
+      z-index: 210;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.6s ease;
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .intro-page.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .intro-page.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 引导页粒子 canvas 背景 */
+    .intro-particles {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+    }
+
+    /* 引导页深空渐变底层 */
+    .intro-page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(60, 30, 120, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(20, 60, 140, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(10, 10, 40, 0.95) 0%, rgba(5, 5, 15, 1) 100%);
+      z-index: -2;
+    }
+
+    /* ── 欢迎页 ── */
+    #welcome-page h1 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(1.8rem, 5.5vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      background: linear-gradient(90deg, #ff6ab0, #ffe066, #5599ff, #a855f7, #ff6ab0);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: welcome-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both, gradient-flow 4s linear 1.2s infinite;
+      filter: drop-shadow(0 0 30px rgba(255, 106, 176, 0.3)) drop-shadow(0 0 60px rgba(85, 153, 255, 0.2));
+    }
+    @keyframes welcome-in {
+      0%   { opacity: 0; transform: translateY(40px) scale(0.85); letter-spacing: 0.5em; }
+      60%  { opacity: 1; transform: translateY(-5px) scale(1.02); }
+      100% { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 0.15em; }
+    }
+    @keyframes gradient-flow {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    /* 欢迎页点击跳过提示 */
+    .welcome-hint {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 1.5em;
+      animation: welcome-in 1.2s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+      letter-spacing: 0.05em;
+    }
+
+    /* 欢迎页装饰小球 */
+    .welcome-balls {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .welcome-ball {
+      position: absolute;
+      border-radius: 50%;
+      animation: wb-float linear infinite;
+      opacity: 0.7;
+    }
+    @keyframes wb-float {
+      0%   { transform: translateY(110vh) scale(0.5); opacity: 0; }
+      10%  { opacity: 0.7; }
+      90%  { opacity: 0.7; }
+      100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+    }
+
+
+    /* ── 模式选择页 ── */
+    #mode-page {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 6vw;
+      padding: 0 10vw;
+    }
+    .mode-ball-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .mode-deco-ball {
+      width: clamp(100px, 14vw, 170px);
+      height: clamp(100px, 14vw, 170px);
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle at 35% 30%, #c8e0ff, #5580dd 35%, #2a3fa0 70%, #1a2570 100%);
+      box-shadow:
+        inset 0 -8px 20px rgba(0,0,0,0.4),
+        inset 0 6px 12px rgba(255,255,255,0.35),
+        0 0 40px rgba(85,128,221,0.5),
+        0 0 80px rgba(85,128,221,0.2),
+        0 0 120px rgba(85,128,221,0.1);
+      animation: mode-ball-float 2.5s ease-in-out infinite;
+    }
+    .mode-deco-ball::before {
+      content: '';
+      position: absolute;
+      top: 12%; left: 22%;
+      width: 35%; height: 25%;
+      background: radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%);
+      border-radius: 50%;
+      transform: rotate(-15deg);
+    }
+    .mode-deco-ball::after {
+      content: '';
+      position: absolute;
+      bottom: -25px; left: 50%;
+      transform: translateX(-50%);
+      width: 70%; height: 12px;
+      background: radial-gradient(ellipse, rgba(85,128,221,0.35) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: mode-ball-shadow 2.5s ease-in-out infinite;
+    }
+    @keyframes mode-ball-float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25%  { transform: translateY(-20px) rotate(2deg); }
+      50%  { transform: translateY(-8px) rotate(-1deg); }
+      75%  { transform: translateY(-24px) rotate(1.5deg); }
+    }
+    @keyframes mode-ball-shadow {
+      0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.6; }
+      50%       { transform: translateX(-50%) scaleX(0.7); opacity: 0.3; }
+    }
+    .mode-form {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 22px;
+    }
+    .mode-form h2 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(1.3rem, 3.2vw, 2rem);
+      font-weight: 800;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 20px rgba(130, 180, 255, 0.3);
+    }
+    .mode-options {
+      display: flex;
+      gap: 20px;
+    }
+    .mode-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #fff;
+      border: none;
+      border-radius: 18px;
+      padding: 16px 36px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .mode-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      pointer-events: none;
+    }
+    .mode-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+      transition: transform 0.6s;
+      transform: translateX(-100%);
+    }
+    .mode-btn:hover::after { transform: translateX(100%); }
+    .mode-btn:hover  { transform: translateY(-3px) scale(1.04); }
+    .mode-btn:active { transform: translateY(0) scale(0.97); }
+    .mode-btn.endless {
+      background: linear-gradient(135deg, #2244aa, #4477ee, #6699ff);
+      box-shadow: 0 4px 25px rgba(50, 100, 255, 0.4), 0 0 50px rgba(50, 100, 255, 0.15);
+    }
+    .mode-btn.endless:hover { box-shadow: 0 8px 35px rgba(50,100,255,0.6), 0 0 80px rgba(50,100,255,0.25); }
+    .mode-btn.stages {
+      background: linear-gradient(135deg, #aa2255, #ee4488, #ff66aa);
+      box-shadow: 0 4px 25px rgba(255, 50, 120, 0.4), 0 0 50px rgba(255, 50, 120, 0.15);
+    }
+    .mode-btn.stages:hover { box-shadow: 0 8px 35px rgba(255,50,120,0.6), 0 0 80px rgba(255,50,120,0.25); }
+    .mode-desc {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.04em;
+      margin-top: -10px;
+    }
+
+    /* ── 开始界面（最终确认） ── */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none; /* 初始隐藏，由 JS 显示 */
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.5s;
+      overflow: hidden;
+    }
+    #start-screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 35%, rgba(40, 20, 80, 0.6) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(10, 10, 40, 0.95) 0%, rgba(5, 5, 15, 1) 100%);
+      z-index: 0;
+    }
+    #start-screen > * { position: relative; z-index: 1; }
+    #start-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #start-screen h1 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(3rem, 10vw, 6rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      background: linear-gradient(135deg, #ff6ab0 0%, #ffe066 40%, #5599ff 70%, #a855f7 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.25em;
+      animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, gradient-flow 4s linear 0.6s infinite;
+      filter: drop-shadow(0 0 40px rgba(255, 106, 176, 0.3));
+    }
+    #start-screen .start-subtitle {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 3em;
+      animation: pop-in 0.5s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #start-screen .start-mode-badge {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 6px 20px;
+      border-radius: 20px;
+      margin-bottom: 1.5em;
+      text-transform: uppercase;
+    }
+    #start-screen .start-mode-badge.endless-badge {
+      background: rgba(50, 100, 255, 0.15);
+      color: rgba(100, 160, 255, 0.8);
+      border: 1px solid rgba(100, 160, 255, 0.2);
+    }
+    #start-screen .start-mode-badge.stages-badge {
+      background: rgba(255, 50, 120, 0.15);
+      color: rgba(255, 120, 170, 0.8);
+      border: 1px solid rgba(255, 120, 170, 0.2);
+    }
+    #start-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: #fff;
+      background: linear-gradient(135deg, #6633cc, #cc3388, #ff6600);
+      border: none;
+      border-radius: 50px;
+      padding: 0.9em 3.2em;
+      cursor: pointer;
+      box-shadow:
+        0 0 30px rgba(200, 50, 130, 0.4),
+        0 0 60px rgba(100, 50, 200, 0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: pop-in 0.55s 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    #start-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
+      transition: transform 0.8s;
+      transform: translateX(-100%);
+    }
+    #start-btn:hover::after { transform: translateX(100%); }
+    #start-btn:hover  { transform: scale(1.08); box-shadow: 0 0 50px rgba(200,50,130,0.6), 0 0 100px rgba(100,50,200,0.3); }
+    #start-btn:active { transform: scale(0.96); }
+
+    /* ── 倒计时覆盖层 ── */
+    #countdown {
+      position: fixed;
+      inset: 0;
+      z-index: 190;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s;
+      background: rgba(5, 5, 20, 0.95);
+    }
+    #countdown.show { opacity: 1; }
+    #countdown-num {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(7rem, 22vw, 14rem);
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow:
+        0 0 30px rgba(255, 230, 100, 0.9),
+        0 0 60px rgba(255, 106, 176, 0.6),
+        0 0 100px rgba(85, 153, 255, 0.4),
+        0 4px 20px rgba(0,0,0,0.5);
+      animation: count-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #countdown-num.go {
+      font-size: clamp(5rem, 16vw, 10rem);
+      background: linear-gradient(135deg, #ff6ab0, #ffe066, #5599ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 30px rgba(255,230,100,0.7)) drop-shadow(0 0 60px rgba(255,106,176,0.5)) drop-shadow(0 0 90px rgba(85,153,255,0.3));
+    }
+    @keyframes count-pop {
+      0%   { opacity: 0; transform: scale(0.3) rotate(-5deg); }
+      50%  { opacity: 1; transform: scale(1.12) rotate(1deg); }
+      100% { opacity: 0.9; transform: scale(1) rotate(0deg); }
+    }
+
+    /* ── 广告覆盖层 ── */
+    #ad-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: #000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #ad-overlay.show { display: flex; }
+    #ad-overlay video {
+      max-width: 100%;
+      max-height: 80vh;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+    #ad-timer {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.6);
+      padding: 6px 16px;
+      border-radius: 20px;
+      letter-spacing: 0.06em;
+    }
+    #ad-skip {
+      position: absolute;
+      bottom: 30px;
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      padding: 10px 28px;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      letter-spacing: 0.08em;
+    }
+    #ad-skip.enabled { opacity: 1; pointer-events: auto; }
+    #ad-skip:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── 模式选择页星级 ── */
+    .mode-stars {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #ffe066;
+      text-shadow: 0 0 10px rgba(255, 230, 100, 0.4);
+      letter-spacing: 0.05em;
+      margin-bottom: 1.2em;
+      animation: pop-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    /* ── 护盾条 ── */
+    #shield-bar {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      display: flex;
+      z-index: 10;
+      gap: 4px;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    #shield-bar.visible { opacity: 1; }
+    .shield-cell {
+      width: 48px;
+      height: 12px;
+      border-radius: 3px;
+      background: rgba(80, 160, 255, 0.12);
+      border: 1px solid rgba(80, 160, 255, 0.25);
+      overflow: hidden;
+      position: relative;
+    }
+    .shield-cell-fill {
+      position: absolute;
+      top: 1px;
+      bottom: 1px;
+      left: 1px;
+      width: calc(100% - 2px);
+      border-radius: 2px;
+      background: linear-gradient(135deg, #50a0ff, #80c0ff);
+      transition: width 0.3s ease, opacity 0.3s ease, background 0.3s ease;
+    }
+    .shield-cell.low .shield-cell-fill {
+      background: linear-gradient(135deg, #ff4444, #ff6644);
+    }
+    .shield-cell.empty .shield-cell-fill {
+      width: 0 !important;
+      opacity: 0;
+    }
+    .shield-cell.regen-flash .shield-cell-fill {
+      animation: shield-flash 0.4s ease-out;
+    }
+    @keyframes shield-flash {
+      0% { filter: brightness(3); }
+      100% { filter: brightness(1); }
+    }
+    /* 护盾伤害闪烁 */
+    @keyframes shield-hit-shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-3px); }
+      40% { transform: translateX(3px); }
+      60% { transform: translateX(-2px); }
+      80% { transform: translateX(2px); }
+    }
+    #shield-bar.hit {
+      animation: shield-hit-shake 0.25s ease-out;
+    }
+
+    /* ── 开始界面按钮包裹/退出按钮 ── */
+    .start-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    #exit-stage-btn, .exit-btn {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 30px;
+      padding: 8px 24px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      margin-bottom: 0;
+      animation: pop-in 0.55s 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #exit-stage-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.8);
+    }
+
+    /* ── 关卡名称 ── */
+    #start-stage-name {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: rgba(200,180,255,0.7);
+      letter-spacing: 0.08em;
+      margin-bottom: 0.3em;
+      text-shadow: 0 0 14px rgba(160, 120, 255, 0.3);
+      animation: pop-in 0.45s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    /* ── 关卡选择页 ── */
+    #stage-select-page {
+      flex-direction: column;
+      gap: 30px;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+    #stage-select-page h2 {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-weight: 800;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 20px rgba(255, 120, 170, 0.3);
+    }
+    .stage-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      max-width: 600px;
+      width: 100%;
+      padding: 0 10px 40px;
+    }
+    .stage-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 22px;
+      padding: 22px 18px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stage-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 22px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(200,150,255,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .stage-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 0 30px rgba(200, 100, 200, 0.2), 0 0 60px rgba(100, 50, 150, 0.1);
+      border-color: rgba(200, 150, 255, 0.35);
+    }
+    .stage-card:active { transform: translateY(0) scale(0.97); }
+    .stage-card .card-number {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6ab0, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .stage-card .card-name-en {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+    .stage-card .card-name-cn {
+      font-family: 'PingFang SC', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.04em;
+      margin-top: 4px;
+    }
+    .stage-card .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.45);
+    }
+    .stage-card .card-dist {
+      font-weight: 700;
+      color: rgba(180, 200, 255, 0.6);
+    }
+    .stage-card .card-icons {
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+    }
+    .stage-back-btn {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 8px 18px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      z-index: 220;
+    }
+    .stage-back-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* ── 胜利页——多按钮布局 ── */
+    #victory .victory-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    #victory .victory-btn-secondary {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 30px;
+      padding: 8px 24px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      animation: pop-in 0.55s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    #victory .victory-btn-secondary:hover {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.8);
+    }
+
