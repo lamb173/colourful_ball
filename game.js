@@ -127,19 +127,19 @@
     // 类型感知间距：不同轨道类型使用不同的 Z 方向间隙
     function randomGap(type) {
       switch(type) {
-        case 1: return 3.0 + Math.random() * 2.5;  // 长直 → 下一轨：3.0~5.5m（标准）
+        case 1: return 5.0 + Math.random() * 3.5;  // 长直 → 下一轨：5.0~8.5m（拉开）
         case 2: // double 方形
-        case 3: return 1.8 + Math.random() * 2.2;  // 方形 → 下一轨：1.8~4.0m（紧凑）
-        case 4: return 3.5 + Math.random() * 3.0;  // 加速 → 下一轨：3.5~6.5m（略宽）
-        case 5: return 5.0 + Math.random() * 3.5;  // 冰面 → 下一轨：5.0~8.5m（跨越）
-        default: return 3.0 + Math.random() * 2.5;
+        case 3: return 4.0 + Math.random() * 3.5;  // 方形 → 下一轨：4.0~7.5m（拉开）
+        case 4: return 5.5 + Math.random() * 4.0;  // 加速 → 下一轨：5.5~9.5m（略宽）
+        case 5: return 7.0 + Math.random() * 4.5;  // 冰面 → 下一轨：7.0~11.5m（跨越）
+        default: return 5.0 + Math.random() * 3.5;
       }
     }
-    function longTotalZ()   { return LONG_D + randomGap(1); }  // 3.6 + 3.0~5.5 = 6.6~9.1
-    function tripleTotalZ() { return SQ_D   + randomGap(3); }  // 2.4 + 1.8~4.0 = 4.2~6.4
+    function longTotalZ()   { return LONG_D + randomGap(1); }  // 3.6 + 5.0~8.5 = 8.6~12.1
+    function tripleTotalZ() { return SQ_D   + randomGap(3); }  // 2.4 + 4.0~7.5 = 6.4~9.9
     function doubleTotalZ() { return SQ_D   + randomGap(2); }  // 同上
-    function iceTotalZ()    { return ICE_D  + randomGap(5); }  // 24.0 + 5.0~8.5 = 29~32.5
-    function boostTotalZ()  { return LONG_D + randomGap(4); }  // 3.6 + 3.5~6.5 = 7.1~10.1
+    function iceTotalZ()    { return ICE_D  + randomGap(5); }  // 24.0 + 7.0~11.5 = 31.0~35.5
+    function boostTotalZ()  { return LONG_D + randomGap(4); }  // 3.6 + 5.5~9.5 = 9.1~13.1
 
     // ── 向前箭头纹理（正方形方块上底面装饰）──
     const arrowCanvas = document.createElement('canvas');
@@ -1117,9 +1117,21 @@
 
     }
 
+    let _lastPlannedSegment = -1; // 记录上次规划的段起点，避免重复规划
+
     function ensureGroupsAhead() {
       // 三分路选择期间暂停生成
       if (pathChoiceActive) return;
+      // ★ 段边界检查：当球进入新的 900m 段时，自动预规划冰/风位置
+      // （v12 移除 refreshGroupsAfterPath 后，selectPath 只在检查点调用，
+      //  但段边界可能不在检查点上，需要自动规划）
+      if (gameMode === 'endless') {
+        const segStart = Math.floor(ballZ / 900) * 900;
+        if (segStart !== _lastPlannedSegment) {
+          _lastPlannedSegment = segStart;
+          planSegmentSpecials(segStart);
+        }
+      }
       // 确保前方始终有 MIN_GROUPS + 5 个平台，留余量让 removeOldGroups 能工作
       const target = MIN_GROUPS + 5;
       while (groups.length < target) {
@@ -1196,6 +1208,7 @@
       lastBoostZ = -999;
       lastIceEndZ = -999;
       lastWindEndZ = -999;
+      _lastPlannedSegment = 0; // 重置段规划标记
 
       // ── 确定性地预规划本段冰/风位置 ──
       planSegmentSpecials(0);
@@ -3987,17 +4000,20 @@
         removeOldGroups();
 
         // 侧风生成 + 风线动画（冰面滑行也要处理）
-        // ── 确定性预规划：优先强制生成计划内的风区 ──
+        // ── 无尽模式：完全确定性规划，避免随机触发与规划竞争配额 ──
         if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
           const planZ = plannedWindPositions.shift();
           const wRules = getPhaseRules(getCurrentPhase(planZ));
           if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
             generateWindZone(planZ);
           } else if (ballZ - lastBoostZ < wRules.windBuf) {
+            // 加速轨道挡住，推迟到缓冲区之后
             plannedWindPositions.unshift(lastBoostZ + wRules.windBuf + 15);
           }
+          // 若 quota 已满（phaseWindCount >= maxWind），静默丢弃，不重新入队
         }
-        if ((gameMode === 'endless' || (_currentStage && _currentStage.hasWind)) && ballZ > windNextZoneAt) {
+        // ── 闯关模式：保留随机触发 ──
+        if (gameMode !== 'endless' && (_currentStage && _currentStage.hasWind) && ballZ > windNextZoneAt) {
           generateWindZone(Math.max(windNextZoneAt, ballZ + 10));
         }
         for (const zone of windZones) {
@@ -4334,7 +4350,7 @@
       // 删除球后方太远的平台（释放资源）
       removeOldGroups();
 
-      // ── 侧风段：确定性预规划优先 ──
+      // ── 侧风段：无尽模式完全确定性，闯关模式保留随机 ──
       if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
         const planZ = plannedWindPositions.shift();
         const wRules = getPhaseRules(getCurrentPhase(planZ));
@@ -4344,7 +4360,7 @@
           plannedWindPositions.unshift(lastBoostZ + wRules.windBuf + 15);
         }
       }
-      if ((gameMode === 'endless' || (_currentStage && _currentStage.hasWind)) && ballZ > windNextZoneAt) {
+      if (gameMode !== 'endless' && (_currentStage && _currentStage.hasWind) && ballZ > windNextZoneAt) {
         generateWindZone(Math.max(windNextZoneAt, ballZ + 10));
       }
 
@@ -4447,6 +4463,7 @@
       phaseWindCount = 0;
       // ── 确定性地预规划本段冰/风位置 ──
       planSegmentSpecials(ballZ);
+      _lastPlannedSegment = Math.floor(ballZ / 900) * 900; // 同步段规划标记
       // ★ 不销毁现有颜色链！已有组天然连通，只需切换 path style，
       //   新路径风格会在后续 appendGroup()（gameplay 触发）中自然生效。
       //   之前的 refreshGroupsAfterPath() 破坏了颜色链 → 必死。
