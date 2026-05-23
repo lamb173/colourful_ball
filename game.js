@@ -18,6 +18,8 @@
     window.addEventListener('error', function(e) {
       _gameError = e.error || e.message;
       var msg = _gameError && _gameError.message ? _gameError.message : String(_gameError);
+      var dbg = document.getElementById('debug-errors');
+      if (dbg) { dbg.style.display = 'block'; dbg.textContent += '[ERROR] ' + msg + '\n'; }
       showFatalError(msg);
     });
     console.log('[GAME] Script starting, THREE available:', typeof THREE !== 'undefined');
@@ -3932,6 +3934,7 @@
       if (localPhase >= 1) {
         jumpTimer = 0;
         jumpFromZ = jumpToZ;
+        console.log('[JUMP] landed at Z=' + Math.round(jumpFromZ) + ' | groups=' + groups.length + ' | mode=' + gameMode + ' | currentPhase=' + getCurrentPhase(jumpFromZ));
 
         // ── 落地缓冲动画
         landBounceActive = true;
@@ -4200,6 +4203,8 @@
 
   } catch(e) {
     console.error('GAME ERROR:', e);
+    var dbg = document.getElementById('debug-errors');
+    if (dbg) { dbg.style.display = 'block'; dbg.textContent += '[ANIM] ' + (e.message || e) + '\n'; }
   } finally {
     renderer.render(scene, camera);
   }
