@@ -872,6 +872,10 @@
 
       plannedIcePositions.sort((a, b) => a - b);
       plannedWindPositions.sort((a, b) => a - b);
+      // [DEBUG] 日志：规划结果
+      if (plannedWindPositions.length > 0) {
+        console.log('[WIND PLAN] segment', segmentStartZ, '→', segmentEndZ, 'wind at', plannedWindPositions.join(','));
+      }
     }
 
     function appendGroup() {
@@ -1012,14 +1016,17 @@
     }
 
     function generateWindZone(atZ) {
+      console.log('[WIND GEN] called at atZ=', Math.round(atZ), 'gameMode=', gameMode);
       // ── 无尽模式：阶段规则阀门（P0 禁止、上限检查、缓冲区检查）──
       if (gameMode === 'endless') {
         const rules = getPhaseRules(getCurrentPhase(atZ));
         if (!rules.allowWind || phaseWindCount >= rules.maxWind) {
+          console.log('[WIND GEN] REJECTED: allowWind=', rules.allowWind, 'phaseWindCount=', phaseWindCount, 'maxWind=', rules.maxWind);
           windNextZoneAt = atZ + 60 + Math.random() * 120;
           return;
         }
         if (atZ - lastBoostZ < rules.windBuf) {
+          console.log('[WIND GEN] REJECTED: boost too close, atZ-lastBoostZ=', Math.round(atZ - lastBoostZ), 'windBuf=', rules.windBuf);
           windNextZoneAt = lastBoostZ + rules.windBuf + 40 + Math.random() * 120;
           return;
         }
@@ -1044,6 +1051,7 @@
       // 记录风区结束位置 + 侧风计数
       lastWindEndZ = zone.endZ;
       phaseWindCount++;
+      console.log('[WIND GEN] SUCCESS! startZ=', Math.round(zone.startZ), 'endZ=', Math.round(zone.endZ), 'dir=', zone.direction, 'phaseWindCount=', phaseWindCount);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -4004,13 +4012,17 @@
         if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
           const planZ = plannedWindPositions.shift();
           const wRules = getPhaseRules(getCurrentPhase(planZ));
+          const distFromBoost = ballZ - lastBoostZ;
+          console.log('[WIND CONSUME] iceSlide ballZ=', Math.round(ballZ), 'planZ=', Math.round(planZ), 'distFromBoost=', Math.round(distFromBoost), 'windBuf=', wRules.windBuf, 'phaseWindCount=', phaseWindCount, 'maxWind=', wRules.maxWind);
           if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
             generateWindZone(planZ);
           } else if (ballZ - lastBoostZ < wRules.windBuf) {
-            // 加速轨道挡住，推迟到缓冲区之后
-            plannedWindPositions.unshift(lastBoostZ + wRules.windBuf + 15);
+            const newPlanZ = lastBoostZ + wRules.windBuf + 15;
+            console.log('[WIND DELAY] pushed to', Math.round(newPlanZ));
+            plannedWindPositions.unshift(newPlanZ);
+          } else {
+            console.log('[WIND DROP] quota full, planZ=', Math.round(planZ));
           }
-          // 若 quota 已满（phaseWindCount >= maxWind），静默丢弃，不重新入队
         }
         // ── 闯关模式：保留随机触发 ──
         if (gameMode !== 'endless' && (_currentStage && _currentStage.hasWind) && ballZ > windNextZoneAt) {
@@ -4354,10 +4366,16 @@
       if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
         const planZ = plannedWindPositions.shift();
         const wRules = getPhaseRules(getCurrentPhase(planZ));
+        const distFromBoost = ballZ - lastBoostZ;
+        console.log('[WIND CONSUME] ballZ=', Math.round(ballZ), 'planZ=', Math.round(planZ), 'distFromBoost=', Math.round(distFromBoost), 'windBuf=', wRules.windBuf, 'phaseWindCount=', phaseWindCount, 'maxWind=', wRules.maxWind);
         if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
           generateWindZone(planZ);
         } else if (ballZ - lastBoostZ < wRules.windBuf) {
-          plannedWindPositions.unshift(lastBoostZ + wRules.windBuf + 15);
+          const newPlanZ = lastBoostZ + wRules.windBuf + 15;
+          console.log('[WIND DELAY] pushed to', Math.round(newPlanZ));
+          plannedWindPositions.unshift(newPlanZ);
+        } else {
+          console.log('[WIND DROP] quota full, planZ=', Math.round(planZ));
         }
       }
       if (gameMode !== 'endless' && (_currentStage && _currentStage.hasWind) && ballZ > windNextZoneAt) {
