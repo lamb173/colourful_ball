@@ -4443,7 +4443,9 @@
       planSegmentSpecials(ballZ);
       // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
       refreshGroupsAfterPath();
-      // 选完路后给 2 秒缓冲倒计时，防止反应不过来
+      // 强制同步段安全色与球的当前颜色，确保重生的方形轨道包含球的颜色
+      activeColorKey = currentBallColorKey;
+      // 选完路后给缓冲倒计时，防止反应不过来
       startCountdown(() => { isPaused = false; });
     }
 
