@@ -762,7 +762,6 @@
     let windNextZoneAt = WIND_FIRST_ZONE_AT;
 
     let activeColorKey = 'blue'; // 段安全色，由 appendGroup 内部更新
-    let _forceTripleNext = false; // 选路后强制第一组为三色台（保证颜色连通）
 
     // ── 渐进难度状态变量（无尽模式）──
     let nextPathCheckpoint = 900;
@@ -949,22 +948,15 @@
           lastIceEndZ = z + ICE_D;
         } else {
           // 普通轨道：路径风格影响比例（0=宽广多长直, 1=均衡, 2=精炼多方块）
-          // ★ 选路后强制第一组为三色台，吸收球的任意颜色
-          if (_forceTripleNext) {
-            // 三色台含全部颜色，球无论什么颜色都能安全着陆
+          const longThresh = currentPathStyle === 0 ? 0.55 : (currentPathStyle === 2 ? 0.15 : 0.33);
+          const tripleThresh = longThresh + (currentPathStyle === 0 ? 0.25 : (currentPathStyle === 2 ? 0.45 : 0.33));
+          if (r < longThresh) {
+            group = createLongPlatform(z);
+            activeColorKey = group.colorKey;
+          } else if (r < tripleThresh) {
             group = createTriplePlatform(z);
-            _forceTripleNext = false;
           } else {
-            const longThresh = currentPathStyle === 0 ? 0.55 : (currentPathStyle === 2 ? 0.15 : 0.33);
-            const tripleThresh = longThresh + (currentPathStyle === 0 ? 0.25 : (currentPathStyle === 2 ? 0.45 : 0.33));
-            if (r < longThresh) {
-              group = createLongPlatform(z);
-              activeColorKey = group.colorKey;
-            } else if (r < tripleThresh) {
-              group = createTriplePlatform(z);
-            } else {
-              group = createDoublePlatform(z, activeColorKey);
-            }
+            group = createDoublePlatform(z, activeColorKey);
           }
         }
       }
@@ -2457,7 +2449,8 @@
     let currentBallColorKey = 'blue';
 
     function initJump() {
-      if (groups.length === 0) { console.warn('[GAME] initJump skipped: groups empty'); return; }
+      // 页面加载时 groups 还未初始化（restartGame 才初始化），静默跳过
+      if (groups.length === 0) { return; }
       const first = groups[0]; // 第一组一定是长直轨道
       if (!first || first.colorKey === undefined || first.colorKey === null) {
         console.warn('[GAME] initJump skipped: first group has no colorKey');
@@ -4454,13 +4447,9 @@
       phaseWindCount = 0;
       // ── 确定性地预规划本段冰/风位置 ──
       planSegmentSpecials(ballZ);
-      // ★ 强制第一个新平台为三色台，保证球的任意颜色都能安全着陆
-      // （refreshGroupsAfterPath 内部会扫描保留组中的长直轨道来更新 activeColorKey，
-      //  但三色台作为安全网，确保即使颜色链断裂也能安全着陆）
-      _forceTripleNext = true;
-      // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
-      refreshGroupsAfterPath();
-      _forceTripleNext = false; // 仅影响第一个 appendGroup 调用
+      // ★ 不销毁现有颜色链！已有组天然连通，只需切换 path style，
+      //   新路径风格会在后续 appendGroup()（gameplay 触发）中自然生效。
+      //   之前的 refreshGroupsAfterPath() 破坏了颜色链 → 必死。
       // 选完路后给缓冲倒计时，防止反应不过来
       startCountdown(() => { isPaused = false; });
     }
