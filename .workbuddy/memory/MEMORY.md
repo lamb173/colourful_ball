@@ -21,7 +21,7 @@
 | 2 | 双色方形 | SQ_W=3.2 | SQ_D=2.4 | 连击变色 |
 | 3 | 三色方形 | SQ_W=3.2 | SQ_D=2.4 | 三色全包 |
 | 4 | 加速轨道 | LONG_W=8 | LONG_D=3.6 | 8秒加速，不变色 |
-| 5 | 冰霜段 | ICE_W=2.0 | ICE_D=10.0 | 球滑行不弹跳，随机横向推力 |
+| 5 | 冰霜段 | ICE_W=2.5 | ICE_D=24.0 | 球滑行不弹跳，随机横向推力 |
 
 ## 代码改动记录规范（用户要求）
 - 每版改动必须记录到当天的 `YYYY-MM-DD.md` 工作日志
@@ -48,3 +48,17 @@
 - 渐进式开发流程：提想法→AI设计→用户确认→实施→反馈
 - 音量要求较高
 - 粒子效果：细碎发光、从上方飘落、不遮挡视线
+
+## 最新机制记录（v11.0-hotfix5）
+
+### 死亡颜色持久化
+- `lastDeathColor` (THREE.Color) + `lastDeathColorKey` (string) 保存球死时的颜色
+- `saveBallDeathColor()` 在 4 个死亡触发点调用（护盾碎、冰面越界、落地脱轨、颜色不匹配）
+- `revivePlayer()` 统一从 `lastDeathColor/lastDeathColorKey` 恢复，不再查平台颜色
+
+### 倒计时画布渲染
+- `animate()` 中 `!gameStarted` 分支不再跳过渲染，添加简易镜头跟随 + `renderer.render()`
+
+### 路径选择后缓冲区刷新
+- `selectPath()` 调用 `refreshGroupsAfterPath()` → `disposeGroup()` 清理前方组 → `ensureGroupsAhead()` 重新生成
+- 解决三分路检查点前预生成的缓冲区缺乏冰面的问题

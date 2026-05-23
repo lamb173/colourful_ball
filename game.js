@@ -775,6 +775,10 @@
     let lastIceEndZ = -999;
     let lastWindEndZ = -999;
 
+    // ── 确定性预规划：每个 900m 段预先确定冰/风的确切位置 ──
+    let plannedIcePositions = [];   // sorted ascending Z
+    let plannedWindPositions = [];  // sorted ascending Z
+
     // ── 渐进难度：累计距离 → 阶段编号（0-6）──
     function getCurrentPhase(z) {
       if (z < 600)  return 0;
@@ -810,6 +814,64 @@
         default:
           return { boostCap: 3, allowIce: false, maxIce: 0, iceBuf: 0, allowWind: false, maxWind: 0, windBuf: 0 };
       }
+    }
+    // ── 确定性预规划：每个 900m 段开始时，预先计算冰/风的确切 Z 位置 ──
+    function planSegmentSpecials(segmentStartZ) {
+      plannedIcePositions = [];
+      plannedWindPositions = [];
+      if (gameMode !== 'endless') return;
+      const segmentEndZ = segmentStartZ + 900;
+
+      // 收集段内的相位边界（600, 1200, 1800...）
+      const boundaries = [];
+      for (let b = 600; b <= segmentEndZ; b += 600) {
+        if (b > segmentStartZ && b < segmentEndZ) boundaries.push(b);
+      }
+
+      // 按子区间分别规划（每个子区间内相位一致，配额按长度比例分配）
+      let subStart = segmentStartZ;
+      const subEnds = [...boundaries, segmentEndZ];
+      for (const subEnd of subEnds) {
+        const subRules = getPhaseRules(getCurrentPhase(subStart + 1));
+        const subLen = subEnd - subStart;
+
+        // 规划冰霜段（配额按子区间长度 / 900 比例）
+        if (subRules.allowIce && subRules.maxIce > 0) {
+          const subCount = Math.max(1, Math.round(subRules.maxIce * subLen / 900));
+          const availStart = Math.max(subStart + Math.max(subRules.iceBuf, 40), segmentStartZ + 40);
+          const availEnd = Math.min(subEnd - ICE_D - 10, segmentEndZ - ICE_D - 10);
+          if (availEnd > availStart && subCount > 0) {
+            const range = availEnd - availStart;
+            for (let i = 0; i < subCount; i++) {
+              const baseZ = availStart + (range * (i + 0.5) / subCount);
+              const jitter = (range / subCount) * 0.25;
+              const z = baseZ + (Math.random() - 0.5) * jitter * 2;
+              plannedIcePositions.push(Math.max(availStart, Math.min(availEnd, z)));
+            }
+          }
+        }
+
+        // 规划侧风段
+        if (subRules.allowWind && subRules.maxWind > 0) {
+          const subCount = Math.max(1, Math.round(subRules.maxWind * subLen / 900));
+          const availStart = Math.max(subStart + Math.max(subRules.windBuf, 40), segmentStartZ + 40);
+          const availEnd = Math.min(subEnd - 50, segmentEndZ - 50);
+          if (availEnd > availStart && subCount > 0) {
+            const range = availEnd - availStart;
+            for (let i = 0; i < subCount; i++) {
+              const baseZ = availStart + (range * (i + 0.5) / subCount);
+              const jitter = (range / subCount) * 0.25;
+              const z = baseZ + (Math.random() - 0.5) * jitter * 2;
+              plannedWindPositions.push(Math.max(availStart, Math.min(availEnd, z)));
+            }
+          }
+        }
+
+        subStart = subEnd;
+      }
+
+      plannedIcePositions.sort((a, b) => a - b);
+      plannedWindPositions.sort((a, b) => a - b);
     }
 
     function appendGroup() {
@@ -852,11 +914,29 @@
                         && totalBoostGenerated < rules.boostCap
                         && r < 0.12;
 
-        // 冰霜段：阶段规则 + 缓冲区 + 数量上限
-        const iceOk = rules.allowIce && !boostOk && lg && lg.type !== 4 && lg.type !== 5
-                      && distFromBoost >= rules.iceBuf
-                      && phaseIceCount < rules.maxIce
-                      && r < 0.18;
+        // 冰霜段：概率触发 + 确定性预规划兜底
+        let iceOk = false;
+        if (rules.allowIce && !boostOk && lg && lg.type !== 4 && lg.type !== 5
+            && distFromBoost >= rules.iceBuf && phaseIceCount < rules.maxIce) {
+          // 概率触发（自然随机）
+          if (r < 0.18) iceOk = true;
+          // 确定性兜底：当前 Z 已越过计划位置，强制生成
+          if (!iceOk) {
+            while (plannedIcePositions.length > 0 && z >= plannedIcePositions[0]) {
+              if (distFromBoost >= rules.iceBuf && phaseIceCount < rules.maxIce) {
+                iceOk = true;
+                plannedIcePositions.shift();
+                break;
+              } else if (distFromBoost < rules.iceBuf) {
+                // 加速轨道挡住了计划位置，推迟
+                plannedIcePositions[0] = lastBoostZ + rules.iceBuf + 15;
+                break;
+              } else {
+                plannedIcePositions.shift(); // quota 满了，丢弃计划
+              }
+            }
+          }
+        }
 
         if (boostOk) {
           group = createBoostPlatform(z);
@@ -1117,6 +1197,8 @@
       lastIceEndZ = -999;
       lastWindEndZ = -999;
 
+      // ── 确定性地预规划本段冰/风位置 ──
+      planSegmentSpecials(0);
 
       // 第一组强制长直轨道
       const first = createLongPlatform(0);
@@ -3899,6 +3981,16 @@
         removeOldGroups();
 
         // 侧风生成 + 风线动画（冰面滑行也要处理）
+        // ── 确定性预规划：优先强制生成计划内的风区 ──
+        if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
+          const planZ = plannedWindPositions.shift();
+          const wRules = getPhaseRules(getCurrentPhase(planZ));
+          if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
+            generateWindZone(planZ);
+          } else if (ballZ - lastBoostZ < wRules.windBuf) {
+            plannedWindPositions.unshift(lastBoostZ + wRules.windBuf + 15);
+          }
+        }
         if ((gameMode === 'endless' || (_currentStage && _currentStage.hasWind)) && ballZ > windNextZoneAt) {
           generateWindZone(Math.max(windNextZoneAt, ballZ + 10));
         }
@@ -4236,7 +4328,16 @@
       // 删除球后方太远的平台（释放资源）
       removeOldGroups();
 
-      // ── 侧风段：当球超过下一个风区起点时生成新风区 ──
+      // ── 侧风段：确定性预规划优先 ──
+      if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
+        const planZ = plannedWindPositions.shift();
+        const wRules = getPhaseRules(getCurrentPhase(planZ));
+        if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
+          generateWindZone(planZ);
+        } else if (ballZ - lastBoostZ < wRules.windBuf) {
+          plannedWindPositions.unshift(lastBoostZ + wRules.windBuf + 15);
+        }
+      }
       if ((gameMode === 'endless' || (_currentStage && _currentStage.hasWind)) && ballZ > windNextZoneAt) {
         generateWindZone(Math.max(windNextZoneAt, ballZ + 10));
       }
@@ -4338,6 +4439,8 @@
       currentPhase = phaseBase;
       phaseIceCount = 0;
       phaseWindCount = 0;
+      // ── 确定性地预规划本段冰/风位置 ──
+      planSegmentSpecials(ballZ);
       // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
       refreshGroupsAfterPath();
     }
