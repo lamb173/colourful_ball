@@ -2211,6 +2211,14 @@
     let gameStarted = false; // 游戏是否已开始（倒计时结束）
     let isPaused = false;    // 暂停状态（三分路选择、UI 弹窗等）
 
+    // ── 死亡颜色记忆（球死了什么色，复活就是什么色）──
+    let lastDeathColor = new THREE.Color(0.5, 0.7, 1.0);
+    let lastDeathColorKey = 'blue';
+    function saveBallDeathColor() {
+      lastDeathColor.copy(sphereMat.color);
+      lastDeathColorKey = currentBallColorKey;
+    }
+
     // ── 护盾系统状态 ──
     let shield = SHIELD_MAX;
     let safeLandCount = 0;
@@ -3209,6 +3217,7 @@
       if (shieldBreakTimer >= SHIELD_BREAK_DELAY) {
         shieldBreakActive = false;
         triggerBurst(sphere.position.clone(), new THREE.Color(0x50a0ff));
+        saveBallDeathColor();
         gameOver = true;
         hideShieldBar();
         hideCombo();
@@ -3353,6 +3362,9 @@
       shadowCircle.visible = true;
       sphere.scale.set(1, 1, 1);
       sphereMat.opacity = 1;
+      // 恢复死亡时的颜色（球死什么色，复活什么色）
+      sphereMat.color.copy(lastDeathColor);
+      currentBallColorKey = lastDeathColorKey;
       // 复活时护盾恢复满值
       shield = SHIELD_MAX;
       safeLandCount = 0;
@@ -3390,28 +3402,21 @@
         } else if (g.type === 1 || g.type === 4) {
           // 长直/加速轨道：居中
           ballX = 0;
-          sphereMat.color.copy(g.color);
-          currentBallColorKey = g.colorKey;
           ballZ = g.landZ;
           jumpFromZ = g.landZ;
           const next = pickNextGroup(landed.index);
           jumpToZ = next.group.landZ;
           currentGroupIdx = landed.index;
         } else {
-          // 方形轨道：找到与 activeColorKey 匹配的方块
-          // 避免球复活时颜色与前方平台脱节（activeColorKey 驱动 appendGroup 的颜色选择）
+          // 方形轨道：使用死亡时保存的颜色，匹配对应方块位置
           let matchPart = g.parts[0];
-          let matchColorKey = g.partColorKeys[0];
           for (let pi = 0; pi < g.parts.length; pi++) {
-            if (g.partColorKeys[pi] === activeColorKey) {
+            if (g.partColorKeys[pi] === lastDeathColorKey) {
               matchPart = g.parts[pi];
-              matchColorKey = activeColorKey;
               break;
             }
           }
           ballX = matchPart.mesh.position.x;
-          sphereMat.color.copy(matchPart.mesh.material.color);
-          currentBallColorKey = matchColorKey;
           ballZ = g.landZ;
           jumpFromZ = g.landZ;
           const next = pickNextGroup(landed.index);
@@ -3731,7 +3736,15 @@
       updateVictoryAnim(dt);
       updateShieldBreak(dt);
 
-      if (gameOver || !gameStarted || shieldBreakActive) {
+      if (gameOver || shieldBreakActive) {
+        return;
+      }
+      if (!gameStarted) {
+        // 倒计时/等待期间仍渲染场景，确保半透明遮罩下可见轨道和球
+        const camT = new THREE.Vector3(ballX, CAM_OFFSET.y, ballZ + CAM_OFFSET.z);
+        camera.position.lerp(camT, 0.06);
+        camera.lookAt(ballX, 0.0, ballZ);
+        renderer.render(scene, camera);
         return;
       }
 
@@ -3857,6 +3870,7 @@
             iceSliding = false;
             iceGroupRef = null;
             jumpToZ = ballZ; // 记录跌倒位置，复活时落回此处
+            saveBallDeathColor();
             gameOver = true;
             hideCombo();
             triggerMissFall();
@@ -4034,6 +4048,7 @@
             });
           }
           if (!onTrack) {
+            saveBallDeathColor();
             gameOver = true;
             hideCombo();
             // 自由落体 Game Over
@@ -4091,6 +4106,7 @@
           if (g.type === 2 || g.type === 3) {
             const safe = checkLandColorMatch(g, currentBallColorKey);
             if (!safe) {
+              saveBallDeathColor();
               gameOver = true;
               document.getElementById('gameover-msg').textContent = '颜色不匹配，球碎了！';
               triggerBurst(sphere.position.clone(), sphereMat.color.clone());
@@ -4322,6 +4338,42 @@
       currentPhase = phaseBase;
       phaseIceCount = 0;
       phaseWindCount = 0;
+      // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
+      refreshGroupsAfterPath();
+    }
+
+    function disposeGroup(grp) {
+      grp.parts.forEach(p => {
+        scene.remove(p.mesh);
+        p.mesh.geometry.dispose();
+        p.mesh.material.dispose();
+        if (p.arrowOverlay) { scene.remove(p.arrowOverlay); p.arrowOverlay.geometry.dispose(); p.arrowOverlay.material.dispose(); }
+        if (p.arrowGlow) { scene.remove(p.arrowGlow); p.arrowGlow.geometry.dispose(); p.arrowGlow.material.dispose(); }
+        p.edges.forEach(e => { scene.remove(e); e.geometry.dispose(); e.material.dispose(); });
+      });
+      if (grp.crystals) { grp.crystals.forEach(c => { scene.remove(c); c.geometry.dispose(); }); }
+      if (grp.frostParticles) { grp.frostParticles.forEach(f => { scene.remove(f); f.geometry.dispose(); f.material.dispose(); }); }
+      if (grp.iceMat) {
+        const idx = activeIceMats.indexOf(grp.iceMat);
+        if (idx !== -1) activeIceMats.splice(idx, 1);
+        grp.iceMat.dispose();
+      }
+      if (grp.crystalMat) {
+        const idx = activeIceMats.indexOf(grp.crystalMat);
+        if (idx !== -1) activeIceMats.splice(idx, 1);
+        grp.crystalMat.dispose();
+      }
+    }
+
+    function refreshGroupsAfterPath() {
+      // 保留当前组及下2个组（球可能正在跳往），清除更前方的预生成组
+      const keepCount = Math.min(currentGroupIdx + 3, groups.length);
+      while (groups.length > keepCount) {
+        const grp = groups.pop();
+        disposeGroup(grp);
+      }
+      // 强制重新生成前方平台
+      ensureGroupsAhead();
     }
 
     // 绑定三分路卡片点击事件
