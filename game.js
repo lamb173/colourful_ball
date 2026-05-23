@@ -1208,11 +1208,13 @@
     // 重力 ∝ 1/T²，g×2.5 → T = BASE/sqrt(2.5)
     const BOOST_JUMP_DURATION = BASE_JUMP_DURATION / Math.sqrt(BOOST_GRAVITY_MULT);
     const BOOST_DURATION  = 8;         // 加速持续秒数
+    const BOOST_DECAY_DURATION = 1.5;  // 加速结束后平滑衰减时间
     const MOUSE_SENSITIVITY = 0.04;
 
-    // 加速状态
-    let boosting = false;
+    // 加速状态（浮点强度：0=正常速度, 1=全速加速, 衰减期平滑过渡）
+    let boostIntensity = 0;
     let boostTimer = 0;
+    let boostDecaying = false;
 
     // ── 冰霜段滑行状态 ──
     let iceSliding = false;           // 是否正在冰面上滑行
@@ -1965,8 +1967,8 @@
       update(dt) {
         if (!this._active) return;
 
-        // boosting 由外部管理，boosting === false 时关闭
-        if (!boosting) { this._hide(); return; }
+        // 加速强度由外部管理，归零时关闭
+        if (boostIntensity <= 0) { this._hide(); return; }
 
         this._elapsed += dt;
         const timeLeft = this._duration - this._elapsed;
@@ -2095,7 +2097,7 @@
     function updateBoostScatter(dt) {
       boostFX.update(dt);
       // 同步 active 标志
-      if (boostScatterActive && !boosting) boostScatterActive = false;
+      if (boostScatterActive && boostIntensity <= 0) boostScatterActive = false;
     }
 
     // ── 自由落体 Game Over 状态 ──
@@ -2207,6 +2209,7 @@
     // ═══════════════════════════════════════════════════════
     let gameOver = false;
     let gameStarted = false; // 游戏是否已开始（倒计时结束）
+    let isPaused = false;    // 暂停状态（三分路选择、UI 弹窗等）
 
     // ── 护盾系统状态 ──
     let shield = SHIELD_MAX;
@@ -2600,7 +2603,9 @@
       removeBlackhole();
       gameOver = false;
       gameStarted = false;
-      boosting = false;
+      isPaused = false;
+      boostIntensity = 0;
+      boostDecaying = false;
       boostTimer = 0;
       iceSliding = false;
       iceGroupRef = null;
@@ -2704,14 +2709,12 @@
         return;
       }
       gameStarted = false;
-      renderer.domElement.style.display = 'none'; // 画布全程隐藏，直到倒计时结束
+      // 倒计时期间不隐藏画布 — 半透明背景透出轨道和球的画面
       const screen = document.getElementById('start-screen');
       screen.classList.add('hidden');
       setTimeout(() => {
         screen.style.display = 'none';
-        // 倒计时期间画布仍然隐藏，倒计时结束才显示画布 + 游戏 UI
         startCountdown(() => {
-          renderer.domElement.style.display = 'block';
           showGameUI();
           gameStarted = true;
         });
@@ -3330,7 +3333,8 @@
       gameOver = false;
       gameStarted = false;
       // 重置加速状态
-      boosting = false;
+      boostIntensity = 0;
+      boostDecaying = false;
       boostTimer = 0;
       sphereMat.emissiveIntensity = 0;
       // 重置冰霜段状态
@@ -3637,7 +3641,8 @@
       updateStarsUI();
 
       // 重置加速状态
-      boosting = false;
+      boostIntensity = 0;
+      boostDecaying = false;
       boostTimer = 0;
       sphereMat.emissiveIntensity = 0;
 
@@ -3729,15 +3734,29 @@
         return;
       }
 
-      // 加速计时
-      if (boosting) {
-        boostTimer += dt;
-        if (boostTimer >= BOOST_DURATION) {
-          boosting = false;
-          boostTimer = 0;
+      // ── 暂停状态：冻结所有游戏逻辑，仅保留场景渲染 ──
+      if (isPaused) {
+        renderer.render(scene, camera);
+        return;
+      }
+
+      // 加速强度管理：全速期 → 衰减期 → 归零
+      if (boostIntensity > 0) {
+        if (boostDecaying) {
+          boostIntensity -= dt / BOOST_DECAY_DURATION;
+          if (boostIntensity <= 0) {
+            boostIntensity = 0;
+            boostDecaying = false;
+            boostTimer = 0;
+          }
+        } else {
+          boostTimer += dt;
+          if (boostTimer >= BOOST_DURATION) {
+            boostDecaying = true;
+          }
         }
       }
-      const curJumpDur = boosting ? BOOST_JUMP_DURATION : BASE_JUMP_DURATION;
+      const curJumpDur = BASE_JUMP_DURATION + (BOOST_JUMP_DURATION - BASE_JUMP_DURATION) * boostIntensity;
 
 
       // ── 冰霜段滑行模式（type5）：球贴地滑行，不弹跳 ──
@@ -4040,7 +4059,8 @@
           if (g.type === 4) {
             triggerRipple(0, g.landZ, new THREE.Color(0xffffff), LONG_W, LONG_D);
             triggerBoostScatter();
-            boosting = true;
+            boostIntensity = 1;
+            boostDecaying = false;
             boostTimer = 0;
             showBoostHint();
             currentGroupIdx = landed.index;
@@ -4230,9 +4250,9 @@
       // 霜花粒子动画（非滑行模式也要更新可见范围内的冰霜段）
       updateFrostParticles(t);
 
-      // ── 加速时球体发光（用球本身颜色，不覆盖） ──
-      if (boosting) {
-        const boostGlow = 0.15 + 0.1 * Math.sin(glowTime * 8);
+      // ── 加速时球体发光（强度随 boostIntensity 平滑变化） ──
+      if (boostIntensity > 0) {
+        const boostGlow = (0.15 + 0.1 * Math.sin(glowTime * 8)) * boostIntensity;
         sphereMat.emissiveIntensity = boostGlow;
         sphereMat.emissive.copy(sphereMat.color);
       } else {
@@ -4274,6 +4294,7 @@
       if (gameMode !== 'endless' || pathChoiceActive) return;
       if (distVal >= nextPathCheckpoint) {
         pathChoiceActive = true;
+        isPaused = true;  // 暂停游戏
         showPathChoice();
       }
     }
@@ -4291,6 +4312,7 @@
     function selectPath(style) {
       currentPathStyle = style;
       pathChoiceActive = false;
+      isPaused = false;  // 恢复游戏
       hidePathChoice();
       // 设置下一个检查点
       nextPathCheckpoint = nextPathCheckpoint + 900;

@@ -669,7 +669,7 @@
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.25s;
-      background: rgba(5, 5, 20, 0.95);
+      background: rgba(5, 5, 20, 0.65);
     }
     #countdown.show { opacity: 1; }
     #countdown-num {
@@ -1037,8 +1037,8 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(8px);
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
       z-index: 90;
     }
     #path-choice-overlay.show {
