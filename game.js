@@ -801,14 +801,14 @@
           return { boostCap: 3, allowIce: false, maxIce: 0, iceBuf: 0, allowWind: false, maxWind: 0, windBuf: 0 };
         case 1: // P1:  600-1200m 引入单个冰霜段
           return { boostCap: 999, allowIce: true, maxIce: 1, iceBuf: 100, allowWind: false, maxWind: 0, windBuf: 0 };
-        case 2: // P2: 1200-1800m 引入单个侧风段
-          return { boostCap: 999, allowIce: true, maxIce: 1, iceBuf: 150, allowWind: true, maxWind: 1, windBuf: 150 };
+        case 2: // P2: 1200-1800m 引入单个侧风段（windBuf=60，给侧风留出合理空间）
+          return { boostCap: 999, allowIce: true, maxIce: 1, iceBuf: 150, allowWind: true, maxWind: 1, windBuf: 60 };
         case 3: // P3: 1800-2400m 多个冰霜段
-          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 1, windBuf: 150 };
+          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 1, windBuf: 60 };
         case 4: // P4: 2400-3000m 多个侧风段
-          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 3, windBuf: 150 };
+          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 3, windBuf: 60 };
         case 5: // P5: 3000-3600m 冰+风组合出现
-          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 3, windBuf: 150 };
+          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 3, windBuf: 60 };
         case 6: // P6: 3600m+    全随机混合（无缓冲区限制）
           return { boostCap: 999, allowIce: true, maxIce: 999, iceBuf: 0, allowWind: true, maxWind: 999, windBuf: 0 };
         default:
@@ -952,8 +952,9 @@
           lastIceEndZ = z + ICE_D;
         } else {
           // 普通轨道：路径风格影响比例（0=宽广多长直, 1=均衡, 2=精炼多方块）
-          const longThresh = currentPathStyle === 0 ? 0.55 : (currentPathStyle === 2 ? 0.15 : 0.33);
-          const tripleThresh = longThresh + (currentPathStyle === 0 ? 0.25 : (currentPathStyle === 2 ? 0.45 : 0.33));
+          // 三档差异非常明显：左路 ~75% 长直，右路几乎无长直
+          const longThresh = currentPathStyle === 0 ? 0.75 : (currentPathStyle === 2 ? 0.08 : 0.33);
+          const tripleThresh = longThresh + (currentPathStyle === 0 ? 0.15 : (currentPathStyle === 2 ? 0.50 : 0.33));
           if (r < longThresh) {
             group = createLongPlatform(z);
             activeColorKey = group.colorKey;
@@ -4011,13 +4012,14 @@
         // ── 无尽模式：完全确定性规划，避免随机触发与规划竞争配额 ──
         if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
           const planZ = plannedWindPositions.shift();
-          const wRules = getPhaseRules(getCurrentPhase(planZ));
-          const distFromBoost = ballZ - lastBoostZ;
-          console.log('[WIND CONSUME] iceSlide ballZ=', Math.round(ballZ), 'planZ=', Math.round(planZ), 'distFromBoost=', Math.round(distFromBoost), 'windBuf=', wRules.windBuf, 'phaseWindCount=', phaseWindCount, 'maxWind=', wRules.maxWind);
-          if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
-            generateWindZone(planZ);
-          } else if (ballZ - lastBoostZ < wRules.windBuf) {
-            const newPlanZ = lastBoostZ + wRules.windBuf + 15;
+          const genZ = Math.max(planZ, ballZ + 5); // 在球前方生成，不做回顾性风区
+          const wRules = getPhaseRules(getCurrentPhase(genZ));
+          const distFromBoost = genZ - lastBoostZ;
+          console.log('[WIND CONSUME] iceSlide genZ=', Math.round(genZ), 'planZ=', Math.round(planZ), 'distFromBoost=', Math.round(distFromBoost), 'windBuf=', wRules.windBuf, 'phaseWindCount=', phaseWindCount, 'maxWind=', wRules.maxWind);
+          if (genZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
+            generateWindZone(genZ);
+          } else if (genZ - lastBoostZ < wRules.windBuf) {
+            const newPlanZ = lastBoostZ + wRules.windBuf + 5;
             console.log('[WIND DELAY] pushed to', Math.round(newPlanZ));
             plannedWindPositions.unshift(newPlanZ);
           } else {
@@ -4365,13 +4367,14 @@
       // ── 侧风段：无尽模式完全确定性，闯关模式保留随机 ──
       if (gameMode === 'endless' && plannedWindPositions.length > 0 && ballZ > plannedWindPositions[0]) {
         const planZ = plannedWindPositions.shift();
-        const wRules = getPhaseRules(getCurrentPhase(planZ));
-        const distFromBoost = ballZ - lastBoostZ;
-        console.log('[WIND CONSUME] ballZ=', Math.round(ballZ), 'planZ=', Math.round(planZ), 'distFromBoost=', Math.round(distFromBoost), 'windBuf=', wRules.windBuf, 'phaseWindCount=', phaseWindCount, 'maxWind=', wRules.maxWind);
-        if (ballZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
-          generateWindZone(planZ);
-        } else if (ballZ - lastBoostZ < wRules.windBuf) {
-          const newPlanZ = lastBoostZ + wRules.windBuf + 15;
+        const genZ = Math.max(planZ, ballZ + 5); // 在球前方生成
+        const wRules = getPhaseRules(getCurrentPhase(genZ));
+        const distFromBoost = genZ - lastBoostZ;
+        console.log('[WIND CONSUME] genZ=', Math.round(genZ), 'planZ=', Math.round(planZ), 'distFromBoost=', Math.round(distFromBoost), 'windBuf=', wRules.windBuf, 'phaseWindCount=', phaseWindCount, 'maxWind=', wRules.maxWind);
+        if (genZ - lastBoostZ >= wRules.windBuf && phaseWindCount < wRules.maxWind) {
+          generateWindZone(genZ);
+        } else if (genZ - lastBoostZ < wRules.windBuf) {
+          const newPlanZ = lastBoostZ + wRules.windBuf + 5;
           console.log('[WIND DELAY] pushed to', Math.round(newPlanZ));
           plannedWindPositions.unshift(newPlanZ);
         } else {
@@ -4482,9 +4485,25 @@
       // ── 确定性地预规划本段冰/风位置 ──
       planSegmentSpecials(ballZ);
       _lastPlannedSegment = Math.floor(ballZ / 900) * 900; // 同步段规划标记
-      // ★ 不销毁现有颜色链！已有组天然连通，只需切换 path style，
-      //   新路径风格会在后续 appendGroup()（gameplay 触发）中自然生效。
-      //   之前的 refreshGroupsAfterPath() 破坏了颜色链 → 必死。
+      // ★ 裁剪远处旧风格 buffer，让新路径风格快速生效
+      // 保留当前组 + 6 个前方组，销毁更远的（这些组会在 ensureGroupsAhead 中用新风格重建）
+      {
+        const keepCount = Math.min(currentGroupIdx + 7, groups.length);
+        while (groups.length > keepCount) {
+          const grp = groups.pop();
+          disposeGroup(grp);
+        }
+        // 保色链：扫描保留的组，用最后一个长直轨道更新 activeColorKey
+        for (let i = keepCount - 1; i >= currentGroupIdx; i--) {
+          const g = groups[i];
+          if (g && g.type === 1 && g.colorKey) {
+            activeColorKey = g.colorKey;
+            break;
+          }
+        }
+        // 用新风格重新生成前方平台
+        ensureGroupsAhead();
+      }
       // 选完路后给缓冲倒计时，防止反应不过来
       startCountdown(() => { isPaused = false; });
     }
