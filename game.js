@@ -88,7 +88,7 @@
     renderer.domElement.style.top = '0';
     renderer.domElement.style.left = '0';
     renderer.domElement.style.zIndex = '1';
-    renderer.domElement.style.display = 'none'; // 初始隐藏，倒计时开始前不显示
+    renderer.domElement.style.display = 'block'; // 始终可见，菜单页透过 z-index 遮盖
 
     const CAM_OFFSET = new THREE.Vector3(0, 5.5, -13);
 
@@ -2709,6 +2709,7 @@
         return;
       }
       gameStarted = false;
+      renderer.domElement.style.display = 'block'; // 确保画布可见（exit 函数可能隐藏过）
       // 倒计时期间不隐藏画布 — 半透明背景透出轨道和球的画面
       const screen = document.getElementById('start-screen');
       screen.classList.add('hidden');
