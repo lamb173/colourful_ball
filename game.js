@@ -18,8 +18,7 @@
     window.addEventListener('error', function(e) {
       _gameError = e.error || e.message;
       var msg = _gameError && _gameError.message ? _gameError.message : String(_gameError);
-      var dbg = document.getElementById('debug-errors');
-      if (dbg) { dbg.style.display = 'block'; dbg.textContent += '[ERROR] ' + msg + '\n'; }
+      console.error('[GAME]', msg);
       showFatalError(msg);
     });
     console.log('[GAME] Script starting, THREE available:', typeof THREE !== 'undefined');
@@ -763,6 +762,55 @@
     let windNextZoneAt = WIND_FIRST_ZONE_AT;
 
     let activeColorKey = 'blue'; // 段安全色，由 appendGroup 内部更新
+
+    // ── 渐进难度状态变量（无尽模式）──
+    let nextPathCheckpoint = 900;
+    let pathChoiceActive = false;
+    let currentPathStyle = 1;
+    let currentPhase = 0;
+    let phaseIceCount = 0;
+    let phaseWindCount = 0;
+    let totalBoostGenerated = 0;
+    let lastBoostZ = -999;
+    let lastIceEndZ = -999;
+    let lastWindEndZ = -999;
+
+    // ── 渐进难度：累计距离 → 阶段编号（0-6）──
+    function getCurrentPhase(z) {
+      if (z < 600)  return 0;
+      if (z < 1200) return 1;
+      if (z < 1800) return 2;
+      if (z < 2400) return 3;
+      if (z < 3000) return 4;
+      if (z < 3600) return 5;
+      return 6;
+    }
+
+    // ── 渐进难度：阶段 → 规则 ──
+    function getPhaseRules(phase) {
+      // boostCap: 累计加速轨道上限 (999=无限)
+      // allowIce/wind: 是否允许该元素出现
+      // maxIce/maxWind: 每 900m 段内上限
+      // iceBuf/windBuf: 距离上一个加速轨道的最小间隔
+      switch (phase) {
+        case 0: // P0:  0- 600m  新手引导：仅 3 个加速轨道
+          return { boostCap: 3, allowIce: false, maxIce: 0, iceBuf: 0, allowWind: false, maxWind: 0, windBuf: 0 };
+        case 1: // P1:  600-1200m 引入单个冰霜段
+          return { boostCap: 999, allowIce: true, maxIce: 1, iceBuf: 100, allowWind: false, maxWind: 0, windBuf: 0 };
+        case 2: // P2: 1200-1800m 引入单个侧风段
+          return { boostCap: 999, allowIce: true, maxIce: 1, iceBuf: 150, allowWind: true, maxWind: 1, windBuf: 150 };
+        case 3: // P3: 1800-2400m 多个冰霜段
+          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 1, windBuf: 150 };
+        case 4: // P4: 2400-3000m 多个侧风段
+          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 3, windBuf: 150 };
+        case 5: // P5: 3000-3600m 冰+风组合出现
+          return { boostCap: 999, allowIce: true, maxIce: 3, iceBuf: 150, allowWind: true, maxWind: 3, windBuf: 150 };
+        case 6: // P6: 3600m+    全随机混合（无缓冲区限制）
+          return { boostCap: 999, allowIce: true, maxIce: 999, iceBuf: 0, allowWind: true, maxWind: 999, windBuf: 0 };
+        default:
+          return { boostCap: 3, allowIce: false, maxIce: 0, iceBuf: 0, allowWind: false, maxWind: 0, windBuf: 0 };
+      }
+    }
 
     function appendGroup() {
       let z = 0;
@@ -3934,7 +3982,6 @@
       if (localPhase >= 1) {
         jumpTimer = 0;
         jumpFromZ = jumpToZ;
-        console.log('[JUMP] landed at Z=' + Math.round(jumpFromZ) + ' | groups=' + groups.length + ' | mode=' + gameMode + ' | currentPhase=' + getCurrentPhase(jumpFromZ));
 
         // ── 落地缓冲动画
         landBounceActive = true;
@@ -4203,8 +4250,6 @@
 
   } catch(e) {
     console.error('GAME ERROR:', e);
-    var dbg = document.getElementById('debug-errors');
-    if (dbg) { dbg.style.display = 'block'; dbg.textContent += '[ANIM] ' + (e.message || e) + '\n'; }
   } finally {
     renderer.render(scene, camera);
   }
