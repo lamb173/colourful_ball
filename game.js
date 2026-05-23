@@ -4430,8 +4430,8 @@
     function selectPath(style) {
       currentPathStyle = style;
       pathChoiceActive = false;
-      isPaused = false;  // 恢复游戏
       hidePathChoice();
+      // isPaused 保持 true — 等倒计时结束再由回调恢复
       // 设置下一个检查点
       nextPathCheckpoint = nextPathCheckpoint + 900;
       // 重置本段相位计数（每个900m段独立计算）
@@ -4443,6 +4443,8 @@
       planSegmentSpecials(ballZ);
       // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
       refreshGroupsAfterPath();
+      // 选完路后给 2 秒缓冲倒计时，防止反应不过来
+      startCountdown(() => { isPaused = false; });
     }
 
     function disposeGroup(grp) {
