@@ -771,26 +771,64 @@
 
       const r = Math.random();
       let group;
-      // 获取当前关卡配置（闯关模式）或默认值
-      const sc = _currentStage || {};
-      const boostProb = (gameMode === 'stages' && sc.hasBoost) ? sc.boostFreq : (gameMode === 'endless' ? 0.12 : 0);
-      const iceProb   = (gameMode === 'stages' && sc.hasIce)   ? sc.iceFreq   : (gameMode === 'endless' ? 0.20 : 0);
-      const lastGroup = groups.length > 0 ? groups[groups.length - 1] : null;
-      const canBoost = boostProb > 0 && lastGroup && lastGroup.type !== 4 && lastGroup.type !== 5 && r < boostProb;
-      const canIce = !canBoost && iceProb > 0 && lastGroup && lastGroup.type !== 4 && lastGroup.type !== 5 && r < iceProb;
-      if (canBoost) {
-        group = createBoostPlatform(z);
-        // 不更新 activeColorKey，加速轨道不影响颜色段
-      } else if (canIce) {
-        group = createIcePlatform(z);
-        // 不更新 activeColorKey，冰霜段不变色
-      } else if (r < 0.33) {
-        group = createLongPlatform(z);
-        activeColorKey = group.colorKey; // 段颜色在这里更新
-      } else if (r < 0.66) {
-        group = createTriplePlatform(z); // 三色全包，天然安全
+      const lg = groups.length > 0 ? groups[groups.length - 1] : null;
+
+      if (gameMode === 'stages') {
+        // ── 闯关模式：关卡配置驱动 ──
+        const sc = _currentStage || {};
+        const boostProb = sc.hasBoost ? sc.boostFreq : 0;
+        const iceProb = sc.hasIce ? sc.iceFreq : 0;
+        const canBoost = boostProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && r < boostProb;
+        const canIce = !canBoost && iceProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && r < iceProb;
+        if (canBoost) {
+          group = createBoostPlatform(z);
+        } else if (canIce) {
+          group = createIcePlatform(z);
+        } else if (r < 0.33) {
+          group = createLongPlatform(z);
+          activeColorKey = group.colorKey;
+        } else if (r < 0.66) {
+          group = createTriplePlatform(z);
+        } else {
+          group = createDoublePlatform(z, activeColorKey);
+        }
       } else {
-        group = createDoublePlatform(z, activeColorKey); // 用当前段颜色
+        // ── 无尽模式：渐进难度 + 路径风格 ──
+        const rules = getPhaseRules(getCurrentPhase(z));
+        const distFromBoost = z - lastBoostZ;
+
+        // 加速轨道：受 boostCap 限制
+        const boostOk = lg && lg.type !== 4 && lg.type !== 5
+                        && totalBoostGenerated < rules.boostCap
+                        && r < 0.12;
+
+        // 冰霜段：阶段规则 + 缓冲区 + 数量上限
+        const iceOk = rules.allowIce && !boostOk && lg && lg.type !== 4 && lg.type !== 5
+                      && distFromBoost >= rules.iceBuf
+                      && phaseIceCount < rules.maxIce
+                      && r < 0.18;
+
+        if (boostOk) {
+          group = createBoostPlatform(z);
+          totalBoostGenerated++;
+          lastBoostZ = z;
+        } else if (iceOk) {
+          group = createIcePlatform(z);
+          phaseIceCount++;
+          lastIceEndZ = z + ICE_D;
+        } else {
+          // 普通轨道：路径风格影响比例（0=宽广多长直, 1=均衡, 2=精炼多方块）
+          const longThresh = currentPathStyle === 0 ? 0.55 : (currentPathStyle === 2 ? 0.15 : 0.33);
+          const tripleThresh = longThresh + (currentPathStyle === 0 ? 0.25 : (currentPathStyle === 2 ? 0.45 : 0.33));
+          if (r < longThresh) {
+            group = createLongPlatform(z);
+            activeColorKey = group.colorKey;
+          } else if (r < tripleThresh) {
+            group = createTriplePlatform(z);
+          } else {
+            group = createDoublePlatform(z, activeColorKey);
+          }
+        }
       }
 
       group.startZ = z;
@@ -844,6 +882,19 @@
     }
 
     function generateWindZone(atZ) {
+      // ── 无尽模式：阶段规则阀门（P0 禁止、上限检查、缓冲区检查）──
+      if (gameMode === 'endless') {
+        const rules = getPhaseRules(getCurrentPhase(atZ));
+        if (!rules.allowWind || phaseWindCount >= rules.maxWind) {
+          windNextZoneAt = atZ + 60 + Math.random() * 120;
+          return;
+        }
+        if (atZ - lastBoostZ < rules.windBuf) {
+          windNextZoneAt = lastBoostZ + rules.windBuf + 40 + Math.random() * 120;
+          return;
+        }
+      }
+
       const zoneLen = WIND_ZONE_LEN_MIN + Math.random() * (WIND_ZONE_LEN_MAX - WIND_ZONE_LEN_MIN);
       const direction = Math.random() < 0.5 ? -1 : 1;
       const strength = WIND_STRENGTH_MIN + Math.random() * (WIND_STRENGTH_MAX - WIND_STRENGTH_MIN);
@@ -860,6 +911,9 @@
       if (windNextZoneAt <= ballZ + 20) {
         windNextZoneAt = ballZ + 20 + WIND_ZONE_GAP_MIN + Math.random() * (WIND_ZONE_GAP_MAX - WIND_ZONE_GAP_MIN);
       }
+      // 记录风区结束位置 + 侧风计数
+      lastWindEndZ = zone.endZ;
+      phaseWindCount++;
     }
 
     // ═══════════════════════════════════════════════════════
@@ -934,6 +988,8 @@
     }
 
     function ensureGroupsAhead() {
+      // 三分路选择期间暂停生成
+      if (pathChoiceActive) return;
       // 确保前方始终有 MIN_GROUPS + 5 个平台，留余量让 removeOldGroups 能工作
       const target = MIN_GROUPS + 5;
       while (groups.length < target) {
@@ -998,6 +1054,18 @@
       });
       windZones = [];
       windNextZoneAt = WIND_FIRST_ZONE_AT;
+
+      // ── 重置渐进难度状态（无尽模式）──
+      nextPathCheckpoint = 900;
+      pathChoiceActive = false;
+      currentPathStyle = 1;
+      currentPhase = 0;
+      phaseIceCount = 0;
+      phaseWindCount = 0;
+      totalBoostGenerated = 0;
+      lastBoostZ = -999;
+      lastIceEndZ = -999;
+      lastWindEndZ = -999;
 
 
       // 第一组强制长直轨道
@@ -3533,6 +3601,18 @@
       windZones = [];
       windNextZoneAt = WIND_FIRST_ZONE_AT;
 
+      // ── 重置渐进难度状态（无尽模式）──
+      nextPathCheckpoint = 900;
+      pathChoiceActive = false;
+      currentPathStyle = 1;
+      currentPhase = 0;
+      phaseIceCount = 0;
+      phaseWindCount = 0;
+      totalBoostGenerated = 0;
+      lastBoostZ = -999;
+      lastIceEndZ = -999;
+      lastWindEndZ = -999;
+
 
       const first = groups[0];
       // 球站在第一个长直轨道上，获取其颜色
@@ -3685,6 +3765,8 @@
           lastStarDist = distVal;
           updateStarsUI();
         }
+        // ── 三分路检查点（仅无尽模式）──
+        checkPathCheckpoint(distVal);
 
         // 检查是否滑出冰面
         if (iceGroupRef) {
@@ -3787,6 +3869,9 @@
       const distEl = document.getElementById('dist-current');
       const distVal = Math.max(0, Math.round(ballZ));
       distEl.innerHTML = distVal + '<span class="dist-unit">m</span>';
+
+      // ── 三分路检查点（仅无尽模式）──
+      checkPathCheckpoint(distVal);
 
       // ── 星级计算（仅无尽模式）──
       if (gameMode === 'endless') {
@@ -4121,3 +4206,45 @@
 }
     animate();
     console.log('[GAME] Init complete. animate() started. start-btn handler registered.');
+
+    // ══════════════════════════════════════════════════════
+    //  三分路系统 — 检查点 + 选择逻辑
+    // ══════════════════════════════════════════════════════
+    function checkPathCheckpoint(distVal) {
+      if (gameMode !== 'endless' || pathChoiceActive) return;
+      if (distVal >= nextPathCheckpoint) {
+        pathChoiceActive = true;
+        showPathChoice();
+      }
+    }
+
+    function showPathChoice() {
+      const overlay = document.getElementById('path-choice-overlay');
+      overlay.classList.add('show');
+    }
+
+    function hidePathChoice() {
+      const overlay = document.getElementById('path-choice-overlay');
+      overlay.classList.remove('show');
+    }
+
+    function selectPath(style) {
+      currentPathStyle = style;
+      pathChoiceActive = false;
+      hidePathChoice();
+      // 设置下一个检查点
+      nextPathCheckpoint = nextPathCheckpoint + 900;
+      // 重置本段相位计数（每个900m段独立计算）
+      const phaseBase = getCurrentPhase(ballZ);
+      currentPhase = phaseBase;
+      phaseIceCount = 0;
+      phaseWindCount = 0;
+    }
+
+    // 绑定三分路卡片点击事件
+    document.querySelectorAll('.path-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const style = parseInt(btn.getAttribute('data-style'), 10);
+        selectPath(style);
+      });
+    });
