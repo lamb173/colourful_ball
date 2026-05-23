@@ -3783,6 +3783,9 @@
 
       jumpFromZ = first.landZ;
       ballZ     = jumpFromZ;
+      ballX     = 0;
+      // ★ 同步球体 mesh 位置，确保倒计时画面能看到球在正确位置
+      sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
       const next = pickNextGroup(0);
       jumpToZ   = next.group.landZ;
       currentGroupIdx = 0;
@@ -3831,6 +3834,8 @@
       }
       if (!gameStarted) {
         // 倒计时/等待期间仍渲染场景，确保半透明遮罩下可见轨道和球
+        // ★ 同步球体位置（restartGame 可能更新了 ballZ/ballX）
+        sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
         const camT = new THREE.Vector3(ballX, CAM_OFFSET.y, ballZ + CAM_OFFSET.z);
         camera.position.lerp(camT, 0.06);
         camera.lookAt(ballX, 0.0, ballZ);
@@ -4449,12 +4454,9 @@
       phaseWindCount = 0;
       // ── 确定性地预规划本段冰/风位置 ──
       planSegmentSpecials(ballZ);
-      // ★ 必须在 refreshGroupsAfterPath 之前同步 activeColorKey！
-      // activeColorKey 是 appendGroup 内部的"生成时颜色"，可能已被前方预生成
-      // 的长直轨道更新为不同值，而球的 currentBallColorKey 还没跑到那里。
-      // 如果不同步，refreshGroupsAfterPath 重生的 double 平台会用错颜色 → 必死。
-      activeColorKey = currentBallColorKey;
       // ★ 强制第一个新平台为三色台，保证球的任意颜色都能安全着陆
+      // （refreshGroupsAfterPath 内部会扫描保留组中的长直轨道来更新 activeColorKey，
+      //  但三色台作为安全网，确保即使颜色链断裂也能安全着陆）
       _forceTripleNext = true;
       // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
       refreshGroupsAfterPath();
@@ -4492,6 +4494,16 @@
       while (groups.length > keepCount) {
         const grp = groups.pop();
         disposeGroup(grp);
+      }
+      // ★ 扫描保留的组，找到最后一个长直轨道，用它更新 activeColorKey
+      // 球在穿过保留组时会经过这些长直轨道并变色，到达新生成组时的颜色
+      // 等于最后一个长直轨道的颜色。如果保留组中没有长直轨道，则保持当前值。
+      for (let i = keepCount - 1; i >= currentGroupIdx; i--) {
+        const g = groups[i];
+        if (g && g.type === 1 && g.colorKey) {
+          activeColorKey = g.colorKey;
+          break;
+        }
       }
       // 强制重新生成前方平台
       ensureGroupsAhead();
