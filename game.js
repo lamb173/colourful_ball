@@ -724,7 +724,7 @@
         iceMat: mat,              // 主体 shader 材质（动画更新用）
         crystalMat: crystalBaseMat, // 棱柱 shader 材质
         totalZ: iceTotalZ(),
-        landZ: startZ + ICE_D / 2,
+        landZ: startZ + ICE_D * 0.1,  // 落点在前端 10%，让球有 ~22m 可滑
         color: ICE_COLOR.clone(),
         colorKey: null,
         partColorKeys: [null],
@@ -3626,10 +3626,12 @@
           iceSlideVelX += windForce * 0.7 * dt;
         }
 
-        // 玩家鼠标控制：产生反向力对抗漂移
-        if (Math.abs(mouseNX) > 0.01) {
+        // 玩家鼠标控制：始终根据鼠标位置施加纠正力
+        // 鼠标在中央（targetX≈0）时会把速度往 0 拉，减弱但不消除惯性；
+        // 鼠标偏向某侧时对抗随机漂移，给玩家足够但不过分的控制感。
+        {
           const targetX = mouseNX * MOUSE_SENSITIVITY * innerWidth * 0.5;
-          const correction = (targetX - ballX) * 4.0;  // 鼠标介入拉力
+          const correction = (targetX - ballX) * 1.5;  // 持续拉力系数（弱，只辅助不主导）
           iceSlideVelX += correction * dt;
         }
 
