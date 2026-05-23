@@ -4441,10 +4441,13 @@
       phaseWindCount = 0;
       // ── 确定性地预规划本段冰/风位置 ──
       planSegmentSpecials(ballZ);
+      // ★ 必须在 refreshGroupsAfterPath 之前同步 activeColorKey！
+      // activeColorKey 是 appendGroup 内部的"生成时颜色"，可能已被前方预生成
+      // 的长直轨道更新为不同值，而球的 currentBallColorKey 还没跑到那里。
+      // 如果不同步，refreshGroupsAfterPath 重生的 double 平台会用错颜色 → 必死。
+      activeColorKey = currentBallColorKey;
       // 清理前方预生成的无冰缓冲区，强制按段规则重新生成
       refreshGroupsAfterPath();
-      // 强制同步段安全色与球的当前颜色，确保重生的方形轨道包含球的颜色
-      activeColorKey = currentBallColorKey;
       // 选完路后给缓冲倒计时，防止反应不过来
       startCountdown(() => { isPaused = false; });
     }
