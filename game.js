@@ -3393,10 +3393,20 @@
           jumpToZ = next.group.landZ;
           currentGroupIdx = landed.index;
         } else {
-          // 方形轨道：落到第一块
-          ballX = g.parts[0].mesh.position.x;
-          sphereMat.color.copy(g.parts[0].mesh.material.color);
-          currentBallColorKey = g.partColorKeys[0];
+          // 方形轨道：找到与 activeColorKey 匹配的方块
+          // 避免球复活时颜色与前方平台脱节（activeColorKey 驱动 appendGroup 的颜色选择）
+          let matchPart = g.parts[0];
+          let matchColorKey = g.partColorKeys[0];
+          for (let pi = 0; pi < g.parts.length; pi++) {
+            if (g.partColorKeys[pi] === activeColorKey) {
+              matchPart = g.parts[pi];
+              matchColorKey = activeColorKey;
+              break;
+            }
+          }
+          ballX = matchPart.mesh.position.x;
+          sphereMat.color.copy(matchPart.mesh.material.color);
+          currentBallColorKey = matchColorKey;
           ballZ = g.landZ;
           jumpFromZ = g.landZ;
           const next = pickNextGroup(landed.index);
