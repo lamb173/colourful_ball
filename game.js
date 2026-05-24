@@ -92,18 +92,33 @@
 
     const CAM_OFFSET = new THREE.Vector3(0, 5.5, -13);
 
-    // ══════════════════════════════════════════════════════
-    //  土星3D模型（第5关 土星风暴 场景包围 · 程序化生成）
-    // ══════════════════════════════════════════════════════
-        // ═════════════════════════════════════════════════════
-    //  土星3D场景（第5关 土星风暴 场景包围 · 程序化生成）
-    // ═════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════
+    //  闯关模式 3D模型（.glb 加载）
+    // ═══════════════════════════════════════════════════
 
-    let saturnGroup     = null;   // THREE.Group 土星（从.glb加载）
-    let saturnStarfield = null;   // THREE.Points 第5关专属星空
-    let saturnInScene  = false;
+    // ─── 第1关 地球轨道 ───
+    let earthModel       = null;
+    let earthModelUrl    = 'assets/models/earth_moon_20260524.glb';
+    let earthModelScale  = 6;
+    let earthInScene     = false;
+    let earthLoadError   = false;
+
+    // ─── 第2关 月球中转站 ───
+    let moonBaseModel    = null;
+    let moonBaseModelUrl = 'assets/models/moon_base_20260524.glb';
+    let moonBaseModelScale = 7;
+    let moonBaseInScene = false;
+    let moonBaseLoadError = false;
+
+    // ─── 第5关 土星风暴 ───
+    let saturnModel       = null;
+    let saturnModelUrl    = 'assets/models/saturn_20260524.glb';
+    let saturnModelScale  = 8;
+    let saturnStarfield   = null;
+    let saturnInScene    = false;
     let starfieldInScene = false;
     let saturnLoadError  = false;
+
 
     // ─── 辅助：生成土星条纹纹理（Canvas 2D） ───
     function makeSaturnBodyTexture() {
@@ -356,11 +371,91 @@
     }
 
     // ─── 显示/隐藏 ───
+    // ─── 第1关 地球轨道 3D模型 ───
+    function showEarth() {
+      console.log('[EARTH] showEarth(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!earthModel && !earthLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') {
+            console.error('[EARTH] GLTFLoader not loaded!');
+            earthLoadError = true;
+            return;
+          }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            earthModelUrl,
+            (gltf) => {
+              earthModel = gltf.scene;
+              earthModel.scale.set(earthModelScale, earthModelScale, earthModelScale);
+              earthModel.position.set(0, 0, 0);
+              earthModel.traverse((child) => {
+                if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+              });
+              console.log('[EARTH] .glb model loaded');
+              if (earthInScene) scene.add(earthModel);
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[EARTH] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[EARTH] .glb load error:', err); earthLoadError = true; }
+          );
+        }
+        if (earthModel && !earthInScene) {
+          scene.add(earthModel);
+          earthInScene = true;
+          console.log('[EARTH] model added to scene');
+        }
+      } catch(e) { console.error('[EARTH] showEarth ERROR:', e); }
+    }
+    function hideEarth() {
+      console.log('[EARTH] hideEarth()');
+      try { if (earthModel && earthInScene) { scene.remove(earthModel); earthInScene = false; } }
+      catch(e) { console.error('[EARTH] hideEarth ERROR:', e); }
+    }
+
+    // ─── 第2关 月球中转站 3D模型 ───
+    function showMoonBase() {
+      console.log('[MOON] showMoonBase(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!moonBaseModel && !moonBaseLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') {
+            console.error('[MOON] GLTFLoader not loaded!');
+            moonBaseLoadError = true;
+            return;
+          }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            moonBaseModelUrl,
+            (gltf) => {
+              moonBaseModel = gltf.scene;
+              moonBaseModel.scale.set(moonBaseModelScale, moonBaseModelScale, moonBaseModelScale);
+              moonBaseModel.position.set(0, 0, 0);
+              moonBaseModel.traverse((child) => {
+                if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+              });
+              console.log('[MOON] .glb model loaded');
+              if (moonBaseInScene) scene.add(moonBaseModel);
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[MOON] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[MOON] .glb load error:', err); moonBaseLoadError = true; }
+          );
+        }
+        if (moonBaseModel && !moonBaseInScene) {
+          scene.add(moonBaseModel);
+          moonBaseInScene = true;
+          console.log('[MOON] model added to scene');
+        }
+      } catch(e) { console.error('[MOON] showMoonBase ERROR:', e); }
+    }
+    function hideMoonBase() {
+      console.log('[MOON] hideMoonBase()');
+      try { if (moonBaseModel && moonBaseInScene) { scene.remove(moonBaseModel); moonBaseInScene = false; } }
+      catch(e) { console.error('[MOON] hideMoonBase ERROR:', e); }
+    }
+
     function showSaturn() {
       console.log("[SATURN] showSaturn(), stage=", _currentStage ? _currentStage.id : null);
       try {
         // 加载 .glb 模型（异步）
-        if (!saturnGroup && !saturnLoadError) {
+        if (!saturnModel && !saturnLoadError) {
           if (typeof THREE.GLTFLoader === 'undefined') {
             console.error("[SATURN] GLTFLoader not loaded!");
             saturnLoadError = true;
@@ -370,17 +465,17 @@
           loader.load(
             'assets/models/saturn_20260524.glb',
             (gltf) => {
-              saturnGroup = gltf.scene;
-              saturnGroup.scale.set(8, 8, 8);
-              saturnGroup.position.set(0, 0, 0);
-              saturnGroup.traverse((child) => {
+              saturnModel = gltf.scene;
+              saturnModel.scale.set(saturnModelScale, saturnModelScale, saturnModelScale);
+              saturnModel.position.set(0, 0, 0);
+              saturnModel.traverse((child) => {
                 if (child.isMesh) {
                   child.castShadow = true;
                   child.receiveShadow = true;
                 }
               });
               console.log('[SATURN] .glb model loaded');
-              if (saturnInScene) scene.add(saturnGroup);
+              if (saturnInScene) scene.add(saturnModel);
             },
             (xhr) => {
               if (xhr.total > 0) {
@@ -395,8 +490,8 @@
           );
         }
         // 模型加载完成后加入场景
-        if (saturnGroup && !saturnInScene) {
-          scene.add(saturnGroup);
+        if (saturnModel && !saturnInScene) {
+          scene.add(saturnModel);
           saturnInScene = true;
           console.log("[SATURN] model added to scene");
         }
@@ -415,8 +510,8 @@
     function hideSaturn() {
       console.log("[SATURN] hideSaturn()");
       try {
-        if (saturnInScene && saturnGroup) {
-          scene.remove(saturnGroup);
+        if (saturnInScene && saturnModel) {
+          scene.remove(saturnModel);
           saturnInScene = false;
         }
         if (starfieldInScene && saturnStarfield) {
@@ -4156,10 +4251,21 @@
         targetEl.classList.remove('completed');
       }
 
-      // 土星3D模型（第5关 土星风暴 场景包围）
-      if (gameMode === 'stages' && _currentStage && _currentStage.id === 5) {
-        showSaturn();
+      // 关卡3D模型场景（根据 _currentStage.id 显示对应模型）
+      if (gameMode === 'stages' && _currentStage) {
+        const sid = _currentStage.id;
+        // 隐藏非当前关卡的模型
+        if (sid !== 1) hideEarth();
+        if (sid !== 2) hideMoonBase();
+        if (sid !== 5) hideSaturn();
+        // 显示当前关卡模型
+        if (sid === 1) showEarth();
+        else if (sid === 2) showMoonBase();
+        else if (sid === 5) showSaturn();
       } else {
+        // 非闯关模式：隐藏所有
+        hideEarth();
+        hideMoonBase();
         hideSaturn();
       }
     }
@@ -4188,18 +4294,23 @@
       updateVictoryAnim(dt);
       updateShieldBreak(dt);
 
-      // 土星旋转动画（第5关 土星风暴 背景）
-      if (saturnInScene && saturnGroup) {
-        saturnGroup.rotation.y += 0.08;
-        // 土星在球后方，作为背景
-        if (sphere) {
-          saturnGroup.position.x = 14;
-          saturnGroup.position.y = -3;
-          saturnGroup.position.z = sphere.position.z + 55;
-        }
+      // 关卡3D模型旋转动画 + 跟随球体
+      // 第1关 地球
+      if (earthInScene && earthModel) {
+        earthModel.rotation.y += 0.003;
+        if (sphere) { earthModel.position.x = 12; earthModel.position.y = -2; earthModel.position.z = sphere.position.z + 50; }
       }
-      // 星空缓慢旋转
-      if (starfieldInScene && saturnStarfield) {
+      // 第2关 月球基地
+      if (moonBaseInScene && moonBaseModel) {
+        moonBaseModel.rotation.y += 0.005;
+        if (sphere) { moonBaseModel.position.x = -10; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 45; }
+      }
+      // 第5关 土星
+      if (saturnInScene && saturnModel) {
+        saturnModel.rotation.y += 0.08;
+        if (sphere) { saturnModel.position.x = 14; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 55; }
+      }
+      // 星空缓慢旋转（第5关）
         saturnStarfield.rotation.y += 0.00005;
       }
       // 沙尘粒子动画（第5关，飞扬尘土效果）
