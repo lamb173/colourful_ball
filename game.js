@@ -143,15 +143,6 @@
     let moonDustMesh      = null;
     let moonDustInScene   = false;
 
-    // ─── 银河流动动画（地球+月球关卡共享） ───
-    let galaxyField      = null;   // THREE.Points
-    let galaxyInScene   = false;
-    let galaxyPositions  = null;
-    let galaxyColors     = null;
-    let galaxyVel        = null;
-
-
-
     // ─── 辅助：生成土星条纹纹理（Canvas 2D） ───
     function makeSaturnBodyTexture() {
       const W = 1024, H = 512;
@@ -315,7 +306,7 @@
       const group = new THREE.Group();
 
       // ① 星星：4000颗（减少数量）
-      const starCount = 4000;
+      const starCount = 800;
       const pos1 = new Float32Array(starCount * 3);
       const col1 = new Float32Array(starCount * 3);
       for (let i = 0; i < starCount; i++) {
@@ -350,7 +341,7 @@
 
       // ② 沙尘粒子：800颗（土星环附近动态尘埃）
       // ② 沙尘粒子：2000颗（飞扬尘土效果）
-      const DUST_COUNT = 700;
+      const DUST_COUNT = 450;
       const dPos   = new Float32Array(DUST_COUNT * 3);
       const dCol   = new Float32Array(DUST_COUNT * 3);
       const dVel   = new Float32Array(DUST_COUNT * 3);
@@ -414,6 +405,7 @@
     function showEarth() {
       console.log('[EARTH] showEarth(), stage=', _currentStage ? _currentStage.id : null);
       try {
+        // 1. 加载/显示 .glb 模型
         if (!earthModel && !earthLoadError) {
           if (typeof THREE.GLTFLoader === 'undefined') {
             console.error('[EARTH] GLTFLoader not loaded!');
@@ -431,46 +423,45 @@
                 if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
               });
               console.log('[EARTH] .glb model loaded');
-              if (earthInScene) scene.add(earthModel);
-        // 大气层（星空+大气粒子）
+              if (earthInScene) { earthModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[EARTH] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[EARTH] .glb load error:', err); earthLoadError = true; }
+          );
+        }
+        // 2. 模型 visible 切换（无论是否刚加载）
+        if (earthModel) {
+          if (!earthInScene) { scene.add(earthModel); earthInScene = true; }
+          earthModel.visible = true;
+          earthModel.position.x = -16;
+          earthModel.position.y = -3;
+          if (sphere) earthModel.position.z = sphere.position.z + 20;
+          console.log('[EARTH] model shown (visible=true)');
+        }
+        // 3. 大气层粒子（不在 .glb 回调里！）
         if (!earthAtmosphere) earthAtmosphere = createEarthAtmosphere();
         if (earthAtmosphere && !earthAtmInScene) {
           scene.add(earthAtmosphere);
           earthAtmInScene = true;
           console.log('[EARTH-ATM] added to scene');
         }
-        // 银河
-        if (!galaxyField) galaxyField = createGalaxy();
-        if (galaxyField && !galaxyInScene) {
-          scene.add(galaxyField);
-          galaxyInScene = true;
-          console.log('[GALAXY] added to scene');
-        }
-            },
-            (xhr) => { if (xhr.total > 0) console.log('[EARTH] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
-            (err) => { console.error('[EARTH] .glb load error:', err); earthLoadError = true; }
-          );
-        }
-        if (earthModel && !earthInScene) {
-          scene.add(earthModel);
-          earthInScene = true;
-          console.log('[EARTH] model added to scene');
-        }
+        if (earthAtmosphere) earthAtmosphere.visible = true;
       } catch(e) { console.error('[EARTH] showEarth ERROR:', e); }
     }
-    function hideEarth() {
+
+function hideEarth() {
       console.log('[EARTH] hideEarth()');
-      try { if (earthModel && earthInScene) { scene.remove(earthModel); earthInScene = false; }
-        if (earthAtmosphere && earthAtmInScene) { scene.remove(earthAtmosphere); earthAtmInScene = false; }
-        if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
-      }
-      catch(e) { console.error('[EARTH] hideEarth ERROR:', e); }
+      try {
+        if (earthModel && earthInScene) { earthModel.visible = false; console.log('[EARTH] model hidden'); }
+        if (earthAtmosphere && earthAtmInScene) { earthAtmosphere.visible = false; console.log('[EARTH-ATM] hidden'); }
+      } catch(e) { console.error('[EARTH] hideEarth ERROR:', e); }
     }
 
-    // ─── 第2关 月球中转站 3D模型 ───
+// ─── 第2关 月球中转站 3D模型 ───
     function showMoonBase() {
       console.log('[MOON] showMoonBase(), stage=', _currentStage ? _currentStage.id : null);
       try {
+        // 1. 加载/显示 .glb 模型
         if (!moonBaseModel && !moonBaseLoadError) {
           if (typeof THREE.GLTFLoader === 'undefined') {
             console.error('[MOON] GLTFLoader not loaded!');
@@ -488,42 +479,41 @@
                 if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
               });
               console.log('[MOON] .glb model loaded');
-              if (moonBaseInScene) scene.add(moonBaseModel);
-        // 月球尘埃（星空+尘埃粒子）
+              if (moonBaseInScene) { moonBaseModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[MOON] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[MOON] .glb load error:', err); moonBaseLoadError = true; }
+          );
+        }
+        // 2. 模型 visible 切换
+        if (moonBaseModel) {
+          if (!moonBaseInScene) { scene.add(moonBaseModel); moonBaseInScene = true; }
+          moonBaseModel.visible = true;
+          moonBaseModel.position.x = 16;
+          moonBaseModel.position.y = -3;
+          if (sphere) moonBaseModel.position.z = sphere.position.z + 18;
+          console.log('[MOON] model shown (visible=true)');
+        }
+        // 3. 月球尘埃粒子
         if (!moonDustField) moonDustField = createMoonDust();
         if (moonDustField && !moonDustInScene) {
           scene.add(moonDustField);
           moonDustInScene = true;
           console.log('[MOON-DUST] added to scene');
         }
-        // 银河（地球和月球共享，如果已存在则只加场景）
-        if (!galaxyField) galaxyField = createGalaxy();
-        if (galaxyField && !galaxyInScene) {
-          scene.add(galaxyField);
-          galaxyInScene = true;
-          console.log('[GALAXY] added to scene');
-        }
-            },
-            (xhr) => { if (xhr.total > 0) console.log('[MOON] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
-            (err) => { console.error('[MOON] .glb load error:', err); moonBaseLoadError = true; }
-          );
-        }
-        if (moonBaseModel && !moonBaseInScene) {
-          scene.add(moonBaseModel);
-          moonBaseInScene = true;
-          console.log('[MOON] model added to scene');
-        }
+        if (moonDustField) moonDustField.visible = true;
       } catch(e) { console.error('[MOON] showMoonBase ERROR:', e); }
     }
-    function hideMoonBase() {
+
+function hideMoonBase() {
       console.log('[MOON] hideMoonBase()');
-      try { if (moonBaseModel && moonBaseInScene) { scene.remove(moonBaseModel); moonBaseInScene = false; }
-        if (moonDustField && moonDustInScene) { scene.remove(moonDustField); moonDustInScene = false; }
-      }
-      catch(e) { console.error('[MOON] hideMoonBase ERROR:', e); }
+      try {
+        if (moonBaseModel && moonBaseInScene) { moonBaseModel.visible = false; console.log('[MOON] model hidden'); }
+        if (moonDustField && moonDustInScene) { moonDustField.visible = false; console.log('[MOON-DUST] hidden'); }
+      } catch(e) { console.error('[MOON] hideMoonBase ERROR:', e); }
     }
 
-    function showSaturn() {
+function showSaturn() {
       console.log("[SATURN] showSaturn(), stage=", _currentStage ? _currentStage.id : null);
       try {
         // 加载 .glb 模型（异步）
@@ -591,7 +581,6 @@
           starfieldInScene = false;
           console.log("[SATURN-SKY] removed from scene");
         }
-        if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
       } catch(e) {
         console.error("[SATURN] hideSaturn ERROR:", e);
       }
@@ -651,7 +640,7 @@
       const group = new THREE.Group();
 
       // ① 星星：3000颗（背景星空）
-      const starCount = 3000;
+      const starCount = 800;
       const pos1 = new Float32Array(starCount * 3);
       const col1 = new Float32Array(starCount * 3);
       for (let i = 0; i < starCount; i++) {
@@ -747,7 +736,7 @@
       const group = new THREE.Group();
 
       // ① 星星：3500颗（更暗的背景）
-      const starCount = 3500;
+      const starCount = 800;
       const pos1 = new Float32Array(starCount * 3);
       const col1 = new Float32Array(starCount * 3);
       for (let i = 0; i < starCount; i++) {
@@ -838,65 +827,6 @@
     }
 
     // ─── 银河流动动画（地球+月球关卡背景） ───
-    function createGalaxy() {
-      console.log('[GALAXY] creating galaxy...');
-      // 银河带宽带粒子：5000颗，呈带状分布（扁平椭圆，中心亮蓝白，边缘偏紫）
-      const GAL_COUNT = 5000;
-      const pos   = new Float32Array(GAL_COUNT * 3);
-      const col   = new Float32Array(GAL_COUNT * 3);
-      const vel   = new Float32Array(GAL_COUNT * 3);
-      for (let i = 0; i < GAL_COUNT; i++) {
-        // 带状分布：x方向宽，y方向薄，z方向中等
-        const t = Math.random();
-        const rx = (Math.random() - 0.5) * 300;
-        const ry = (Math.random() - 0.5) * 8 * (1 - Math.abs(rx)/150); // 中心厚边缘薄
-        const rz = (Math.random() - 0.5) * 120;
-        pos[i*3]     = rx;
-        pos[i*3 + 1] = ry;
-        pos[i*3 + 2] = rz;
-        // 速度：绕Y轴缓慢旋转（银河自转）
-        const angVel = 0.0002 + Math.abs(rx)/300 * 0.0006;
-        vel[i*3]     = -rz * angVel;
-        vel[i*3 + 1] = (Math.random()-0.5) * 0.001;
-        vel[i*3 + 2] =  rx * angVel;
-        // 颜色：中心蓝白，旋臂偏紫/粉
-        const dist = Math.sqrt(rx*rx + rz*rz);
-        if (dist < 40) {
-          col[i*3] = 0.85 + Math.random()*0.15;
-          col[i*3+1] = 0.90 + Math.random()*0.10;
-          col[i*3+2] = 1.0;
-        } else if (t < 0.5) {
-          col[i*3] = 0.55 + Math.random()*0.2;
-          col[i*3+1] = 0.40 + Math.random()*0.15;
-          col[i*3+2] = 0.75 + Math.random()*0.2;
-        } else if (t < 0.8) {
-          col[i*3] = 0.72 + Math.random()*0.18;
-          col[i*3+1] = 0.65 + Math.random()*0.15;
-          col[i*3+2] = 0.88 + Math.random()*0.12;
-        } else {
-          col[i*3] = 0.35 + Math.random()*0.15;
-          col[i*3+1] = 0.32 + Math.random()*0.12;
-          col[i*3+2] = 0.58 + Math.random()*0.2;
-        }
-      }
-      galaxyPositions = pos;
-      galaxyColors    = col;
-      galaxyVel       = vel;
-      const galGeo = new THREE.BufferGeometry();
-      galGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      galGeo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-      const galMat = new THREE.PointsMaterial({
-        size: 1.8, vertexColors: true, transparent: true, opacity: 0.55,
-        sizeAttenuation: true, fog: false, depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      });
-      galaxyField = new THREE.Points(galGeo, galMat);
-      console.log('[GALAXY] done, particles=5000');
-      return galaxyField;
-    }
-
-
-
     // ═══════════════════════════════════════════════════════
     //  星空
     // ═══════════════════════════════════════════════════════
@@ -4674,17 +4604,17 @@
       // 第1关 地球
       if (earthInScene && earthModel) {
         earthModel.rotation.y += 0.01;
-        if (sphere) { earthModel.position.x = -22; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 20; }
+        if (sphere) { earthModel.position.x = -16; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 20; }
       }
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
         moonBaseModel.rotation.y += 0.01;
-        if (sphere) { moonBaseModel.position.x = 22; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
+        if (sphere) { moonBaseModel.position.x = 16; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
       }
       // 第5关 土星
       if (saturnInScene && saturnModel) {
         saturnModel.rotation.y += 0.01;
-        if (sphere) { saturnModel.position.x = 26; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 22; }
+        if (sphere) { saturnModel.position.x = 20; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 22; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
@@ -4812,7 +4742,6 @@
           pos[i*3 + 1] += vel[i*3 + 1];
           pos[i*3 + 2] += vel[i*3 + 2];
         }
-        galaxyField.rotation.y += 0.00008;
         galaxyField.geometry.attributes.position.needsUpdate = true;
       }
 
