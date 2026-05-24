@@ -4731,20 +4731,6 @@ function showSaturn() {
         if (moonDustMesh) moonDustMesh.geometry.attributes.position.needsUpdate = true;
       }
 
-      // 银河流动动画
-      if (galaxyInScene && galaxyField && galaxyPositions) {
-        const pos = galaxyPositions;
-        const vel = galaxyVel;
-        const t   = clock.getElapsedTime();
-        const count = pos.length / 3;
-        for (let i = 0; i < count; i++) {
-          pos[i*3]     += vel[i*3];
-          pos[i*3 + 1] += vel[i*3 + 1];
-          pos[i*3 + 2] += vel[i*3 + 2];
-        }
-        galaxyField.geometry.attributes.position.needsUpdate = true;
-      }
-
       if (gameOver || shieldBreakActive) {
         return;
       }
