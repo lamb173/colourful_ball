@@ -99,25 +99,26 @@
     // ─── 第1关 地球轨道 ───
     let earthModel       = null;
     let earthModelUrl    = 'assets/models/earth_moon_20260524.glb';
-    let earthModelScale  = 6;
+    let earthModelScale  = 10;
     let earthInScene     = false;
     let earthLoadError   = false;
 
     // ─── 第2关 月球中转站 ───
     let moonBaseModel    = null;
     let moonBaseModelUrl = 'assets/models/moon_base_20260524.glb';
-    let moonBaseModelScale = 7;
+    let moonBaseModelScale = 12;
     let moonBaseInScene = false;
     let moonBaseLoadError = false;
 
     // ─── 第5关 土星风暴 ───
     let saturnModel       = null;
     let saturnModelUrl    = 'assets/models/saturn_20260524.glb';
-    let saturnModelScale  = 8;
+    let saturnModelScale  = 14;
     let saturnStarfield   = null;
     let saturnInScene    = false;
     let starfieldInScene = false;
     let saturnLoadError  = false;
+    let preloadStarted = false;
 
 
     // ─── 辅助：生成土星条纹纹理（Canvas 2D） ───
@@ -523,6 +524,56 @@
         console.error("[SATURN] hideSaturn ERROR:", e);
       }
     }
+    // ─── 预加载所有关卡3D模型（游戏启动时调用，切关零等待） ───
+    function preloadAllStageModels() {
+      console.log('[PRELOAD] 开始预加载关卡3D模型...');
+      // 第1关 地球
+      if (!earthModel && !earthLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          earthModelUrl,
+          (gltf) => {
+            earthModel = gltf.scene;
+            earthModel.scale.set(earthModelScale, earthModelScale, earthModelScale);
+            earthModel.position.set(0, 0, 0);
+            earthModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 地球模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 地球模型加载失败:', err); earthLoadError = true; }
+        );
+      }
+      // 第2关 月球基地
+      if (!moonBaseModel && !moonBaseLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          moonBaseModelUrl,
+          (gltf) => {
+            moonBaseModel = gltf.scene;
+            moonBaseModel.scale.set(moonBaseModelScale, moonBaseModelScale, moonBaseModelScale);
+            moonBaseModel.position.set(0, 0, 0);
+            moonBaseModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 月球基地模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 月球基地模型加载失败:', err); moonBaseLoadError = true; }
+        );
+      }
+      // 第5关 土星
+      if (!saturnModel && !saturnLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          saturnModelUrl,
+          (gltf) => {
+            saturnModel = gltf.scene;
+            saturnModel.scale.set(saturnModelScale, saturnModelScale, saturnModelScale);
+            saturnModel.position.set(0, 0, 0);
+            saturnModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 土星模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 土星模型加载失败:', err); saturnLoadError = true; }
+        );
+      }
+    }
+
 
     // ═══════════════════════════════════════════════════════
     //  星空
@@ -4274,6 +4325,9 @@
     //  动画主循环
     // ═══════════════════════════════════════════════════════
     function animate() {
+      // 预加载关卡3D模型（仅首次执行）
+      if (!preloadStarted && gameMode === 'stages') { preloadAllStageModels(); preloadStarted = true; }
+      if (!preloadStarted && gameMode !== 'stages') { preloadStarted = true; }  // 无尽模式不需要预加载
       requestAnimationFrame(animate);
       try {
       const dt = Math.min(clock.getDelta(), 0.05);
@@ -4297,13 +4351,13 @@
       // 关卡3D模型旋转动画 + 跟随球体
       // 第1关 地球
       if (earthInScene && earthModel) {
-        earthModel.rotation.y += 0.001;
-        if (sphere) { earthModel.position.x = 12; earthModel.position.y = -2; earthModel.position.z = sphere.position.z + 20; }
+        earthModel.rotation.y += 0.02;
+        if (sphere) { earthModel.position.x = -10; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 20; }
       }
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
-        moonBaseModel.rotation.y += 0.002;
-        if (sphere) { moonBaseModel.position.x = -10; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
+        moonBaseModel.rotation.y += 0.02;
+        if (sphere) { moonBaseModel.position.x = 10; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
       }
       // 第5关 土星
       if (saturnInScene && saturnModel) {
