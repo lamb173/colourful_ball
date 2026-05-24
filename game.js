@@ -304,9 +304,9 @@
         dVel[i*3 + 1] = (Math.random() - 0.5) * 0.010;
         dVel[i*3 + 2] = (Math.random() - 0.5) * 0.018;
         const brightness = 0.45 + Math.random() * 0.35;
-        dCol[i*3]     = brightness * 1.05;
-        dCol[i*3 + 1] = brightness * 0.92;
-        dCol[i*3 + 2] = brightness * 0.65;
+        dCol[i*3]     = 0.45 + brightness * 0.35;  // 土黄 R
+        dCol[i*3 + 1] = 0.30 + brightness * 0.28;  // 土黄 G
+        dCol[i*3 + 2] = 0.15 + brightness * 0.18;  // 土黄 B
       }
       saturnDustPositions  = dPos;
       saturnDustVelocities = dVel;
@@ -314,7 +314,7 @@
       dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
       dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.6,
+        size: 0.25,
         map: createCircleTexture(64),
         alphaTest: 0.1,
         vertexColors: true,
@@ -4143,6 +4143,8 @@
       }
       // 沙尘粒子动画（第5关）
       if (starfieldInScene && saturnDustPositions && saturnDustVelocities && saturnDustMesh) {
+        // 跟随球（粒子整体 Z 跟随，始终在球附近）
+        saturnDustMesh.position.z = sphere.position.z;
         const pos = saturnDustPositions;
         const vel = saturnDustVelocities;
         const count = pos.length / 3;
