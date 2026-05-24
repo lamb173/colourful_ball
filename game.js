@@ -295,7 +295,7 @@
 
       // ② 沙尘粒子：800颗（土星环附近动态尘埃）
       // ② 沙尘粒子：2000颗（飞扬尘土效果）
-      const DUST_COUNT = 2000;
+      const DUST_COUNT = 700;
       const dPos   = new Float32Array(DUST_COUNT * 3);
       const dCol   = new Float32Array(DUST_COUNT * 3);
       const dVel   = new Float32Array(DUST_COUNT * 3);
@@ -350,7 +350,7 @@
       saturnDustMesh = new THREE.Points(dustGeo, dustMat);
       group.add(saturnDustMesh);
 
-      console.log('[SATURN-SKY] done, stars=4000 dust=2000');
+      console.log('[SATURN-SKY] done, stars=4000 dust=700');
       return group;
     }
 
