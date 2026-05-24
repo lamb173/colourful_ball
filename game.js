@@ -246,9 +246,14 @@
     }
 
     // ─── 第5关专属星空 + 沙尘粒子 ───
-    let saturnDustPositions = null;
+    let saturnDustPositions  = null;
     let saturnDustVelocities = null;
-    let saturnDustMesh = null;
+    let saturnDustPhase     = null;
+    let saturnDustFreq      = null;
+    let saturnDustAmp       = null;
+    let saturnDustLife      = null;
+    let saturnDustMaxLife   = null;
+    let saturnDustMesh     = null;
 
     function createSaturnStarfield() {
       console.log('[SATURN-SKY] creating starfield + dust...');
@@ -289,43 +294,62 @@
       group.add(new THREE.Points(starGeo, starMat));
 
       // ② 沙尘粒子：800颗（土星环附近动态尘埃）
-      const dustCount = 800;
-      const dPos = new Float32Array(dustCount * 3);
-      const dCol = new Float32Array(dustCount * 3);
-      const dVel = new Float32Array(dustCount * 3);
-      for (let i = 0; i < dustCount; i++) {
+      // ② 沙尘粒子：2000颗（飞扬尘土效果）
+      const DUST_COUNT = 2000;
+      const dPos   = new Float32Array(DUST_COUNT * 3);
+      const dCol   = new Float32Array(DUST_COUNT * 3);
+      const dVel   = new Float32Array(DUST_COUNT * 3);
+      const dPhase = new Float32Array(DUST_COUNT);
+      const dFreq  = new Float32Array(DUST_COUNT);
+      const dAmp   = new Float32Array(DUST_COUNT);
+      const dLife  = new Float32Array(DUST_COUNT);
+      const dMaxLife = new Float32Array(DUST_COUNT);
+      for (let i = 0; i < DUST_COUNT; i++) {
+        // 环形分布（土星环平面）
         const theta = Math.random() * Math.PI * 2;
-        const phi   = Math.acos(2 * Math.random() - 1);
-        const r     = 18 + Math.random() * 44;
-        dPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
-        dPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.3;
-        dPos[i*3 + 2] = r * Math.cos(phi);
-        dVel[i*3]     = (Math.random() - 0.5) * 0.018;
-        dVel[i*3 + 1] = (Math.random() - 0.5) * 0.010;
-        dVel[i*3 + 2] = (Math.random() - 0.5) * 0.018;
-        const brightness = 0.45 + Math.random() * 0.35;
-        dCol[i*3]     = 0.45 + brightness * 0.35;  // 土黄 R
-        dCol[i*3 + 1] = 0.30 + brightness * 0.28;  // 土黄 G
-        dCol[i*3 + 2] = 0.15 + brightness * 0.18;  // 土黄 B
+        const r     = 10 + Math.random() * 55;
+        dPos[i*3]     = Math.cos(theta) * r;
+        dPos[i*3 + 1] = (Math.random() - 0.5) * 7;
+        dPos[i*3 + 2] = Math.sin(theta) * r;
+        // 速度：漩涡 + 上浮
+        const swirl = 0.008 + Math.random() * 0.02;
+        dVel[i*3]     = Math.cos(theta) * swirl + (Math.random()-0.5)*0.025;
+        dVel[i*3 + 1] = Math.random() * 0.06;  // 上浮
+        dVel[i*3 + 2] = Math.sin(theta) * swirl + (Math.random()-0.5)*0.025;
+        dPhase[i] = Math.random() * Math.PI * 2;
+        dFreq[i]  = 0.4 + Math.random() * 1.5;
+        dAmp[i]   = 0.2 + Math.random() * 1.2;
+        dLife[i]  = dMaxLife[i] = 3 + Math.random() * 9;
+        // 颜色：土黄色
+        const t = Math.random();
+        dCol[i*3]     = 0.35 + t * 0.30;  // R: 0.35-0.65
+        dCol[i*3 + 1] = 0.22 + t * 0.25;  // G: 0.22-0.47
+        dCol[i*3 + 2] = 0.08 + t * 0.15;  // B: 0.08-0.23
       }
       saturnDustPositions  = dPos;
       saturnDustVelocities = dVel;
+      saturnDustPhase     = dPhase;
+      saturnDustFreq      = dFreq;
+      saturnDustAmp       = dAmp;
+      saturnDustLife      = dLife;
+      saturnDustMaxLife   = dMaxLife;
       const dustGeo = new THREE.BufferGeometry();
-      dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
-      dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      dustGeo.setAttribute('position',  new THREE.BufferAttribute(dPos, 3));
+      dustGeo.setAttribute('color',     new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.25,
+        size: 0.18,
         map: createCircleTexture(64),
-        alphaTest: 0.1,
+        alphaTest: 0.08,
         vertexColors: true,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.7,
         sizeAttenuation: true,
         fog: false,
         depthWrite: false,
       });
       saturnDustMesh = new THREE.Points(dustGeo, dustMat);
       group.add(saturnDustMesh);
+
       console.log('[SATURN-SKY] done, stars=4000 dust=800');
       return group;
     }
@@ -4141,31 +4165,45 @@
       if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
       }
-      // 沙尘粒子动画（第5关）
-      if (starfieldInScene && saturnDustPositions && saturnDustVelocities && saturnDustMesh) {
-        // 跟随球（粒子整体 Z 跟随，始终在球附近）
-        saturnDustMesh.position.z = sphere.position.z;
-        const pos = saturnDustPositions;
-        const vel = saturnDustVelocities;
+      // 沙尘粒子动画（第5关，飞扬尘土效果）
+      if (starfieldInScene && saturnDustPositions && saturnDustPhase) {
+        // 星空+尘土整体跟随球
+        if (saturnStarfield) saturnStarfield.position.z = sphere.position.z;
+        const pos   = saturnDustPositions;
+        const vel   = saturnDustVelocities;
+        const phase = saturnDustPhase;
+        const freq  = saturnDustFreq;
+        const amp   = saturnDustAmp;
+        const life  = saturnDustLife;
+        const mLife = saturnDustMaxLife;
+        const t     = clock.getElapsedTime();
         const count = pos.length / 3;
         for (let i = 0; i < count; i++) {
-          pos[i*3]     += vel[i*3];
-          pos[i*3 + 1] += vel[i*3 + 1];
-          pos[i*3 + 2] += vel[i*3 + 2];
-          // 边界回绕（距中心超过62回绕）
+          const tp = t * freq[i] + phase[i];
+          // 湍流运动：sin/cos 扰动
+          pos[i*3]     += vel[i*3]     + Math.sin(tp)     * amp[i] * 0.020;
+          pos[i*3 + 1] += vel[i*3 + 1] + Math.cos(tp * 1.4) * amp[i] * 0.016;
+          pos[i*3 + 2] += vel[i*3 + 2] + Math.cos(tp * 0.8) * amp[i] * 0.020;
+          // 重力：轻微下落
+          vel[i*3 + 1] -= 0.007;
+          // 生命周期
+          life[i] -= 0.016;
+          // 边界回绕 + 重生
           const dx = pos[i*3], dy = pos[i*3+1], dz = pos[i*3+2];
-          if (dx*dx + dy*dy + dz*dz > 3844) {
+          if (life[i] <= 0 || dx*dx + dy*dy + dz*dz > 4900) {
             const theta = Math.random() * Math.PI * 2;
-            const phi   = Math.acos(2 * Math.random() - 1);
-            const r     = 18 + Math.random() * 44;
-            pos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
-            pos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.3;
-            pos[i*3 + 2] = r * Math.cos(phi);
+            const r     = 10 + Math.random() * 55;
+            pos[i*3]     = Math.cos(theta) * r;
+            pos[i*3 + 1] = (Math.random() - 0.5) * 7;
+            pos[i*3 + 2] = Math.sin(theta) * r;
+            vel[i*3]     = (Math.random()-0.5) * 0.03;
+            vel[i*3 + 1] = Math.random() * 0.05;
+            vel[i*3 + 2] = (Math.random()-0.5) * 0.03;
+            life[i] = mLife[i] = 3 + Math.random() * 9;
           }
         }
-        saturnDustMesh.geometry.attributes.position.needsUpdate = true;
+        if (saturnDustMesh) saturnDustMesh.geometry.attributes.position.needsUpdate = true;
       }
-
       if (gameOver || shieldBreakActive) {
         return;
       }
