@@ -229,46 +229,88 @@
     }
 
     // ─── 创建第5关专属星空 ───
+    // ─── 第5关专属星空 + 沙尘粒子 ───
+    let saturnDustPositions = null;
+    let saturnDustVelocities = null;
+    let saturnDustMesh = null;
+
     function createSaturnStarfield() {
-      console.log("[SATURN-SKY] creating starfield...");
+      console.log('[SATURN-SKY] creating starfield + dust...');
       const group = new THREE.Group();
-      const count = 12000;
-      const pos = new Float32Array(count * 3);
-      const col = new Float32Array(count * 3);
-      const sz  = new Float32Array(count);
-      for (let i = 0; i < count; i++) {
+
+      // ① 星星：4000颗（减少数量）
+      const starCount = 4000;
+      const pos1 = new Float32Array(starCount * 3);
+      const col1 = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
         const theta = Math.random() * Math.PI * 2;
         const phi   = Math.acos(2 * Math.random() - 1);
-        const r     = 280 + Math.random() * 220;
-        pos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-        pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-        pos[i * 3 + 2] = r * Math.cos(phi);
+        const r     = 300 + Math.random() * 200;
+        pos1[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+        pos1[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        pos1[i*3 + 2] = r * Math.cos(phi);
         const t = Math.random();
         if (t < 0.5) {
-          col[i * 3] = 0.92; col[i * 3 + 1] = 0.94; col[i * 3 + 2] = 1.0;
+          col1[i*3] = 0.92; col1[i*3+1] = 0.94; col1[i*3+2] = 1.0;
         } else if (t < 0.8) {
-          col[i * 3] = 1.0; col[i * 3 + 1] = 0.97; col[i * 3 + 2] = 0.85;
+          col1[i*3] = 1.0; col1[i*3+1] = 0.97; col1[i*3+2] = 0.85;
         } else {
-          col[i * 3] = 0.75; col[i * 3 + 1] = 0.85; col[i * 3 + 2] = 1.0;
+          col1[i*3] = 0.75; col1[i*3+1] = 0.85; col1[i*3+2] = 1.0;
         }
-        sz[i] = 0.5 + Math.random() * 2.2;
       }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      geo.setAttribute("color",    new THREE.BufferAttribute(col, 3));
-      geo.setAttribute("size",     new THREE.BufferAttribute(sz, 1));
-      const mat = new THREE.PointsMaterial({
-        size: 1.4,
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(pos1, 3));
+      starGeo.setAttribute('color',    new THREE.BufferAttribute(col1, 3));
+      const starMat = new THREE.PointsMaterial({
+        size: 1.2,
         vertexColors: true,
         transparent: true,
-        opacity: 0.95,
+        opacity: 0.9,
         sizeAttenuation: true,
         fog: false,
         depthWrite: false,
       });
-      group.add(new THREE.Points(geo, mat));
-      console.log("[SATURN-SKY] starfield created, count=", count);
+      group.add(new THREE.Points(starGeo, starMat));
+
+      // ② 沙尘粒子：800颗（土星环附近动态尘埃）
+      const dustCount = 800;
+      const dPos = new Float32Array(dustCount * 3);
+      const dCol = new Float32Array(dustCount * 3);
+      const dVel = new Float32Array(dustCount * 3);
+      for (let i = 0; i < dustCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const r     = 18 + Math.random() * 44;
+        dPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+        dPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.3;
+        dPos[i*3 + 2] = r * Math.cos(phi);
+        dVel[i*3]     = (Math.random() - 0.5) * 0.018;
+        dVel[i*3 + 1] = (Math.random() - 0.5) * 0.010;
+        dVel[i*3 + 2] = (Math.random() - 0.5) * 0.018;
+        const brightness = 0.45 + Math.random() * 0.35;
+        dCol[i*3]     = brightness * 1.05;
+        dCol[i*3 + 1] = brightness * 0.92;
+        dCol[i*3 + 2] = brightness * 0.65;
+      }
+      saturnDustPositions  = dPos;
+      saturnDustVelocities = dVel;
+      const dustGeo = new THREE.BufferGeometry();
+      dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const dustMat = new THREE.PointsMaterial({
+        size: 2.0,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.55,
+        sizeAttenuation: true,
+        fog: false,
+        depthWrite: false,
+      });
+      saturnDustMesh = new THREE.Points(dustGeo, dustMat);
+      group.add(saturnDustMesh);
+      console.log('[SATURN-SKY] done, stars=4000 dust=800');
       return group;
+    }
     }
 
     // ─── 显示/隐藏 ───
@@ -4070,17 +4112,39 @@
 
       // 土星旋转动画（第5关 土星风暴 背景）
       if (saturnInScene && saturnGroup) {
-        saturnGroup.rotation.y += 0.008;
+        saturnGroup.rotation.y += 0.08;
         // 土星在球后方，作为背景
         if (sphere) {
           saturnGroup.position.x = 14;
-          saturnGroup.position.y = 0;
+          saturnGroup.position.y = -3;
           saturnGroup.position.z = sphere.position.z + 55;
         }
       }
       // 星空缓慢旋转
       if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
+      }
+      // 沙尘粒子动画（第5关）
+      if (starfieldInScene && saturnDustPositions && saturnDustVelocities && saturnDustMesh) {
+        const pos = saturnDustPositions;
+        const vel = saturnDustVelocities;
+        const count = pos.length / 3;
+        for (let i = 0; i < count; i++) {
+          pos[i*3]     += vel[i*3];
+          pos[i*3 + 1] += vel[i*3 + 1];
+          pos[i*3 + 2] += vel[i*3 + 2];
+          // 边界回绕（距中心超过62回绕）
+          const dx = pos[i*3], dy = pos[i*3+1], dz = pos[i*3+2];
+          if (dx*dx + dy*dy + dz*dz > 3844) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi   = Math.acos(2 * Math.random() - 1);
+            const r     = 18 + Math.random() * 44;
+            pos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+            pos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.3;
+            pos[i*3 + 2] = r * Math.cos(phi);
+          }
+        }
+        saturnDustMesh.geometry.attributes.position.needsUpdate = true;
       }
 
       if (gameOver || shieldBreakActive) {
