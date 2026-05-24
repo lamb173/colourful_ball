@@ -883,9 +883,10 @@ function showSaturn() {
         // 5. Light ribbons (flowing energy bands)
         const earthRibbons = createLightRibbons(1);
         group.add(earthRibbons);
+      }
 
       // 5. Light ribbons (flowing energy bands)
- else if (stageId === 2) {
+      else if (stageId === 2) {
         // ─── Stage 2: Moon Base - Cratered ground, spacecraft ───
 
         // 1. Sky dome (dark gray-blue)
@@ -977,12 +978,12 @@ function showSaturn() {
 
         console.log('[BG] Moon scenic background done');
 
-      // 5. Light ribbons
         // 5. Light ribbons
         const moonRibbons = createLightRibbons(2);
         group.add(moonRibbons);
+      }
 
- else if (stageId === 5) {
+      else if (stageId === 5) {
         // ─── Stage 5: Saturn Storm - Yellowish ground, vortex ───
 
         // 1. Sky dome (amber/gold)
