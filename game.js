@@ -311,7 +311,6 @@
       console.log('[SATURN-SKY] done, stars=4000 dust=800');
       return group;
     }
-    }
 
     // ─── 显示/隐藏 ───
     function showSaturn() {
