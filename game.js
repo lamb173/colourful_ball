@@ -4070,11 +4070,11 @@
 
       // 土星旋转动画（第5关 土星风暴 背景）
       if (saturnInScene && saturnGroup) {
-        saturnGroup.rotation.y += 0.0008;
-        // 土星在球后方上空，始终作为背景可见
+        saturnGroup.rotation.y += 0.003;
+        // 土星在球后方，作为背景
         if (sphere) {
           saturnGroup.position.x = 14;
-          saturnGroup.position.y = 4;
+          saturnGroup.position.y = 0;
           saturnGroup.position.z = sphere.position.z + 55;
         }
       }
