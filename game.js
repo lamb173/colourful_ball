@@ -99,26 +99,57 @@
     // ─── 第1关 地球轨道 ───
     let earthModel       = null;
     let earthModelUrl    = 'assets/models/earth_moon_20260524.glb';
-    let earthModelScale  = 10;
+    let earthModelScale  = 25;
     let earthInScene     = false;
     let earthLoadError   = false;
 
     // ─── 第2关 月球中转站 ───
     let moonBaseModel    = null;
     let moonBaseModelUrl = 'assets/models/moon_base_20260524.glb';
-    let moonBaseModelScale = 12;
+    let moonBaseModelScale = 25;
     let moonBaseInScene = false;
     let moonBaseLoadError = false;
 
     // ─── 第5关 土星风暴 ───
     let saturnModel       = null;
     let saturnModelUrl    = 'assets/models/saturn_20260524.glb';
-    let saturnModelScale  = 14;
+    let saturnModelScale  = 25;
     let saturnStarfield   = null;
     let saturnInScene    = false;
     let starfieldInScene = false;
     let saturnLoadError  = false;
     let preloadStarted = false;
+    // ─── 第1关 地球大气层粒子 ───
+    let earthAtmosphere   = null;   // THREE.Group
+    let earthDustPositions  = null;
+    let earthDustVelocities = null;
+    let earthDustPhase     = null;
+    let earthDustFreq      = null;
+    let earthDustAmp       = null;
+    let earthDustLife      = null;
+    let earthDustMaxLife   = null;
+    let earthDustMesh      = null;
+    let earthAtmInScene    = false;
+
+    // ─── 第2关 月球尘埃粒子 ───
+    let moonDustField    = null;   // THREE.Group
+    let moonDustPositions  = null;
+    let moonDustVelocities = null;
+    let moonDustPhase     = null;
+    let moonDustFreq      = null;
+    let moonDustAmp       = null;
+    let moonDustLife      = null;
+    let moonDustMaxLife   = null;
+    let moonDustMesh      = null;
+    let moonDustInScene   = false;
+
+    // ─── 银河流动动画（地球+月球关卡共享） ───
+    let galaxyField      = null;   // THREE.Points
+    let galaxyInScene   = false;
+    let galaxyPositions  = null;
+    let galaxyColors     = null;
+    let galaxyVel        = null;
+
 
 
     // ─── 辅助：生成土星条纹纹理（Canvas 2D） ───
@@ -394,6 +425,20 @@
               });
               console.log('[EARTH] .glb model loaded');
               if (earthInScene) scene.add(earthModel);
+        // 大气层（星空+大气粒子）
+        if (!earthAtmosphere) earthAtmosphere = createEarthAtmosphere();
+        if (earthAtmosphere && !earthAtmInScene) {
+          scene.add(earthAtmosphere);
+          earthAtmInScene = true;
+          console.log('[EARTH-ATM] added to scene');
+        }
+        // 银河
+        if (!galaxyField) galaxyField = createGalaxy();
+        if (galaxyField && !galaxyInScene) {
+          scene.add(galaxyField);
+          galaxyInScene = true;
+          console.log('[GALAXY] added to scene');
+        }
             },
             (xhr) => { if (xhr.total > 0) console.log('[EARTH] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
             (err) => { console.error('[EARTH] .glb load error:', err); earthLoadError = true; }
@@ -409,6 +454,8 @@
     function hideEarth() {
       console.log('[EARTH] hideEarth()');
       try { if (earthModel && earthInScene) { scene.remove(earthModel); earthInScene = false; } }
+        if (earthAtmosphere && earthAtmInScene) { scene.remove(earthAtmosphere); earthAtmInScene = false; }
+        if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
       catch(e) { console.error('[EARTH] hideEarth ERROR:', e); }
     }
 
@@ -434,6 +481,20 @@
               });
               console.log('[MOON] .glb model loaded');
               if (moonBaseInScene) scene.add(moonBaseModel);
+        // 月球尘埃（星空+尘埃粒子）
+        if (!moonDustField) moonDustField = createMoonDust();
+        if (moonDustField && !moonDustInScene) {
+          scene.add(moonDustField);
+          moonDustInScene = true;
+          console.log('[MOON-DUST] added to scene');
+        }
+        // 银河（地球和月球共享，如果已存在则只加场景）
+        if (!galaxyField) galaxyField = createGalaxy();
+        if (galaxyField && !galaxyInScene) {
+          scene.add(galaxyField);
+          galaxyInScene = true;
+          console.log('[GALAXY] added to scene');
+        }
             },
             (xhr) => { if (xhr.total > 0) console.log('[MOON] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
             (err) => { console.error('[MOON] .glb load error:', err); moonBaseLoadError = true; }
@@ -449,6 +510,7 @@
     function hideMoonBase() {
       console.log('[MOON] hideMoonBase()');
       try { if (moonBaseModel && moonBaseInScene) { scene.remove(moonBaseModel); moonBaseInScene = false; } }
+        if (moonDustField && moonDustInScene) { scene.remove(moonDustField); moonDustInScene = false; }
       catch(e) { console.error('[MOON] hideMoonBase ERROR:', e); }
     }
 
@@ -517,6 +579,7 @@
         }
         if (starfieldInScene && saturnStarfield) {
           scene.remove(saturnStarfield);
+        if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
           starfieldInScene = false;
           console.log("[SATURN-SKY] removed from scene");
         }
@@ -573,6 +636,256 @@
         );
       }
     }
+    // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
+    function createEarthAtmosphere() {
+      console.log('[EARTH-ATM] creating atmosphere...');
+      const group = new THREE.Group();
+
+      // ① 星星：3000颗（背景星空）
+      const starCount = 3000;
+      const pos1 = new Float32Array(starCount * 3);
+      const col1 = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const r     = 250 + Math.random() * 250;
+        pos1[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+        pos1[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        pos1[i*3 + 2] = r * Math.cos(phi);
+        const t = Math.random();
+        if (t < 0.6) {
+          col1[i*3] = 0.75; col1[i*3+1] = 0.85; col1[i*3+2] = 1.0;
+        } else if (t < 0.85) {
+          col1[i*3] = 1.0; col1[i*3+1] = 0.97; col1[i*3+2] = 0.92;
+        } else {
+          col1[i*3] = 0.55; col1[i*3+1] = 0.70; col1[i*3+2] = 1.0;
+        }
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(pos1, 3));
+      starGeo.setAttribute('color',    new THREE.BufferAttribute(col1, 3));
+      const starMat = new THREE.PointsMaterial({
+        size: 1.0, vertexColors: true, transparent: true, opacity: 0.85,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+      });
+      group.add(new THREE.Points(starGeo, starMat));
+
+      // ② 大气粒子：1200颗（蓝白云絮，慢速漩涡）
+      const ATM_COUNT = 1200;
+      const dPos   = new Float32Array(ATM_COUNT * 3);
+      const dCol   = new Float32Array(ATM_COUNT * 3);
+      const dVel   = new Float32Array(ATM_COUNT * 3);
+      const dPhase = new Float32Array(ATM_COUNT);
+      const dFreq  = new Float32Array(ATM_COUNT);
+      const dAmp   = new Float32Array(ATM_COUNT);
+      const dLife  = new Float32Array(ATM_COUNT);
+      const dMaxLife = new Float32Array(ATM_COUNT);
+      for (let i = 0; i < ATM_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r     = 8 + Math.random() * 50;
+        dPos[i*3]     = Math.cos(theta) * r;
+        dPos[i*3 + 1] = (Math.random() - 0.5) * 6;
+        dPos[i*3 + 2] = Math.sin(theta) * r;
+        const swirl = 0.008 + Math.random() * 0.025;
+        dVel[i*3]     = Math.cos(theta) * swirl + (Math.random()-0.5)*0.03;
+        dVel[i*3 + 1] = 0.01 + Math.random() * 0.06;
+        dVel[i*3 + 2] = Math.sin(theta) * swirl + (Math.random()-0.5)*0.03;
+        dPhase[i] = Math.random() * Math.PI * 2;
+        dFreq[i]  = 0.3 + Math.random() * 1.2;
+        dAmp[i]   = 0.15 + Math.random() * 1.0;
+        dLife[i]  = dMaxLife[i] = 4 + Math.random() * 10;
+        // 颜色：蓝白云 + 少量绿色（陆地）
+        const t = Math.random();
+        if (t < 0.55) {
+          dCol[i*3] = 0.75 + Math.random()*0.2;
+          dCol[i*3+1] = 0.82 + Math.random()*0.15;
+          dCol[i*3+2] = 0.95 + Math.random()*0.05;
+        } else if (t < 0.8) {
+          dCol[i*3] = 0.30 + Math.random()*0.2;
+          dCol[i*3+1] = 0.65 + Math.random()*0.2;
+          dCol[i*3+2] = 0.30 + Math.random()*0.15;
+        } else {
+          dCol[i*3] = 0.9 + Math.random()*0.1;
+          dCol[i*3+1] = 0.92 + Math.random()*0.08;
+          dCol[i*3+2] = 1.0;
+        }
+      }
+      earthDustPositions  = dPos;
+      earthDustVelocities = dVel;
+      earthDustPhase     = dPhase;
+      earthDustFreq      = dFreq;
+      earthDustAmp       = dAmp;
+      earthDustLife      = dLife;
+      earthDustMaxLife   = dMaxLife;
+      const dustGeo = new THREE.BufferGeometry();
+      dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const dustMat = new THREE.PointsMaterial({
+        size: 0.5, map: createCircleTexture(64), alphaTest: 0.08,
+        vertexColors: true, transparent: true, opacity: 0.65,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+      });
+      earthDustMesh = new THREE.Points(dustGeo, dustMat);
+      group.add(earthDustMesh);
+
+      console.log('[EARTH-ATM] done, stars=3000 atm=1200');
+      return group;
+    }
+
+    // ─── 第2关 月球尘埃粒子（灰白石屑 + 深邃星空） ───
+    function createMoonDust() {
+      console.log('[MOON-DUST] creating moon dust...');
+      const group = new THREE.Group();
+
+      // ① 星星：3500颗（更暗的背景）
+      const starCount = 3500;
+      const pos1 = new Float32Array(starCount * 3);
+      const col1 = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const r     = 280 + Math.random() * 220;
+        pos1[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+        pos1[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        pos1[i*3 + 2] = r * Math.cos(phi);
+        const t = Math.random();
+        if (t < 0.5) {
+          col1[i*3] = 0.7; col1[i*3+1] = 0.72; col1[i*3+2] = 0.8;
+        } else if (t < 0.8) {
+          col1[i*3] = 0.85; col1[i*3+1] = 0.87; col1[i*3+2] = 0.92;
+        } else {
+          col1[i*3] = 0.55; col1[i*3+1] = 0.60; col1[i*3+2] = 0.75;
+        }
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(pos1, 3));
+      starGeo.setAttribute('color',    new THREE.BufferAttribute(col1, 3));
+      const starMat = new THREE.PointsMaterial({
+        size: 0.9, vertexColors: true, transparent: true, opacity: 0.75,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+      });
+      group.add(new THREE.Points(starGeo, starMat));
+
+      // ② 月球尘埃：900颗（灰白色，稀疏慢速）
+      const DUST_COUNT = 900;
+      const dPos   = new Float32Array(DUST_COUNT * 3);
+      const dCol   = new Float32Array(DUST_COUNT * 3);
+      const dVel   = new Float32Array(DUST_COUNT * 3);
+      const dPhase = new Float32Array(DUST_COUNT);
+      const dFreq  = new Float32Array(DUST_COUNT);
+      const dAmp   = new Float32Array(DUST_COUNT);
+      const dLife  = new Float32Array(DUST_COUNT);
+      const dMaxLife = new Float32Array(DUST_COUNT);
+      for (let i = 0; i < DUST_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r     = 6 + Math.random() * 40;
+        dPos[i*3]     = Math.cos(theta) * r;
+        dPos[i*3 + 1] = (Math.random() - 0.5) * 5;
+        dPos[i*3 + 2] = Math.sin(theta) * r;
+        const drift = 0.004 + Math.random() * 0.015;
+        dVel[i*3]     = Math.cos(theta) * drift + (Math.random()-0.5)*0.02;
+        dVel[i*3 + 1] = 0.005 + Math.random() * 0.04;
+        dVel[i*3 + 2] = Math.sin(theta) * drift + (Math.random()-0.5)*0.02;
+        dPhase[i] = Math.random() * Math.PI * 2;
+        dFreq[i]  = 0.2 + Math.random() * 0.8;
+        dAmp[i]   = 0.1 + Math.random() * 0.6;
+        dLife[i]  = dMaxLife[i] = 5 + Math.random() * 12;
+        // 颜色：灰白/浅灰（月尘）
+        const t = Math.random();
+        if (t < 0.6) {
+          dCol[i*3] = 0.65 + Math.random()*0.2;
+          dCol[i*3+1] = 0.63 + Math.random()*0.2;
+          dCol[i*3+2] = 0.60 + Math.random()*0.18;
+        } else if (t < 0.85) {
+          dCol[i*3] = 0.82 + Math.random()*0.15;
+          dCol[i*3+1] = 0.81 + Math.random()*0.14;
+          dCol[i*3+2] = 0.78 + Math.random()*0.12;
+        } else {
+          dCol[i*3] = 0.45 + Math.random()*0.15;
+          dCol[i*3+1] = 0.43 + Math.random()*0.15;
+          dCol[i*3+2] = 0.40 + Math.random()*0.12;
+        }
+      }
+      moonDustPositions  = dPos;
+      moonDustVelocities = dVel;
+      moonDustPhase     = dPhase;
+      moonDustFreq      = dFreq;
+      moonDustAmp       = dAmp;
+      moonDustLife      = dLife;
+      moonDustMaxLife   = dMaxLife;
+      const dustGeo = new THREE.BufferGeometry();
+      dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const dustMat = new THREE.PointsMaterial({
+        size: 0.4, map: createCircleTexture(64), alphaTest: 0.08,
+        vertexColors: true, transparent: true, opacity: 0.6,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+      });
+      moonDustMesh = new THREE.Points(dustGeo, dustMat);
+      group.add(moonDustMesh);
+
+      console.log('[MOON-DUST] done, stars=3500 dust=900');
+      return group;
+    }
+
+    // ─── 银河流动动画（地球+月球关卡背景） ───
+    function createGalaxy() {
+      console.log('[GALAXY] creating galaxy...');
+      // 银河带宽带粒子：5000颗，呈带状分布（扁平椭圆，中心亮蓝白，边缘偏紫）
+      const GAL_COUNT = 5000;
+      const pos   = new Float32Array(GAL_COUNT * 3);
+      const col   = new Float32Array(GAL_COUNT * 3);
+      const vel   = new Float32Array(GAL_COUNT * 3);
+      for (let i = 0; i < GAL_COUNT; i++) {
+        // 带状分布：x方向宽，y方向薄，z方向中等
+        const t = Math.random();
+        const rx = (Math.random() - 0.5) * 300;
+        const ry = (Math.random() - 0.5) * 8 * (1 - Math.abs(rx)/150); // 中心厚边缘薄
+        const rz = (Math.random() - 0.5) * 120;
+        pos[i*3]     = rx;
+        pos[i*3 + 1] = ry;
+        pos[i*3 + 2] = rz;
+        // 速度：绕Y轴缓慢旋转（银河自转）
+        const angVel = 0.0002 + Math.abs(rx)/300 * 0.0006;
+        vel[i*3]     = -rz * angVel;
+        vel[i*3 + 1] = (Math.random()-0.5) * 0.001;
+        vel[i*3 + 2] =  rx * angVel;
+        // 颜色：中心蓝白，旋臂偏紫/粉
+        const dist = Math.sqrt(rx*rx + rz*rz);
+        if (dist < 40) {
+          col[i*3] = 0.85 + Math.random()*0.15;
+          col[i*3+1] = 0.90 + Math.random()*0.10;
+          col[i*3+2] = 1.0;
+        } else if (t < 0.5) {
+          col[i*3] = 0.55 + Math.random()*0.2;
+          col[i*3+1] = 0.40 + Math.random()*0.15;
+          col[i*3+2] = 0.75 + Math.random()*0.2;
+        } else if (t < 0.8) {
+          col[i*3] = 0.72 + Math.random()*0.18;
+          col[i*3+1] = 0.65 + Math.random()*0.15;
+          col[i*3+2] = 0.88 + Math.random()*0.12;
+        } else {
+          col[i*3] = 0.35 + Math.random()*0.15;
+          col[i*3+1] = 0.32 + Math.random()*0.12;
+          col[i*3+2] = 0.58 + Math.random()*0.2;
+        }
+      }
+      galaxyPositions = pos;
+      galaxyColors    = col;
+      galaxyVel       = vel;
+      const galGeo = new THREE.BufferGeometry();
+      galGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      galGeo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+      const galMat = new THREE.PointsMaterial({
+        size: 1.8, vertexColors: true, transparent: true, opacity: 0.55,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      galaxyField = new THREE.Points(galGeo, galMat);
+      console.log('[GALAXY] done, particles=5000');
+      return galaxyField;
+    }
+
 
 
     // ═══════════════════════════════════════════════════════
@@ -4407,6 +4720,92 @@
         }
         if (saturnDustMesh) saturnDustMesh.geometry.attributes.position.needsUpdate = true;
       }
+
+      // 地球大气层粒子动画（第1关）
+      if (earthAtmInScene && earthDustPositions && earthDustPhase) {
+        if (earthAtmosphere) earthAtmosphere.position.z = sphere.position.z;
+        const pos   = earthDustPositions;
+        const vel   = earthDustVelocities;
+        const phase = earthDustPhase;
+        const freq  = earthDustFreq;
+        const amp   = earthDustAmp;
+        const life  = earthDustLife;
+        const mLife = earthDustMaxLife;
+        const t     = clock.getElapsedTime();
+        const count = pos.length / 3;
+        for (let i = 0; i < count; i++) {
+          const tp = t * freq[i] + phase[i];
+          pos[i*3]     += vel[i*3]     + Math.sin(tp)     * amp[i] * 0.12;
+          pos[i*3 + 1] += vel[i*3 + 1] + Math.cos(tp * 1.3) * amp[i] * 0.10;
+          pos[i*3 + 2] += vel[i*3 + 2] + Math.cos(tp * 0.7) * amp[i] * 0.12;
+          vel[i*3 + 1] -= 0.003;
+          life[i] -= 0.016;
+          const dx = pos[i*3], dy = pos[i*3+1], dz = pos[i*3+2];
+          if (life[i] <= 0 || dx*dx + dy*dy + dz*dz > 3600) {
+            const theta = Math.random() * Math.PI * 2;
+            const r     = 8 + Math.random() * 50;
+            pos[i*3]     = Math.cos(theta) * r;
+            pos[i*3 + 1] = (Math.random() - 0.5) * 6;
+            pos[i*3 + 2] = Math.sin(theta) * r;
+            vel[i*3]     = (Math.random()-0.5) * 0.05;
+            vel[i*3 + 1] = 0.01 + Math.random() * 0.06;
+            vel[i*3 + 2] = (Math.random()-0.5) * 0.05;
+            life[i] = mLife[i] = 4 + Math.random() * 10;
+          }
+        }
+        if (earthDustMesh) earthDustMesh.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // 月球尘埃粒子动画（第2关）
+      if (moonDustInScene && moonDustPositions && moonDustPhase) {
+        if (moonDustField) moonDustField.position.z = sphere.position.z;
+        const pos   = moonDustPositions;
+        const vel   = moonDustVelocities;
+        const phase = moonDustPhase;
+        const freq  = moonDustFreq;
+        const amp   = moonDustAmp;
+        const life  = moonDustLife;
+        const mLife = moonDustMaxLife;
+        const t     = clock.getElapsedTime();
+        const count = pos.length / 3;
+        for (let i = 0; i < count; i++) {
+          const tp = t * freq[i] + phase[i];
+          pos[i*3]     += vel[i*3]     + Math.sin(tp)     * amp[i] * 0.08;
+          pos[i*3 + 1] += vel[i*3 + 1] + Math.cos(tp * 1.1) * amp[i] * 0.06;
+          pos[i*3 + 2] += vel[i*3 + 2] + Math.cos(tp * 0.6) * amp[i] * 0.08;
+          vel[i*3 + 1] -= 0.002;
+          life[i] -= 0.016;
+          const dx = pos[i*3], dy = pos[i*3+1], dz = pos[i*3+2];
+          if (life[i] <= 0 || dx*dx + dy*dy + dz*dz > 2500) {
+            const theta = Math.random() * Math.PI * 2;
+            const r     = 6 + Math.random() * 40;
+            pos[i*3]     = Math.cos(theta) * r;
+            pos[i*3 + 1] = (Math.random() - 0.5) * 5;
+            pos[i*3 + 2] = Math.sin(theta) * r;
+            vel[i*3]     = (Math.random()-0.5) * 0.04;
+            vel[i*3 + 1] = 0.005 + Math.random() * 0.04;
+            vel[i*3 + 2] = (Math.random()-0.5) * 0.04;
+            life[i] = mLife[i] = 5 + Math.random() * 12;
+          }
+        }
+        if (moonDustMesh) moonDustMesh.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // 银河流动动画
+      if (galaxyInScene && galaxyField && galaxyPositions) {
+        const pos = galaxyPositions;
+        const vel = galaxyVel;
+        const t   = clock.getElapsedTime();
+        const count = pos.length / 3;
+        for (let i = 0; i < count; i++) {
+          pos[i*3]     += vel[i*3];
+          pos[i*3 + 1] += vel[i*3 + 1];
+          pos[i*3 + 2] += vel[i*3 + 2];
+        }
+        galaxyField.rotation.y += 0.00008;
+        galaxyField.geometry.attributes.position.needsUpdate = true;
+      }
+
       if (gameOver || shieldBreakActive) {
         return;
       }
