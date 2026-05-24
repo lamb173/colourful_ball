@@ -453,9 +453,10 @@
     }
     function hideEarth() {
       console.log('[EARTH] hideEarth()');
-      try { if (earthModel && earthInScene) { scene.remove(earthModel); earthInScene = false; } }
+      try { if (earthModel && earthInScene) { scene.remove(earthModel); earthInScene = false; }
         if (earthAtmosphere && earthAtmInScene) { scene.remove(earthAtmosphere); earthAtmInScene = false; }
         if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
+      }
       catch(e) { console.error('[EARTH] hideEarth ERROR:', e); }
     }
 
@@ -509,8 +510,9 @@
     }
     function hideMoonBase() {
       console.log('[MOON] hideMoonBase()');
-      try { if (moonBaseModel && moonBaseInScene) { scene.remove(moonBaseModel); moonBaseInScene = false; } }
+      try { if (moonBaseModel && moonBaseInScene) { scene.remove(moonBaseModel); moonBaseInScene = false; }
         if (moonDustField && moonDustInScene) { scene.remove(moonDustField); moonDustInScene = false; }
+      }
       catch(e) { console.error('[MOON] hideMoonBase ERROR:', e); }
     }
 
@@ -579,10 +581,10 @@
         }
         if (starfieldInScene && saturnStarfield) {
           scene.remove(saturnStarfield);
-        if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
           starfieldInScene = false;
           console.log("[SATURN-SKY] removed from scene");
         }
+        if (galaxyField && galaxyInScene) { scene.remove(galaxyField); galaxyInScene = false; }
       } catch(e) {
         console.error("[SATURN] hideSaturn ERROR:", e);
       }
