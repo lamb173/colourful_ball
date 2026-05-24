@@ -278,7 +278,10 @@
 
     // ─── 创建第5关专属星空 ───
     // ─── 辅助：生成圆形纹理（让 Points 粒子变圆） ───
+    // 缓存圆形纹理（只创建一次，r128 兼容）
+    let _circleTexCache = null;
     function createCircleTexture(size) {
+      if (_circleTexCache) return _circleTexCache;
       size = size || 64;
       const c = document.createElement('canvas');
       c.width = c.height = size;
@@ -288,8 +291,12 @@
       ctx.arc(size/2, size/2, size/2 * 0.92, 0, Math.PI*2);
       ctx.fillStyle = '#fff';
       ctx.fill();
-      const tex = new THREE.CanvasTexture(c);
+      // r128: 用 Texture(canvas) 而非 CanvasTexture
+      const tex = new THREE.Texture(c);
       tex.needsUpdate = true;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      _circleTexCache = tex;
       return tex;
     }
 
@@ -385,7 +392,7 @@
       dustGeo.setAttribute('position',  new THREE.BufferAttribute(dPos, 3));
       dustGeo.setAttribute('color',     new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.55,
+        size: 0.4,
         map: createCircleTexture(64),
         alphaTest: 0.08,
         vertexColors: true,
@@ -723,7 +730,7 @@
       dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
       dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.5, map: createCircleTexture(64), alphaTest: 0.08,
+        size: 0.35, map: createCircleTexture(64), alphaTest: 0.08,
         vertexColors: true, transparent: true, opacity: 0.65,
         sizeAttenuation: true, fog: false, depthWrite: false,
       });
@@ -819,7 +826,7 @@
       dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
       dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.4, map: createCircleTexture(64), alphaTest: 0.08,
+        size: 0.3, map: createCircleTexture(64), alphaTest: 0.08,
         vertexColors: true, transparent: true, opacity: 0.6,
         sizeAttenuation: true, fog: false, depthWrite: false,
       });
@@ -4666,18 +4673,18 @@
       // 关卡3D模型旋转动画 + 跟随球体
       // 第1关 地球
       if (earthInScene && earthModel) {
-        earthModel.rotation.y += 0.02;
-        if (sphere) { earthModel.position.x = -10; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 20; }
+        earthModel.rotation.y += 0.01;
+        if (sphere) { earthModel.position.x = -22; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 20; }
       }
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
-        moonBaseModel.rotation.y += 0.02;
-        if (sphere) { moonBaseModel.position.x = 10; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
+        moonBaseModel.rotation.y += 0.01;
+        if (sphere) { moonBaseModel.position.x = 22; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
       }
       // 第5关 土星
       if (saturnInScene && saturnModel) {
-        saturnModel.rotation.y += 0.02;
-        if (sphere) { saturnModel.position.x = 14; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 22; }
+        saturnModel.rotation.y += 0.01;
+        if (sphere) { saturnModel.position.x = 26; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 22; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
@@ -4746,6 +4753,7 @@
           if (life[i] <= 0 || dx*dx + dy*dy + dz*dz > 3600) {
             const theta = Math.random() * Math.PI * 2;
             const r     = 8 + Math.random() * 50;
+            // 粒子重生位置相对于球（通过 group 的 Z 偏移实现）
             pos[i*3]     = Math.cos(theta) * r;
             pos[i*3 + 1] = (Math.random() - 0.5) * 6;
             pos[i*3 + 2] = Math.sin(theta) * r;
