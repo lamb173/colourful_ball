@@ -1727,11 +1727,11 @@
     scene.add(mainLight);
     scene.add(mainLight.target);
 
-    const fillLight = new THREE.PointLight(0x4466ff, 2.5, 20);
+    const fillLight = new THREE.PointLight(0x4466ff, 2.5, 60);
     scene.add(fillLight);
-    const backLight = new THREE.PointLight(0xff8844, 1.8, 16);
+    const backLight = new THREE.PointLight(0xff8844, 1.8, 50);
     scene.add(backLight);
-    scene.add(new THREE.AmbientLight(0x223366, 0.8));
+    scene.add(new THREE.AmbientLight(0x334466, 1.2));
 
     // ═══════════════════════════════════════════════════════
     //  运动参数
@@ -4297,18 +4297,18 @@
       // 关卡3D模型旋转动画 + 跟随球体
       // 第1关 地球
       if (earthInScene && earthModel) {
-        earthModel.rotation.y += 0.003;
-        if (sphere) { earthModel.position.x = 12; earthModel.position.y = -2; earthModel.position.z = sphere.position.z + 50; }
+        earthModel.rotation.y += 0.001;
+        if (sphere) { earthModel.position.x = 12; earthModel.position.y = -2; earthModel.position.z = sphere.position.z + 20; }
       }
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
-        moonBaseModel.rotation.y += 0.005;
-        if (sphere) { moonBaseModel.position.x = -10; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 45; }
+        moonBaseModel.rotation.y += 0.002;
+        if (sphere) { moonBaseModel.position.x = -10; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
       }
       // 第5关 土星
       if (saturnInScene && saturnModel) {
-        saturnModel.rotation.y += 0.08;
-        if (sphere) { saturnModel.position.x = 14; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 55; }
+        saturnModel.rotation.y += 0.02;
+        if (sphere) { saturnModel.position.x = 14; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 22; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
