@@ -659,176 +659,244 @@ function showSaturn() {
     }
     // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
     function createStageBackground(stageId) {
-      console.log('[BG] Creating background for stage', stageId);
+      console.log('[BG] Creating SCENIC background for stage', stageId);
       const group = new THREE.Group();
 
       if (stageId === 1) {
-        // ─── 第1关 地球轨道：深蓝/绿色调星云 ───
-        // 天空球：深蓝紫渐变
+        // ─── Stage 1: Earth Orbit - Blue sky, green land, clouds, lake ───
+
+        // 1. Sky dome (LIGHT BLUE, not black!)
         const skyGeo = new THREE.SphereGeometry(500, 32, 32);
         const skyMat = new THREE.MeshBasicMaterial({
-          color: 0x050510,
+          color: 0x87CEEB,
           side: THREE.BackSide,
           fog: false,
         });
         const sky = new THREE.Mesh(skyGeo, skyMat);
         group.add(sky);
 
-        // 星云粒子：蓝/绿色调，AdditiveBlending
-        const nebulaCount = 2000;
-        const nebPos = new Float32Array(nebulaCount * 3);
-        const nebCol = new Float32Array(nebulaCount * 3);
-        for (let i = 0; i < nebulaCount; i++) {
-          const theta = Math.random() * Math.PI * 2;
-          const phi   = Math.acos(2 * Math.random() - 1);
-          const r     = 200 + Math.random() * 300;
-          nebPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
-          nebPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.4;
-          nebPos[i*3 + 2] = r * Math.cos(phi);
-          // 地球大气色调：蓝/绿/紫
-          const t = Math.random();
-          if (t < 0.4) {
-            nebCol[i*3]     = 0.2 + Math.random()*0.3;  // 蓝
-            nebCol[i*3 + 1] = 0.3 + Math.random()*0.4;
-            nebCol[i*3 + 2] = 0.8 + Math.random()*0.2;
-          } else if (t < 0.7) {
-            nebCol[i*3]     = 0.1 + Math.random()*0.2;  // 绿
-            nebCol[i*3 + 1] = 0.4 + Math.random()*0.3;
-            nebCol[i*3 + 2] = 0.2 + Math.random()*0.2;
-          } else {
-            nebCol[i*3]     = 0.5 + Math.random()*0.3;  // 紫
-            nebCol[i*3 + 1] = 0.1 + Math.random()*0.2;
-            nebCol[i*3 + 2] = 0.6 + Math.random()*0.3;
+        // 2. Ground plane (green, far below platforms)
+        const groundGeo = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos = groundGeo.attributes.position;
+        for (let i = 0; i < gPos.count; i++) {
+          const x = gPos.getX(i);
+          const y = gPos.getY(i);
+          const dist = Math.sqrt(x*x + y*y);
+          if (dist < 800) {
+            gPos.setZ(i, (Math.sin(x*0.01)*3 + Math.cos(y*0.01)*3) * 0.6);
           }
         }
-        const nebGeo = new THREE.BufferGeometry();
-        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
-        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol, 3));
-        const nebMat = new THREE.PointsMaterial({
-          size: 3.0, map: createCircleTexture(48),
-          vertexColors: true, transparent: true, opacity: 0.5,
-          sizeAttenuation: true, fog: false, depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        });
-        group.add(new THREE.Points(nebGeo, nebMat));
+        gPos.needsUpdate = true;
+        groundGeo.computeVertexNormals();
+        const groundMat = new THREE.MeshPhongMaterial({ color: 0x3a7d2a, fog: false });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI/2;
+        ground.position.y = -50;
+        ground.receiveShadow = true;
+        group.add(ground);
 
-        // 远处小太阳（亮黄点光源效果）
-        const sunGeo = new THREE.SphereGeometry(8, 16, 16);
-        const sunMat = new THREE.MeshBasicMaterial({
-          color: 0xffee88, transparent: true, opacity: 0.9, fog: false,
+        // 3. Lake (blue plane)
+        const lakeGeo = new THREE.PlaneGeometry(250, 180);
+        const lakeMat = new THREE.MeshPhongMaterial({
+          color: 0x2288cc, transparent: true, opacity: 0.7, fog: false,
+          shininess: 80,
         });
-        const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.set(200, 80, -150);
-        group.add(sun);
-        console.log('[BG] Earth orbit background done');
+        const lake = new THREE.Mesh(lakeGeo, lakeMat);
+        lake.rotation.x = -Math.PI/2;
+        lake.position.set(300, -49.5, 200);
+        group.add(lake);
+
+        // 4. Clouds (white sprites)
+        const cloudTex = createCircleTexture(64);
+        if (!group.userData) group.userData = {};
+        if (!group.userData.clouds) group.userData.clouds = [];
+        for (let i = 0; i < 20; i++) {
+          const mat = new THREE.SpriteMaterial({
+            map: cloudTex, color: 0xffffff, transparent: true, opacity: 0.88,
+            fog: false, blending: THREE.AdditiveBlending, depthWrite: false,
+          });
+          const sprite = new THREE.Sprite(mat);
+          const scale = 35 + Math.random()*55;
+          sprite.scale.set(scale, scale*0.6, 1);
+          sprite.position.set(
+            (Math.random()-0.5)*1400,
+            50 + Math.random()*100,
+            (Math.random()-0.5)*1400,
+          );
+          sprite.userData.isCloud = true;
+          group.add(sprite);
+          group.userData.clouds.push(sprite);
+        }
+
+        console.log('[BG] Earth scenic background done');
 
       } else if (stageId === 2) {
-        // ─── 第2关 月球中转站：灰/白色调，远处小地球 ───
+        // ─── Stage 2: Moon Base - Cratered ground, spacecraft ───
+
+        // 1. Sky dome (dark gray-blue)
         const skyGeo = new THREE.SphereGeometry(500, 32, 32);
         const skyMat = new THREE.MeshBasicMaterial({
-          color: 0x080810,
+          color: 0x0a0a1a,
           side: THREE.BackSide,
           fog: false,
         });
         const sky = new THREE.Mesh(skyGeo, skyMat);
         group.add(sky);
 
-        // 月球尘埃星云：灰白/暗灰
-        const nebulaCount = 1800;
-        const nebPos = new Float32Array(nebulaCount * 3);
-        const nebCol = new Float32Array(nebulaCount * 3);
-        for (let i = 0; i < nebulaCount; i++) {
-          const theta = Math.random() * Math.PI * 2;
-          const phi   = Math.acos(2 * Math.random() - 1);
-          const r     = 180 + Math.random() * 320;
-          nebPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
-          nebPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.35;
-          nebPos[i*3 + 2] = r * Math.cos(phi);
-          const t = Math.random();
-          if (t < 0.5) {
-            nebCol[i*3]     = 0.5 + Math.random()*0.3;  // 灰白
-            nebCol[i*3 + 1] = 0.5 + Math.random()*0.3;
-            nebCol[i*3 + 2] = 0.55 + Math.random()*0.3;
-          } else if (t < 0.8) {
-            nebCol[i*3]     = 0.7 + Math.random()*0.25; // 亮灰
-            nebCol[i*3 + 1] = 0.7 + Math.random()*0.25;
-            nebCol[i*3 + 2] = 0.75 + Math.random()*0.2;
-          } else {
-            nebCol[i*3]     = 0.2 + Math.random()*0.15; // 暗灰
-            nebCol[i*3 + 1] = 0.2 + Math.random()*0.15;
-            nebCol[i*3 + 2] = 0.22 + Math.random()*0.13;
-          }
+        // 2. Cratered ground (gray, with bumps)
+        const groundGeo = new THREE.PlaneGeometry(2000, 2000, 80, 80);
+        const gPos = groundGeo.attributes.position;
+        const craters = [];
+        for (let c = 0; c < 80; c++) {
+          craters.push({
+            x: (Math.random()-0.5)*1800,
+            y: (Math.random()-0.5)*1800,
+            r: 15 + Math.random()*55,
+            depth: 3 + Math.random()*8,
+          });
         }
-        const nebGeo = new THREE.BufferGeometry();
-        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
-        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol, 3));
-        const nebMat = new THREE.PointsMaterial({
-          size: 2.5, map: createCircleTexture(48),
-          vertexColors: true, transparent: true, opacity: 0.45,
-          sizeAttenuation: true, fog: false, depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        });
-        group.add(new THREE.Points(nebGeo, nebMat));
+        for (let i = 0; i < gPos.count; i++) {
+          let x = gPos.getX(i);
+          let y = gPos.getY(i);
+          let z = 0;
+          for (const cr of craters) {
+            const dist = Math.sqrt((x-cr.x)**2 + (y-cr.y)**2);
+            if (dist < cr.r) {
+              z -= cr.depth * (1 - dist/cr.r);
+            }
+          }
+          z += (Math.sin(x*0.02)*2 + Math.cos(y*0.02)*2) * 0.4;
+          gPos.setZ(i, z);
+        }
+        gPos.needsUpdate = true;
+        groundGeo.computeVertexNormals();
+        const groundMat = new THREE.MeshPhongMaterial({ color: 0x888888, fog: false });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI/2;
+        ground.position.y = -50;
+        ground.receiveShadow = true;
+        group.add(ground);
 
-        // 远处小地球（蓝绿色亮点）
-        const earthGeo = new THREE.SphereGeometry(12, 16, 16);
-        const earthMat = new THREE.MeshBasicMaterial({
-          color: 0x2288cc, transparent: true, opacity: 0.7, fog: false,
-        });
-        const distantEarth = new THREE.Mesh(earthGeo, earthMat);
-        distantEarth.position.set(-180, 40, -200);
+        // 3. Simple spacecraft (group of basic shapes)
+        const ship = new THREE.Group();
+        // Body: cylinder
+        const bodyG = new THREE.CylinderGeometry(3.5, 3.5, 22, 12);
+        const bodyM = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+        const body = new THREE.Mesh(bodyG, bodyM);
+        body.rotation.x = Math.PI/2;
+        ship.add(body);
+        // Nose: cone
+        const noseG = new THREE.ConeGeometry(3.5, 7, 12);
+        const noseM = new THREE.MeshPhongMaterial({ color: 0xdd4444 });
+        const nose = new THREE.Mesh(noseG, noseM);
+        nose.rotation.x = Math.PI/2;
+        nose.position.z = 14;
+        ship.add(nose);
+        // Wings
+        const wingG = new THREE.BoxGeometry(14, 0.6, 5);
+        const wingM = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
+        const wingL = new THREE.Mesh(wingG, wingM);
+        wingL.position.set(-6, 0, -3.5);
+        ship.add(wingL);
+        const wingR = new THREE.Mesh(wingG, wingM);
+        wingR.position.set(6, 0, -3.5);
+        ship.add(wingR);
+        // Engine glow
+        const engineG = new THREE.SphereGeometry(1.8, 8, 8);
+        const engineM = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.8 });
+        const engine = new THREE.Mesh(engineG, engineM);
+        engine.position.z = -12;
+        ship.add(engine);
+
+        ship.position.set(-120, -42, 100);
+        ship.rotation.y = Math.PI*0.2;
+        ship.rotation.x = -0.15;
+        group.add(ship);
+
+        // 4. Distant Earth (small blue-green sphere)
+        const earthG = new THREE.SphereGeometry(14, 16, 16);
+        const earthM = new THREE.MeshBasicMaterial({ color: 0x2288cc, transparent: true, opacity: 0.65, fog: false });
+        const distantEarth = new THREE.Mesh(earthG, earthM);
+        distantEarth.position.set(-200, 50, -220);
         group.add(distantEarth);
-        console.log('[BG] Moon transfer background done');
+
+        console.log('[BG] Moon scenic background done');
 
       } else if (stageId === 5) {
-        // ─── 第5关 土星风暴：金黄/琥珀色调星云 ───
+        // ─── Stage 5: Saturn Storm - Yellowish ground, vortex ───
+
+        // 1. Sky dome (amber/gold)
         const skyGeo = new THREE.SphereGeometry(500, 32, 32);
         const skyMat = new THREE.MeshBasicMaterial({
-          color: 0x100800,
+          color: 0x2a1800,
           side: THREE.BackSide,
           fog: false,
         });
         const sky = new THREE.Mesh(skyGeo, skyMat);
         group.add(sky);
 
-        // 土星背景星云：金黄/琥珀
-        const nebulaCount = 2200;
-        const nebPos = new Float32Array(nebulaCount * 3);
-        const nebCol = new Float32Array(nebulaCount * 3);
-        for (let i = 0; i < nebulaCount; i++) {
-          const theta = Math.random() * Math.PI * 2;
-          const phi   = Math.acos(2 * Math.random() - 1);
-          const r     = 220 + Math.random() * 280;
-          nebPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
-          nebPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.5;
-          nebPos[i*3 + 2] = r * Math.cos(phi);
+        // 2. Yellowish ground with terrain
+        const groundGeo = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos = groundGeo.attributes.position;
+        for (let i = 0; i < gPos.count; i++) {
+          const x = gPos.getX(i);
+          const y = gPos.getY(i);
+          const dist = Math.sqrt(x*x + y*y);
+          let z = 0;
+          if (dist < 700) {
+            z += Math.sin(dist*0.025)*4 + Math.sin(x*0.018)*3;
+          }
+          gPos.setZ(i, z);
+        }
+        gPos.needsUpdate = true;
+        groundGeo.computeVertexNormals();
+        const groundMat = new THREE.MeshPhongMaterial({ color: 0xaa7744, fog: false });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI/2;
+        ground.position.y = -50;
+        ground.receiveShadow = true;
+        group.add(ground);
+
+        // 3. Vortex particles on ground (swirling pattern)
+        const vCount = 900;
+        const vPos = new Float32Array(vCount * 3);
+        const vCol = new Float32Array(vCount * 3);
+        for (let i = 0; i < vCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = 40 + Math.random() * 350;
+          vPos[i*3]     = Math.cos(angle) * r;
+          vPos[i*3 + 1] = -49;
+          vPos[i*3 + 2] = Math.sin(angle) * r;
           const t = Math.random();
           if (t < 0.5) {
-            nebCol[i*3]     = 0.7 + Math.random()*0.25; // 金黄
-            nebCol[i*3 + 1] = 0.5 + Math.random()*0.25;
-            nebCol[i*3 + 2] = 0.1 + Math.random()*0.15;
+            vCol[i*3]     = 0.75 + Math.random()*0.2;
+            vCol[i*3 + 1] = 0.55 + Math.random()*0.2;
+            vCol[i*3 + 2] = 0.1;
           } else if (t < 0.8) {
-            nebCol[i*3]     = 0.9 + Math.random()*0.1;  // 琥珀
-            nebCol[i*3 + 1] = 0.6 + Math.random()*0.2;
-            nebCol[i*3 + 2] = 0.15 + Math.random()*0.1;
+            vCol[i*3]     = 0.9 + Math.random()*0.1;
+            vCol[i*3 + 1] = 0.65 + Math.random()*0.15;
+            vCol[i*3 + 2] = 0.15;
           } else {
-            nebCol[i*3]     = 0.4 + Math.random()*0.3;  // 暗金
-            nebCol[i*3 + 1] = 0.25 + Math.random()*0.15;
-            nebCol[i*3 + 2] = 0.05 + Math.random()*0.08;
+            vCol[i*3]     = 0.5 + Math.random()*0.2;
+            vCol[i*3 + 1] = 0.35 + Math.random()*0.15;
+            vCol[i*3 + 2] = 0.08;
           }
         }
-        const nebGeo = new THREE.BufferGeometry();
-        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
-        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol, 3));
-        const nebMat = new THREE.PointsMaterial({
-          size: 3.5, map: createCircleTexture(48),
-          vertexColors: true, transparent: true, opacity: 0.55,
-          sizeAttenuation: true, fog: false, depthWrite: false,
-          blending: THREE.AdditiveBlending,
+        const vGeo = new THREE.BufferGeometry();
+        vGeo.setAttribute('position', new THREE.BufferAttribute(vPos, 3));
+        vGeo.setAttribute('color',    new THREE.BufferAttribute(vCol, 3));
+        const vMat = new THREE.PointsMaterial({
+          size: 2.8, map: createCircleTexture(48), vertexColors: true,
+          transparent: true, opacity: 0.65, sizeAttenuation: true,
+          fog: false, depthWrite: false, blending: THREE.AdditiveBlending,
         });
-        group.add(new THREE.Points(nebGeo, nebMat));
-        console.log('[BG] Saturn storm background done');
+        const vortex = new THREE.Points(vGeo, vMat);
+        vortex.userData.isVortex = true;
+        group.add(vortex);
+
+        console.log('[BG] Saturn scenic background done');
       }
+
       return group;
     }
 
@@ -4816,6 +4884,36 @@ function showSaturn() {
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
+      }
+      // 主题背景 Z 跟随球（防止背景落在后面）
+      if (sphere) {
+        if (earthBgInScene && earthBgGroup) earthBgGroup.position.z = sphere.position.z;
+        if (moonBgInScene && moonBgGroup) moonBgGroup.position.z = sphere.position.z;
+        if (saturnBgInScene && saturnBgGroup) saturnBgGroup.position.z = sphere.position.z;
+      }
+      // 云朵缓慢漂移（地球关卡）
+      if (earthBgInScene && earthBgGroup && earthBgGroup.userData && earthBgGroup.userData.clouds) {
+        const t = clock.getElapsedTime();
+        for (let i = 0; i < earthBgGroup.userData.clouds.length; i++) {
+          const c = earthBgGroup.userData.clouds[i];
+          c.position.x += Math.sin(t * 0.1 + i) * 0.02;
+          c.position.y += Math.cos(t * 0.08 + i * 0.5) * 0.015;
+        }
+      }
+      // 土星漩涡粒子动画（地面漩涡旋转）
+      if (saturnBgInScene && saturnBgGroup) {
+        saturnBgGroup.children.forEach(child => {
+          if (child.isPoints && child.userData && child.userData.isVortex) {
+            const pos = child.geometry.attributes.position;
+            const t = clock.getElapsedTime();
+            for (let i = 0; i < pos.count; i++) {
+              const angle = Math.atan2(pos.getY(i), pos.getX(i)) + 0.003;
+              const r = Math.sqrt(pos.getX(i)*pos.getX(i) + pos.getY(i)*pos.getY(i));
+              pos.setXY(i, Math.cos(angle) * r, Math.sin(angle) * r);
+            }
+            pos.needsUpdate = true;
+          }
+        });
       }
       // 主题背景缓慢旋转
       if (earthBgInScene && earthBgGroup) earthBgGroup.rotation.y += 0.00003;
