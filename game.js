@@ -119,6 +119,14 @@
     let starfieldInScene = false;
     let saturnLoadError  = false;
     let preloadStarted = false;
+    // ─── 关卡主题背景（程序化天空球 + 星云粒子） ───
+    let earthBgGroup    = null;
+    let moonBgGroup     = null;
+    let saturnBgGroup   = null;
+    let earthBgInScene  = false;
+    let moonBgInScene   = false;
+    let saturnBgInScene = false;
+
     // ─── 第1关 地球大气层粒子 ───
     let earthAtmosphere   = null;   // THREE.Group
     let earthDustPositions  = null;
@@ -446,6 +454,10 @@
           console.log('[EARTH-ATM] added to scene');
         }
         if (earthAtmosphere) earthAtmosphere.visible = true;
+        // 4. 主题背景
+        if (!earthBgGroup) earthBgGroup = createStageBackground(1);
+        if (earthBgGroup && !earthBgInScene) { scene.add(earthBgGroup); earthBgInScene = true; }
+        if (earthBgGroup) earthBgGroup.visible = true;
       } catch(e) { console.error('[EARTH] showEarth ERROR:', e); }
     }
 
@@ -454,6 +466,7 @@ function hideEarth() {
       try {
         if (earthModel && earthInScene) { earthModel.visible = false; console.log('[EARTH] model hidden'); }
         if (earthAtmosphere && earthAtmInScene) { earthAtmosphere.visible = false; console.log('[EARTH-ATM] hidden'); }
+        if (earthBgGroup && earthBgInScene) { earthBgGroup.visible = false; }
       } catch(e) { console.error('[EARTH] hideEarth ERROR:', e); }
     }
 
@@ -489,7 +502,7 @@ function hideEarth() {
         if (moonBaseModel) {
           if (!moonBaseInScene) { scene.add(moonBaseModel); moonBaseInScene = true; }
           moonBaseModel.visible = true;
-          moonBaseModel.position.x = 16;
+          moonBaseModel.position.x = 22;
           moonBaseModel.position.y = -3;
           if (sphere) moonBaseModel.position.z = sphere.position.z + 18;
           console.log('[MOON] model shown (visible=true)');
@@ -502,6 +515,10 @@ function hideEarth() {
           console.log('[MOON-DUST] added to scene');
         }
         if (moonDustField) moonDustField.visible = true;
+        // 4. 主题背景
+        if (!moonBgGroup) moonBgGroup = createStageBackground(2);
+        if (moonBgGroup && !moonBgInScene) { scene.add(moonBgGroup); moonBgInScene = true; }
+        if (moonBgGroup) moonBgGroup.visible = true;
       } catch(e) { console.error('[MOON] showMoonBase ERROR:', e); }
     }
 
@@ -510,6 +527,7 @@ function hideMoonBase() {
       try {
         if (moonBaseModel && moonBaseInScene) { moonBaseModel.visible = false; console.log('[MOON] model hidden'); }
         if (moonDustField && moonDustInScene) { moonDustField.visible = false; console.log('[MOON-DUST] hidden'); }
+        if (moonBgGroup && moonBgInScene) { moonBgGroup.visible = false; }
       } catch(e) { console.error('[MOON] hideMoonBase ERROR:', e); }
     }
 
@@ -564,6 +582,10 @@ function showSaturn() {
           starfieldInScene = true;
           console.log("[SATURN-SKY] added to scene");
         }
+        // 主题背景
+        if (!saturnBgGroup) saturnBgGroup = createStageBackground(5);
+        if (saturnBgGroup && !saturnBgInScene) { scene.add(saturnBgGroup); saturnBgInScene = true; }
+        if (saturnBgGroup) saturnBgGroup.visible = true;
       } catch(e) {
         console.error("[SATURN] showSaturn ERROR:", e);
       }
@@ -580,6 +602,7 @@ function showSaturn() {
           scene.remove(saturnStarfield);
           starfieldInScene = false;
           console.log("[SATURN-SKY] removed from scene");
+          if (saturnBgGroup && saturnBgInScene) { saturnBgGroup.visible = false; }
         }
       } catch(e) {
         console.error("[SATURN] hideSaturn ERROR:", e);
@@ -635,6 +658,180 @@ function showSaturn() {
       }
     }
     // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
+    function createStageBackground(stageId) {
+      console.log('[BG] Creating background for stage', stageId);
+      const group = new THREE.Group();
+
+      if (stageId === 1) {
+        // ─── 第1关 地球轨道：深蓝/绿色调星云 ───
+        // 天空球：深蓝紫渐变
+        const skyGeo = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat = new THREE.MeshBasicMaterial({
+          color: 0x050510,
+          side: THREE.BackSide,
+          fog: false,
+        });
+        const sky = new THREE.Mesh(skyGeo, skyMat);
+        group.add(sky);
+
+        // 星云粒子：蓝/绿色调，AdditiveBlending
+        const nebulaCount = 2000;
+        const nebPos = new Float32Array(nebulaCount * 3);
+        const nebCol = new Float32Array(nebulaCount * 3);
+        for (let i = 0; i < nebulaCount; i++) {
+          const theta = Math.random() * Math.PI * 2;
+          const phi   = Math.acos(2 * Math.random() - 1);
+          const r     = 200 + Math.random() * 300;
+          nebPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+          nebPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.4;
+          nebPos[i*3 + 2] = r * Math.cos(phi);
+          // 地球大气色调：蓝/绿/紫
+          const t = Math.random();
+          if (t < 0.4) {
+            nebCol[i*3]     = 0.2 + Math.random()*0.3;  // 蓝
+            nebCol[i*3 + 1] = 0.3 + Math.random()*0.4;
+            nebCol[i*3 + 2] = 0.8 + Math.random()*0.2;
+          } else if (t < 0.7) {
+            nebCol[i*3]     = 0.1 + Math.random()*0.2;  // 绿
+            nebCol[i*3 + 1] = 0.4 + Math.random()*0.3;
+            nebCol[i*3 + 2] = 0.2 + Math.random()*0.2;
+          } else {
+            nebCol[i*3]     = 0.5 + Math.random()*0.3;  // 紫
+            nebCol[i*3 + 1] = 0.1 + Math.random()*0.2;
+            nebCol[i*3 + 2] = 0.6 + Math.random()*0.3;
+          }
+        }
+        const nebGeo = new THREE.BufferGeometry();
+        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
+        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol, 3));
+        const nebMat = new THREE.PointsMaterial({
+          size: 3.0, map: createCircleTexture(48),
+          vertexColors: true, transparent: true, opacity: 0.5,
+          sizeAttenuation: true, fog: false, depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        group.add(new THREE.Points(nebGeo, nebMat));
+
+        // 远处小太阳（亮黄点光源效果）
+        const sunGeo = new THREE.SphereGeometry(8, 16, 16);
+        const sunMat = new THREE.MeshBasicMaterial({
+          color: 0xffee88, transparent: true, opacity: 0.9, fog: false,
+        });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sun.position.set(200, 80, -150);
+        group.add(sun);
+        console.log('[BG] Earth orbit background done');
+
+      } else if (stageId === 2) {
+        // ─── 第2关 月球中转站：灰/白色调，远处小地球 ───
+        const skyGeo = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat = new THREE.MeshBasicMaterial({
+          color: 0x080810,
+          side: THREE.BackSide,
+          fog: false,
+        });
+        const sky = new THREE.Mesh(skyGeo, skyMat);
+        group.add(sky);
+
+        // 月球尘埃星云：灰白/暗灰
+        const nebulaCount = 1800;
+        const nebPos = new Float32Array(nebulaCount * 3);
+        const nebCol = new Float32Array(nebulaCount * 3);
+        for (let i = 0; i < nebulaCount; i++) {
+          const theta = Math.random() * Math.PI * 2;
+          const phi   = Math.acos(2 * Math.random() - 1);
+          const r     = 180 + Math.random() * 320;
+          nebPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+          nebPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.35;
+          nebPos[i*3 + 2] = r * Math.cos(phi);
+          const t = Math.random();
+          if (t < 0.5) {
+            nebCol[i*3]     = 0.5 + Math.random()*0.3;  // 灰白
+            nebCol[i*3 + 1] = 0.5 + Math.random()*0.3;
+            nebCol[i*3 + 2] = 0.55 + Math.random()*0.3;
+          } else if (t < 0.8) {
+            nebCol[i*3]     = 0.7 + Math.random()*0.25; // 亮灰
+            nebCol[i*3 + 1] = 0.7 + Math.random()*0.25;
+            nebCol[i*3 + 2] = 0.75 + Math.random()*0.2;
+          } else {
+            nebCol[i*3]     = 0.2 + Math.random()*0.15; // 暗灰
+            nebCol[i*3 + 1] = 0.2 + Math.random()*0.15;
+            nebCol[i*3 + 2] = 0.22 + Math.random()*0.13;
+          }
+        }
+        const nebGeo = new THREE.BufferGeometry();
+        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
+        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol, 3));
+        const nebMat = new THREE.PointsMaterial({
+          size: 2.5, map: createCircleTexture(48),
+          vertexColors: true, transparent: true, opacity: 0.45,
+          sizeAttenuation: true, fog: false, depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        group.add(new THREE.Points(nebGeo, nebMat));
+
+        // 远处小地球（蓝绿色亮点）
+        const earthGeo = new THREE.SphereGeometry(12, 16, 16);
+        const earthMat = new THREE.MeshBasicMaterial({
+          color: 0x2288cc, transparent: true, opacity: 0.7, fog: false,
+        });
+        const distantEarth = new THREE.Mesh(earthGeo, earthMat);
+        distantEarth.position.set(-180, 40, -200);
+        group.add(distantEarth);
+        console.log('[BG] Moon transfer background done');
+
+      } else if (stageId === 5) {
+        // ─── 第5关 土星风暴：金黄/琥珀色调星云 ───
+        const skyGeo = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat = new THREE.MeshBasicMaterial({
+          color: 0x100800,
+          side: THREE.BackSide,
+          fog: false,
+        });
+        const sky = new THREE.Mesh(skyGeo, skyMat);
+        group.add(sky);
+
+        // 土星背景星云：金黄/琥珀
+        const nebulaCount = 2200;
+        const nebPos = new Float32Array(nebulaCount * 3);
+        const nebCol = new Float32Array(nebulaCount * 3);
+        for (let i = 0; i < nebulaCount; i++) {
+          const theta = Math.random() * Math.PI * 2;
+          const phi   = Math.acos(2 * Math.random() - 1);
+          const r     = 220 + Math.random() * 280;
+          nebPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+          nebPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.5;
+          nebPos[i*3 + 2] = r * Math.cos(phi);
+          const t = Math.random();
+          if (t < 0.5) {
+            nebCol[i*3]     = 0.7 + Math.random()*0.25; // 金黄
+            nebCol[i*3 + 1] = 0.5 + Math.random()*0.25;
+            nebCol[i*3 + 2] = 0.1 + Math.random()*0.15;
+          } else if (t < 0.8) {
+            nebCol[i*3]     = 0.9 + Math.random()*0.1;  // 琥珀
+            nebCol[i*3 + 1] = 0.6 + Math.random()*0.2;
+            nebCol[i*3 + 2] = 0.15 + Math.random()*0.1;
+          } else {
+            nebCol[i*3]     = 0.4 + Math.random()*0.3;  // 暗金
+            nebCol[i*3 + 1] = 0.25 + Math.random()*0.15;
+            nebCol[i*3 + 2] = 0.05 + Math.random()*0.08;
+          }
+        }
+        const nebGeo = new THREE.BufferGeometry();
+        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
+        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol, 3));
+        const nebMat = new THREE.PointsMaterial({
+          size: 3.5, map: createCircleTexture(48),
+          vertexColors: true, transparent: true, opacity: 0.55,
+          sizeAttenuation: true, fog: false, depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        group.add(new THREE.Points(nebGeo, nebMat));
+        console.log('[BG] Saturn storm background done');
+      }
+      return group;
+    }
+
     function createEarthAtmosphere() {
       console.log('[EARTH-ATM] creating atmosphere...');
       const group = new THREE.Group();
@@ -4609,7 +4806,7 @@ function showSaturn() {
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
         moonBaseModel.rotation.y += 0.01;
-        if (sphere) { moonBaseModel.position.x = 16; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
+        if (sphere) { moonBaseModel.position.x = 22; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
       }
       // 第5关 土星
       if (saturnInScene && saturnModel) {
@@ -4620,6 +4817,10 @@ function showSaturn() {
       if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
       }
+      // 主题背景缓慢旋转
+      if (earthBgInScene && earthBgGroup) earthBgGroup.rotation.y += 0.00003;
+      if (moonBgInScene && moonBgGroup) moonBgGroup.rotation.y += 0.00002;
+      if (saturnBgInScene && saturnBgGroup) saturnBgGroup.rotation.y += 0.00004;
       // 沙尘粒子动画（第5关，飞扬尘土效果）
       if (starfieldInScene && saturnDustPositions && saturnDustPhase) {
         // 星空+尘土整体跟随球
