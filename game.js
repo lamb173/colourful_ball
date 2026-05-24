@@ -92,6 +92,64 @@
 
     const CAM_OFFSET = new THREE.Vector3(0, 5.5, -13);
 
+    // ══════════════════════════════════════════════════════
+    //  土星3D模型（第5关 土星风暴 场景包围）
+    // ══════════════════════════════════════════════════════
+    let saturnModel    = null;   // 加载后的 THREE.Group
+    let saturnLoaded   = false;  // 是否已加载完成
+    let saturnInScene = false;  // 是否已添加到场景
+    const SATURN_POS  = new THREE.Vector3(0, -40, -350); // 远处低位，包围轨道
+    const SATURN_SCALE = 55;  // 超大缩放，包围感
+
+    function loadSaturnModel(callback) {
+      if (saturnLoaded) { callback && callback(); return; }
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        './assets/models/saturn_20260524.glb',
+        (gltf) => {
+          saturnModel = gltf.scene;
+          saturnModel.position.copy(SATURN_POS);
+          saturnModel.scale.set(SATURN_SCALE, SATURN_SCALE, SATURN_SCALE);
+          saturnModel.rotation.set(0.3, 0, 0.15); // 光环倾斜
+          saturnModel.traverse(child => {
+            if (child.isMesh) {
+              child.frustumCulled = false;
+              if (child.material) child.material.side = THREE.DoubleSide;
+            }
+          });
+          saturnLoaded = true;
+          console.log('[SATURN] model loaded, scale=', SATURN_SCALE);
+          callback && callback();
+        },
+        (xhr) => {
+          console.log('[SATURN] ' + (xhr.loaded / xhr.total * 100).toFixed(1) + '% loaded');
+        },
+        (err) => {
+          console.error('[SATURN] load error:', err);
+        }
+      );
+    }
+
+    function showSaturn() {
+      if (!saturnLoaded) {
+        loadSaturnModel(() => { showSaturn(); });
+        return;
+      }
+      if (!saturnInScene && saturnModel) {
+        scene.add(saturnModel);
+        saturnInScene = true;
+        console.log('[SATURN] added to scene');
+      }
+    }
+
+    function hideSaturn() {
+      if (saturnInScene && saturnModel) {
+        scene.remove(saturnModel);
+        saturnInScene = false;
+        console.log('[SATURN] removed from scene');
+      }
+    }
+
     // ═══════════════════════════════════════════════════════
     //  星空
     // ═══════════════════════════════════════════════════════
@@ -3818,6 +3876,13 @@
         targetEl.classList.add('revealed');
         targetEl.classList.remove('completed');
       }
+
+      // 土星3D模型（第5关 土星风暴 场景包围）
+      if (gameMode === 'stages' && _currentStage && _currentStage.id === 5) {
+        showSaturn();
+      } else {
+        hideSaturn();
+      }
     }
 
     // ═══════════════════════════════════════════════════════
@@ -3843,6 +3908,11 @@
       updateBlackhole(dt);
       updateVictoryAnim(dt);
       updateShieldBreak(dt);
+
+      // 土星旋转动画（第5关 土星风暴 背景）
+      if (saturnInScene && saturnModel) {
+        saturnModel.rotation.y += 0.0008;
+      }
 
       if (gameOver || shieldBreakActive) {
         return;
