@@ -760,6 +760,52 @@ function showSaturn() {
       tex.needsUpdate = true;
       return tex;
     }
+
+    // ════════════════════════════════════════════════════════
+    //  createLightRibbons — 流动弯曲光带（TubeGeometry）
+    //  返回 Group，包含 2~3 条发光弯曲光带
+    // ════════════════════════════════════════════════════════
+    function createLightRibbons(stageId) {
+      const group = new THREE.Group();
+      let ribbons = [];
+
+      if (stageId === 1) {
+        // 地球：绿蓝色光带，柔和弯曲
+        ribbons = [
+          { pts: [[-180,90,-60],[-60,130,40],[80,70,-20],[200,110,80]], color: 0x44ddaa, emissive: 0x22aa88 },
+          { pts: [[-120,140,20],[20,100,120],[160,150,-30],[280,90,100]], color: 0x2288ff, emissive: 0x1155cc },
+        ];
+      } else if (stageId === 2) {
+        // 月球：灰白色光带，低对比度
+        ribbons = [
+          { pts: [[-300,100,-100],[-100,160,80],[100,80,-60],[300,120,100]], color: 0xaaaaaa, emissive: 0x666666 },
+          { pts: [[-200,180,60],[0,120,180],[200,160,-40],[350,100,120]], color: 0x888888, emissive: 0x444444 },
+        ];
+      } else if (stageId === 5) {
+        // 土星：金琥珀色光带
+        ribbons = [
+          { pts: [[-250,100,-80],[-80,150,60],[100,80,-40],[220,120,90]], color: 0xffaa44, emissive: 0xcc7700 },
+          { pts: [[-150,160,40],[50,110,140],[180,140,-20],[300,90,110]], color: 0xffdd88, emissive: 0xcc9900 },
+        ];
+      }
+
+      ribbons.forEach(function(rb) {
+        const pts = rb.pts.map(function(p) { return new THREE.Vector3(p[0], p[1], p[2]); });
+        const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+        const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.6, 8, false);
+        const mat = new THREE.MeshBasicMaterial({
+          color: rb.color, emissive: rb.emissive, emissiveIntensity: 0.9,
+          transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending,
+          fog: false, depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(tubeGeo, mat);
+        mesh.userData = { isRibbon: true, rotSpeed: 0.0008 + Math.random()*0.0006 };
+        group.add(mesh);
+      });
+
+      group.userData = { isRibbonGroup: true };
+      return group;
+    }
     function createStageBackground(stageId) {
       console.log('[BG] Creating SCENIC background for stage', stageId);
       const group = new THREE.Group();
@@ -798,32 +844,34 @@ function showSaturn() {
         group.add(ground);
 
         // 3. Lake (blue plane)
-        const lakeGeo = new THREE.PlaneGeometry(250, 180);
+        const lakeGeo = new THREE.PlaneGeometry(250, 180, 8, 8);
         const lakeMat = new THREE.MeshPhongMaterial({
           color: 0x2288cc, transparent: true, opacity: 0.7, fog: false,
-          shininess: 80,
+          shininess: 80, side: THREE.DoubleSide,
         });
         const lake = new THREE.Mesh(lakeGeo, lakeMat);
         lake.rotation.x = -Math.PI/2;
-        lake.position.set(100, -49.5, 60);
+        lake.position.set(100, -48, 60);
         group.add(lake);
 
-        // 4. Clouds (NormalBlending, closer to camera)
+        // 4. Clouds (AdditiveBlending, bright on blue sky)
         const cloudTex = createCircleTexture(64);
         if (!group.userData) group.userData = {};
         if (!group.userData.clouds) group.userData.clouds = [];
-        for (let i = 0; i < 18; i++) {
+        for (let i = 0; i < 16; i++) {
           const mat = new THREE.SpriteMaterial({
-            map: cloudTex, color: 0xf0f0f0, transparent: true, opacity: 0.92,
-            fog: false, blending: THREE.NormalBlending, depthWrite: false, depthTest: true,
+            map: cloudTex, color: 0xffffff, transparent: true, opacity: 0.72,
+            fog: false, blending: THREE.AdditiveBlending,
+            depthWrite: false, depthTest: true,
           });
           const sprite = new THREE.Sprite(mat);
-          const scale = 60 + Math.random()*80;
-          sprite.scale.set(scale, scale*0.55, 1);
+          const scale = 80 + Math.random()*100;
+          sprite.scale.set(scale, scale*0.5, 1);
+          // 放在相机前方，确保可见
           sprite.position.set(
-            (Math.random()-0.5)*600,
-            60 + Math.random()*80,
-            (Math.random()-0.5)*400 + 30,
+            (Math.random()-0.5)*500,
+            70 + Math.random()*90,
+            -60 + Math.random()*120,
           );
           sprite.userData.isCloud = true;
           group.add(sprite);
@@ -832,7 +880,12 @@ function showSaturn() {
 
         console.log('[BG] Earth scenic background done');
 
-      } else if (stageId === 2) {
+        // 5. Light ribbons (flowing energy bands)
+        const earthRibbons = createLightRibbons(1);
+        group.add(earthRibbons);
+
+      // 5. Light ribbons (flowing energy bands)
+ else if (stageId === 2) {
         // ─── Stage 2: Moon Base - Cratered ground, spacecraft ───
 
         // 1. Sky dome (dark gray-blue)
@@ -924,7 +977,12 @@ function showSaturn() {
 
         console.log('[BG] Moon scenic background done');
 
-      } else if (stageId === 5) {
+      // 5. Light ribbons
+        // 5. Light ribbons
+        const moonRibbons = createLightRibbons(2);
+        group.add(moonRibbons);
+
+ else if (stageId === 5) {
         // ─── Stage 5: Saturn Storm - Yellowish ground, vortex ───
 
         // 1. Sky dome (amber/gold)
@@ -995,6 +1053,10 @@ function showSaturn() {
         const vortex = new THREE.Points(vGeo, vMat);
         vortex.userData.isVortex = true;
         group.add(vortex);
+
+        // 4. Light ribbons
+        const saturnRibbons = createLightRibbons(5);
+        group.add(saturnRibbons);
 
         console.log('[BG] Saturn scenic background done');
       }
@@ -5002,6 +5064,16 @@ function showSaturn() {
           c.position.y += Math.cos(t * 0.08 + i * 0.5) * 0.015;
         }
       }
+        // 光带旋转动画
+        if (earthBgGroup.userData && earthBgGroup.userData.isRibbonGroup) {
+          earthBgGroup.children.forEach(child => {
+            if (child.userData && child.userData.isRibbon) {
+              child.rotation.z += child.userData.rotSpeed;
+              child.rotation.x += child.userData.rotSpeed * 0.3;
+            }
+          });
+        }
+
       // 土星漩涡粒子动画（地面漩涡旋转）
       if (saturnBgInScene && saturnBgGroup) {
         saturnBgGroup.children.forEach(child => {
@@ -5017,9 +5089,29 @@ function showSaturn() {
           }
         });
       }
+        // 光带旋转动画
+        if (saturnBgGroup.userData && saturnBgGroup.userData.isRibbonGroup) {
+          saturnBgGroup.children.forEach(child => {
+            if (child.userData && child.userData.isRibbon) {
+              child.rotation.z += child.userData.rotSpeed;
+              child.rotation.x += child.userData.rotSpeed * 0.4;
+            }
+          });
+        }
+
       // 主题背景缓慢旋转
       if (earthBgInScene && earthBgGroup) earthBgGroup.rotation.y += 0.00003;
       if (moonBgInScene && moonBgGroup) moonBgGroup.rotation.y += 0.00002;
+        // 光带旋转动画
+        if (moonBgGroup.userData && moonBgGroup.userData.isRibbonGroup) {
+          moonBgGroup.children.forEach(child => {
+            if (child.userData && child.userData.isRibbon) {
+              child.rotation.z += child.userData.rotSpeed;
+              child.rotation.y += child.userData.rotSpeed * 0.5;
+            }
+          });
+        }
+
       if (saturnBgInScene && saturnBgGroup) saturnBgGroup.rotation.y += 0.00004;
       // 沙尘粒子动画（第5关，飞扬尘土效果）
       if (starfieldInScene && saturnDustPositions && saturnDustPhase) {
