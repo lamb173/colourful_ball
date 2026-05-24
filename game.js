@@ -215,8 +215,8 @@
         group.add(new THREE.Mesh(glow2Geo, glow2Mat));
         console.log("[SATURN] glow layers added");
 
-        group.rotation.x = 0.47;
-        group.rotation.y = 0.18;
+        group.rotation.x = 0.30;
+        group.rotation.y = 0.60;
         group.position.set(0, 14, 45);
         group.scale.set(13, 13, 13);
         console.log("[SATURN] group created");
@@ -4074,7 +4074,7 @@
         // 土星在球后方上空，始终作为背景可见
         if (sphere) {
           saturnGroup.position.x = 14;
-          saturnGroup.position.y = 10;
+          saturnGroup.position.y = 4;
           saturnGroup.position.z = sphere.position.z + 55;
         }
       }
