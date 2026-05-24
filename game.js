@@ -93,58 +93,83 @@
     const CAM_OFFSET = new THREE.Vector3(0, 5.5, -13);
 
     // ══════════════════════════════════════════════════════
-    //  土星3D模型（第5关 土星风暴 场景包围）
+    //  土星3D模型（第5关 土星风暴 场景包围 · 程序化生成）
     // ══════════════════════════════════════════════════════
-    let saturnModel    = null;   // 加载后的 THREE.Group
-    let saturnLoaded   = false;  // 是否已加载完成
-    let saturnInScene = false;  // 是否已添加到场景
-    const SATURN_POS  = new THREE.Vector3(0, -40, -350); // 远处低位，包围轨道
-    const SATURN_SCALE = 55;  // 超大缩放，包围感
+    let saturnGroup   = null;   // THREE.Group
+    let saturnInScene = false;
 
-    function loadSaturnModel(callback) {
-      if (saturnLoaded) { callback && callback(); return; }
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        './assets/models/saturn_20260524.glb',
-        (gltf) => {
-          saturnModel = gltf.scene;
-          saturnModel.position.copy(SATURN_POS);
-          saturnModel.scale.set(SATURN_SCALE, SATURN_SCALE, SATURN_SCALE);
-          saturnModel.rotation.set(0.3, 0, 0.15); // 光环倾斜
-          saturnModel.traverse(child => {
-            if (child.isMesh) {
-              child.frustumCulled = false;
-              if (child.material) child.material.side = THREE.DoubleSide;
-            }
-          });
-          saturnLoaded = true;
-          console.log('[SATURN] model loaded, scale=', SATURN_SCALE);
-          callback && callback();
-        },
-        (xhr) => {
-          console.log('[SATURN] ' + (xhr.loaded / xhr.total * 100).toFixed(1) + '% loaded');
-        },
-        (err) => {
-          console.error('[SATURN] load error:', err);
-        }
-      );
+    function createSaturnProcedural() {
+      const group = new THREE.Group();
+
+      // 土星本体（深黄褐色）
+      const bodyGeo = new THREE.SphereGeometry(1.0, 64, 48);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0xd4a017,
+        roughness: 0.65,
+        metalness: 0.05,
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      group.add(body);
+
+      // 光环（3个同心圆环，不同半径/透明度）
+      const ringColors = [0xc8b88a, 0xddd0a0, 0xb8a870];
+      const ringRadii  = [1.6, 2.1, 2.6];
+      const ringWidths = [0.25, 0.30, 0.28];
+      for (let i = 0; i < 3; i++) {
+        const rGeo = new THREE.RingGeometry(
+          ringRadii[i] - ringWidths[i],
+          ringRadii[i] + ringWidths[i],
+          96
+        );
+        const rMat = new THREE.MeshStandardMaterial({
+          color: ringColors[i],
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.55 - i * 0.10,
+          roughness: 0.7,
+          metalness: 0.0,
+        });
+        const rMesh = new THREE.Mesh(rGeo, rMat);
+        rMesh.rotation.x = -Math.PI / 2; // 平铺
+        group.add(rMesh);
+      }
+
+      // 大气云雾感（半透明外层）
+      const atmoGeo = new THREE.SphereGeometry(1.08, 64, 48);
+      const atmoMat = new THREE.MeshStandardMaterial({
+        color: 0xe8c870,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.BackSide,
+        roughness: 1.0,
+      });
+      group.add(new THREE.Mesh(atmoGeo, atmoMat));
+
+      // 倾斜光环（土星真实倾角 ~27°）
+      group.rotation.x = 0.48;  // ~27 degrees
+      group.rotation.y = 0.15;
+
+      // 固定位置和超大缩放
+      group.position.set(0, -40, -350);
+      group.scale.set(55, 55, 55);
+
+      return group;
     }
 
     function showSaturn() {
-      if (!saturnLoaded) {
-        loadSaturnModel(() => { showSaturn(); });
-        return;
+      if (!saturnGroup) {
+        saturnGroup = createSaturnProcedural();
       }
-      if (!saturnInScene && saturnModel) {
-        scene.add(saturnModel);
+      if (!saturnInScene && saturnGroup) {
+        scene.add(saturnGroup);
         saturnInScene = true;
-        console.log('[SATURN] added to scene');
+        console.log('[SATURN] procedural model added to scene');
       }
     }
 
     function hideSaturn() {
-      if (saturnInScene && saturnModel) {
-        scene.remove(saturnModel);
+      if (saturnInScene && saturnGroup) {
+        scene.remove(saturnGroup);
         saturnInScene = false;
         console.log('[SATURN] removed from scene');
       }
@@ -3910,8 +3935,8 @@
       updateShieldBreak(dt);
 
       // 土星旋转动画（第5关 土星风暴 背景）
-      if (saturnInScene && saturnModel) {
-        saturnModel.rotation.y += 0.0008;
+      if (saturnInScene && saturnGroup) {
+        saturnGroup.rotation.y += 0.0008;
       }
 
       if (gameOver || shieldBreakActive) {
