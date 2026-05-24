@@ -658,6 +658,108 @@ function showSaturn() {
       }
     }
     // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
+
+    // ══════════════════════════════════════════════════════
+    //  createGroundTexture — 程序化生成地面纹理（canvas）
+    //  返回 THREE.Texture，给地面 MeshPhongMaterial.map 使用
+    // ══════════════════════════════════════════════════════
+    function createGroundTexture(stageId) {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (stageId === 1) {
+        // 地球：深绿草地 + 噪声暗斑 + 浅色草丛
+        ctx.fillStyle = '#1a4c0a';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 3000; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const r = 3 + Math.random()*12;
+          const g = Math.floor(20 + Math.random()*40);
+          ctx.fillStyle = 'rgb(' + g + ',' + Math.floor(g*0.6) + ',0)';
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+        }
+        for (let i = 0; i < 1500; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const g = Math.floor(60 + Math.random()*50);
+          ctx.fillStyle = 'rgba(' + g + ',' + (g+60) + ',' + Math.floor(g*0.3) + ',0.4)';
+          ctx.fillRect(x, y, 2+Math.random()*3, 2+Math.random()*3);
+        }
+      } else if (stageId === 2) {
+        // 月球：深灰 + 陨石坑阴影（暗中心 + 亮边缘）
+        ctx.fillStyle = '#555555';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 60; i++) {
+          const cx = Math.random()*size, cy = Math.random()*size;
+          const cr = 10 + Math.random()*40;
+          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+          grad.addColorStop(0,   'rgba(20,20,20,0.7)');
+          grad.addColorStop(0.6, 'rgba(50,50,50,0.3)');
+          grad.addColorStop(0.85,'rgba(120,120,120,0.3)');
+          grad.addColorStop(1,   'rgba(85,85,85,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI*2); ctx.fill();
+        }
+        for (let i = 0; i < 2000; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(60 + Math.random()*40);
+          ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+          ctx.fillRect(x, y, 1, 1);
+        }
+      } else if (stageId === 5) {
+        // 土星：土黄底色 + 旋涡条纹带 + 沙尘颗粒
+        ctx.fillStyle = '#774411';
+        ctx.fillRect(0, 0, size, size);
+        // 旋涡条纹带（填充椭圆模拟旋涡）
+        for (let i = 0; i < 40; i++) {
+          const cx = size/2 + (Math.random()-0.5)*size*0.9;
+          const cy = size/2 + (Math.random()-0.5)*size*0.9;
+          const rx = 20 + Math.random()*100, ry = 8 + Math.random()*40;
+          const angle = Math.random()*Math.PI*2;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(angle);
+          const r2 = Math.floor(Math.random()*80)+40, g2 = Math.floor(Math.random()*40)+60, b2 = Math.floor(Math.random()*15)+5;
+          ctx.fillStyle = 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',0.35)';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        }
+        // 金色亮粉（旋涡高光）
+        for (let i = 0; i < 800; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(180 + Math.random()*60);
+          ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.7) + ',' + Math.floor(v*0.2) + ',0.6)';
+          ctx.fillRect(x, y, 1+Math.random()*2, 1);
+        }
+      }
+        // 土星：土黄 + 旋涡条纹 + 沙尘颗粒
+        ctx.fillStyle = '#885522';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 30; i++) {
+          const cx = size/2 + (Math.random()-0.5)*size*0.8;
+          const cy = size/2 + (Math.random()-0.5)*size*0.8;
+          const cr = 30 + Math.random()*120;
+          ctx.strokeStyle = 'rgba(' + Math.floor(100+Math.random()*60) + ',' + Math.floor(60+Math.random()*30) + ',10,0.25)';
+          ctx.lineWidth = 3+Math.random()*8;
+          ctx.beginPath();
+          ctx.arc(cx, cy, cr, Math.random()*Math.PI*2, Math.random()*Math.PI*2 + Math.PI*1.2);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 2500; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(100 + Math.random()*50);
+          ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.65) + ',' + Math.floor(v*0.2) + ',0.5)';
+          ctx.fillRect(x, y, 1+Math.random()*2, 1+Math.random()*2);
+        }
+      const tex = new THREE.Texture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 4);
+      tex.needsUpdate = true;
+      return tex;
+    }
     function createStageBackground(stageId) {
       console.log('[BG] Creating SCENIC background for stage', stageId);
       const group = new THREE.Group();
@@ -668,7 +770,7 @@ function showSaturn() {
         // 1. Sky dome (LIGHT BLUE, not black!)
         const skyGeo = new THREE.SphereGeometry(500, 32, 32);
         const skyMat = new THREE.MeshBasicMaterial({
-          color: 0x87CEEB,
+          color: 0x4A90D9,
           side: THREE.BackSide,
           fog: false,
         });
@@ -688,7 +790,7 @@ function showSaturn() {
         }
         gPos.needsUpdate = true;
         groundGeo.computeVertexNormals();
-        const groundMat = new THREE.MeshPhongMaterial({ color: 0x3a7d2a, fog: false });
+        const groundMat = new THREE.MeshPhongMaterial({ color: 0x1a4c0a, map: createGroundTexture(1), fog: false });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI/2;
         ground.position.y = -50;
@@ -703,25 +805,25 @@ function showSaturn() {
         });
         const lake = new THREE.Mesh(lakeGeo, lakeMat);
         lake.rotation.x = -Math.PI/2;
-        lake.position.set(300, -49.5, 200);
+        lake.position.set(100, -49.5, 60);
         group.add(lake);
 
-        // 4. Clouds (white sprites)
+        // 4. Clouds (NormalBlending, closer to camera)
         const cloudTex = createCircleTexture(64);
         if (!group.userData) group.userData = {};
         if (!group.userData.clouds) group.userData.clouds = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 18; i++) {
           const mat = new THREE.SpriteMaterial({
-            map: cloudTex, color: 0xffffff, transparent: true, opacity: 0.88,
-            fog: false, blending: THREE.AdditiveBlending, depthWrite: false,
+            map: cloudTex, color: 0xf0f0f0, transparent: true, opacity: 0.92,
+            fog: false, blending: THREE.NormalBlending, depthWrite: false, depthTest: true,
           });
           const sprite = new THREE.Sprite(mat);
-          const scale = 35 + Math.random()*55;
-          sprite.scale.set(scale, scale*0.6, 1);
+          const scale = 60 + Math.random()*80;
+          sprite.scale.set(scale, scale*0.55, 1);
           sprite.position.set(
-            (Math.random()-0.5)*1400,
-            50 + Math.random()*100,
-            (Math.random()-0.5)*1400,
+            (Math.random()-0.5)*600,
+            60 + Math.random()*80,
+            (Math.random()-0.5)*400 + 30,
           );
           sprite.userData.isCloud = true;
           group.add(sprite);
@@ -770,7 +872,7 @@ function showSaturn() {
         }
         gPos.needsUpdate = true;
         groundGeo.computeVertexNormals();
-        const groundMat = new THREE.MeshPhongMaterial({ color: 0x888888, fog: false });
+        const groundMat = new THREE.MeshPhongMaterial({ color: 0x666666, map: createGroundTexture(2), fog: false });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI/2;
         ground.position.y = -50;
@@ -850,7 +952,7 @@ function showSaturn() {
         }
         gPos.needsUpdate = true;
         groundGeo.computeVertexNormals();
-        const groundMat = new THREE.MeshPhongMaterial({ color: 0xaa7744, fog: false });
+        const groundMat = new THREE.MeshPhongMaterial({ color: 0x885522, map: createGroundTexture(5), fog: false });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI/2;
         ground.position.y = -50;
