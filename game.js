@@ -115,17 +115,18 @@
       group.add(body);
       console.log('[SATURN] body added');
 
-      // 光环（3个同心圆环，不同半径/透明度）
-      const ringColors = [0xc8b88a, 0xddd0a0, 0xb8a870];
-      const ringRadii  = [1.6, 2.1, 2.6];
-      const ringWidths = [0.25, 0.30, 0.28];
+      // 光环（3个薄环，用 TorusGeometry 代替 RingGeometry）
+      const ringColors  = [0xc8b88a, 0xddd0a0, 0xb8a870];
+      const ringRadii   = [1.6, 2.1, 2.6];
+      const ringWidths  = [0.25, 0.30, 0.28];
       for (let i = 0; i < 3; i++) {
-        const rGeo = new THREE.RingGeometry(
-          ringRadii[i] - ringWidths[i],
-          ringRadii[i] + ringWidths[i],
-          96
+        // TorusGeometry(radius, tubeRadius, radialSegments, tubularSegments)
+        const tGeo = new THREE.TorusGeometry(
+          ringRadii[i],   // 环半径
+          ringWidths[i],  // 管半径（环厚度）
+          16, 96
         );
-        const rMat = new THREE.MeshStandardMaterial({
+        const tMat = new THREE.MeshStandardMaterial({
           color: ringColors[i],
           side: THREE.DoubleSide,
           transparent: true,
@@ -134,11 +135,11 @@
           metalness: 0.0,
           fog: false,
         });
-        const rMesh = new THREE.Mesh(rGeo, rMat);
-        rMesh.rotation.x = -Math.PI / 2; // 平铺
-        group.add(rMesh);
+        const tMesh = new THREE.Mesh(tGeo, tMat);
+        tMesh.rotation.x = Math.PI / 2; // 平铺（环绕XY平面→环绕XZ平面）
+        group.add(tMesh);
       }
-      console.log('[SATURN] 3 rings added');
+      console.log('[SATURN] 3 rings (torus) added');
 
       // 大气云雾感（半透明外层）
       const atmoGeo = new THREE.SphereGeometry(1.08, 64, 48);
@@ -160,7 +161,7 @@
       // 固定位置和超大缩放
       group.position.set(0, -40, -180);
       group.scale.set(55, 55, 55);
-      console.log('[SATURN] group created, pos:', group.position, 'scale:', group.scale);
+      console.log('[SATURN] procedural group created, pos:', group.position, 'scale:', group.scale);
 
       return group;
       } catch(e) {
