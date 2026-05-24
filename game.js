@@ -229,6 +229,22 @@
     }
 
     // ─── 创建第5关专属星空 ───
+    // ─── 辅助：生成圆形纹理（让 Points 粒子变圆） ───
+    function createCircleTexture(size) {
+      size = size || 64;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, size, size);
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size/2 * 0.92, 0, Math.PI*2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
     // ─── 第5关专属星空 + 沙尘粒子 ───
     let saturnDustPositions = null;
     let saturnDustVelocities = null;
@@ -298,7 +314,9 @@
       dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
       dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 2.0,
+        size: 0.6,
+        map: createCircleTexture(64),
+        alphaTest: 0.1,
         vertexColors: true,
         transparent: true,
         opacity: 0.55,
