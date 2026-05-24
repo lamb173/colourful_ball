@@ -218,7 +218,7 @@
         group.rotation.x = 0.47;
         group.rotation.y = 0.18;
         group.position.set(0, 14, 45);
-        group.scale.set(16, 16, 16);
+        group.scale.set(13, 13, 13);
         console.log("[SATURN] group created");
 
         return group;
@@ -279,6 +279,7 @@
         if (saturnGroup && !saturnInScene) {
           scene.add(saturnGroup);
           saturnInScene = true;
+          console.log("[SATURN] added to scene, pos:", saturnGroup.position);
         }
         if (!saturnStarfield) saturnStarfield = createSaturnStarfield();
         if (saturnStarfield && !starfieldInScene) {
@@ -4070,11 +4071,11 @@
       // 土星旋转动画（第5关 土星风暴 背景）
       if (saturnInScene && saturnGroup) {
         saturnGroup.rotation.y += 0.0008;
-        // 土星固定在相机右后方，作为背景装饰
+        // 土星在球后方上空，始终作为背景可见
         if (sphere) {
-          saturnGroup.position.x = 12;
-          saturnGroup.position.y = 8;
-          saturnGroup.position.z = sphere.position.z - 70;
+          saturnGroup.position.x = 14;
+          saturnGroup.position.y = 10;
+          saturnGroup.position.z = sphere.position.z + 55;
         }
       }
       // 星空缓慢旋转
