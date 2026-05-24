@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>土星模型 v2 · 关卡场景导入预览</title>
+  <style>
+    * { margin:0; padding:0; box-sizing: border-box; }
+    body { background:#0a0a1a; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+    #c { display:block; width:100vw; height:100vh; }
+
+    #loading {
+      position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background: #0a0a1a; z-index: 100; color:#c8b8ff; font-size:16px;
+    }
+    #loading .box { text-align:center; }
+    #loading .spinner {
+      width:48px; height:48px; border:3px solid rgba(160,140,255,0.2);
+      border-top-color:#a08cff; border-radius:50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #hud {
+      position: fixed; top: 0; left:0; width:100%; z-index: 10;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      pointer-events: none; padding: 16px 20px;
+    }
+    .badge {
+      background: rgba(0,0,0,0.55); color: #e0d6ff; border:1px solid rgba(160,140,255,0.35);
+      border-radius: 8px; padding: 6px 16px; font-size: 14px; letter-spacing: 1px;
+      backdrop-filter: blur(6px); pointer-events: auto;
+    }
+    #info {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); color: #aaa; border:1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 8px 20px; font-size: 13px;
+      backdrop-filter: blur(6px); pointer-events: none;
+    }
+    #controls {
+      position: fixed; top: 60px; right: 16px; z-index: 10;
+      display: flex; flex-direction: column; gap: 8px; pointer-events: auto;
+    }
+    #controls button {
+      background: rgba(0,0,0,0.6); color: #c8b8ff; border:1px solid rgba(160,140,255,0.3);
+      border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+      backdrop-filter: blur(6px); transition: background 0.2s;
+    }
+    #controls button:hover { background: rgba(100,80,200,0.5); }
+
+    #debug {
+      position: fixed; bottom: 60px; left: 16px; z-index: 10;
+      background: rgba(0,0,0,0.7); color: #8f8; font-size: 12px;
+      border-radius: 6px; padding: 8px 12px; max-width: 400px;
+      font-family: monospace; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading"><div class="box"><div class="spinner"></div>正在加载土星模型 v2…</div></div>
+<div id="debug">调试信息加载中…</div>
+
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="badge">🪐 第5关 · 土星关卡 · 模型预览 v2</div>
+</div>
+
+<div id="controls">
+  <button onclick="toggleAutoRotate()">🔄 自动旋转</button>
+  <button onclick="toggleWireframe()">🔲 线框模式</button>
+  <button onclick="resetCamera()">🎯 重置视角</button>
+  <button onclick="toggleBackground()">🌌 切换背景</button>
+</div>
+
+<div id="info">🖱️ 左键旋转 | 右键平移 | 滚轮缩放 | 土星模型 PBR 30万面</div>
+
+<!-- Three.js r128 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+
+<script>
+// ── 调试信息 ──
+const dbg = document.getElementById('debug');
+function log(msg) {
+  console.log('[Saturn]', msg);
+  dbg.innerHTML += msg + '<br>';
+  if (dbg.innerHTML.length > 2000) dbg.innerHTML = dbg.innerHTML.slice(-1500);
+}
+
+log('页面加载开始');
+log('Three.js: ' + (typeof THREE !== 'undefined' ? '✅' : '❌'));
+
+let scene, camera, renderer, controls;
+let saturn = null;
+let autoRotate = true;
+let wireframeMode = false;
+let darkBg = true;
+
+// ── 动态加载 GLTFLoader ──
+log('开始加载 GLTFLoader...');
+const gltfScript = document.createElement('script');
+gltfScript.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+gltfScript.onload = () => {
+  log('✅ GLTFLoader 加载成功');
+  log('开始加载 OrbitControls...');
+  const orbScript = document.createElement('script');
+  orbScript.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+  orbScript.onload = () => {
+    log('✅ OrbitControls 加载成功');
+    log('开始初始化场景...');
+    init();
+  };
+  orbScript.onerror = () => { log('❌ OrbitControls 加载失败'); };
+  document.head.appendChild(orbScript);
+};
+gltfScript.onerror = () => { log('❌ GLTFLoader 加载失败'); };
+document.head.appendChild(gltfScript);
+
+function init() {
+  log('init() 开始');
+
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  log('渲染器已创建');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+  scene.fog = new THREE.FogExp2(0x0a0a1a, 0.015);
+
+  createStarfield();
+  log('星空背景已创建');
+
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 500);
+  camera.position.set(0, 18, 24);
+  camera.lookAt(0, 0, 0);
+  log('相机已创建');
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.06;
+  controls.minDistance = 5;
+  controls.maxDistance = 80;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.8;
+  controls.target.set(0, 0, 0);
+  log('控制器已创建');
+
+  // 光照
+  const ambient = new THREE.AmbientLight(0x334466, 0.5);
+  scene.add(ambient);
+
+  const dirLight = new THREE.DirectionalLight(0xffeedd, 1.4);
+  dirLight.position.set(12, 20, 10);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  const backLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+  backLight.position.set(-8, 6, -12);
+  scene.add(backLight);
+
+  const rimLight = new THREE.PointLight(0xffaa44, 0.8, 60);
+  rimLight.position.set(-10, 8, 5);
+  scene.add(rimLight);
+  log('光照已创建');
+
+  // 加载土星
+  loadSaturn();
+
+  window.addEventListener('resize', onResize);
+  log('init() 完成，开始动画循环');
+  animate();
+}
+
+function createStarfield() {
+  const count = 1200;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count * 3; i++) {
+    positions[i] = (Math.random() - 0.5) * 300;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.8 });
+  scene.add(new THREE.Points(geo, mat));
+}
+
+function loadSaturn() {
+  if (typeof THREE.GLTFLoader === 'undefined') {
+    log('❌ THREE.GLTFLoader 未定义！');
+    return;
+  }
+  log('开始加载土星模型...');
+  const loader = new THREE.GLTFLoader();
+
+  // 绝对 URL，确保从 9091 端口加载
+  const modelUrl = 'http://127.0.0.1:9091/assets/models/saturn_20260524.glb';
+  log('模型 URL: ' + modelUrl);
+
+  loader.load(
+    modelUrl,
+    (gltf) => {
+      log('✅ 土星模型加载成功！');
+      saturn = gltf.scene;
+      saturn.scale.set(8, 8, 8);
+      saturn.position.set(0, 0, 0);
+
+      saturn.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            if (child.material.metalness !== undefined) child.material.metalness = 0.1;
+            if (child.material.roughness !== undefined) child.material.roughness = 0.65;
+          }
+        }
+      });
+
+      scene.add(saturn);
+      document.getElementById('loading').style.display = 'none';
+      log('土星已添加到场景');
+    },
+    (xhr) => {
+      if (xhr.total > 0) {
+        const pct = ((xhr.loaded / xhr.total) * 100).toFixed(0);
+        log('加载进度: ' + pct + '%');
+      }
+    },
+    (err) => {
+      log('❌ 模型加载失败: ' + err);
+      document.getElementById('loading').innerHTML =
+        '<div class="box">❌ 模型加载失败<br><small>请确认 HTTP 服务已启动（端口 9091）<br>错误: ' + err + '</small></div>';
+    }
+  );
+}
+
+function toggleAutoRotate() {
+  autoRotate = !autoRotate;
+  controls.autoRotate = autoRotate;
+}
+
+function toggleWireframe() {
+  wireframeMode = !wireframeMode;
+  if (saturn) {
+    saturn.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material.wireframe = wireframeMode;
+      }
+    });
+  }
+}
+
+function resetCamera() {
+  camera.position.set(0, 18, 24);
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+
+function toggleBackground() {
+  darkBg = !darkBg;
+  scene.background = new THREE.Color(darkBg ? 0x0a0a1a : 0x110822);
+  scene.fog = darkBg ? new THREE.FogExp2(0x0a0a1a, 0.015) : null;
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (saturn && autoRotate && !controls.autoRotate) {
+    saturn.rotation.y += 0.002;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>

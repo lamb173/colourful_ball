@@ -4311,6 +4311,7 @@
         if (sphere) { saturnModel.position.x = 14; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 55; }
       }
       // 星空缓慢旋转（第5关）
+      if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
       }
       // 沙尘粒子动画（第5关，飞扬尘土效果）
