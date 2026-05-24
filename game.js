@@ -312,10 +312,10 @@
         dPos[i*3 + 1] = (Math.random() - 0.5) * 7;
         dPos[i*3 + 2] = Math.sin(theta) * r;
         // 速度：漩涡 + 上浮
-        const swirl = 0.008 + Math.random() * 0.02;
-        dVel[i*3]     = Math.cos(theta) * swirl + (Math.random()-0.5)*0.025;
-        dVel[i*3 + 1] = Math.random() * 0.06;  // 上浮
-        dVel[i*3 + 2] = Math.sin(theta) * swirl + (Math.random()-0.5)*0.025;
+        const swirl = 0.015 + Math.random() * 0.035;
+        dVel[i*3]     = Math.cos(theta) * swirl + (Math.random()-0.5)*0.04;
+        dVel[i*3 + 1] = 0.02 + Math.random() * 0.08;  // 上浮（最低速度>0）
+        dVel[i*3 + 2] = Math.sin(theta) * swirl + (Math.random()-0.5)*0.04;
         dPhase[i] = Math.random() * Math.PI * 2;
         dFreq[i]  = 0.4 + Math.random() * 1.5;
         dAmp[i]   = 0.2 + Math.random() * 1.2;
@@ -337,7 +337,7 @@
       dustGeo.setAttribute('position',  new THREE.BufferAttribute(dPos, 3));
       dustGeo.setAttribute('color',     new THREE.BufferAttribute(dCol, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.18,
+        size: 0.55,
         map: createCircleTexture(64),
         alphaTest: 0.08,
         vertexColors: true,
@@ -350,7 +350,7 @@
       saturnDustMesh = new THREE.Points(dustGeo, dustMat);
       group.add(saturnDustMesh);
 
-      console.log('[SATURN-SKY] done, stars=4000 dust=800');
+      console.log('[SATURN-SKY] done, stars=4000 dust=2000');
       return group;
     }
 
@@ -4181,11 +4181,11 @@
         for (let i = 0; i < count; i++) {
           const tp = t * freq[i] + phase[i];
           // 湍流运动：sin/cos 扰动
-          pos[i*3]     += vel[i*3]     + Math.sin(tp)     * amp[i] * 0.020;
-          pos[i*3 + 1] += vel[i*3 + 1] + Math.cos(tp * 1.4) * amp[i] * 0.016;
-          pos[i*3 + 2] += vel[i*3 + 2] + Math.cos(tp * 0.8) * amp[i] * 0.020;
+          pos[i*3]     += vel[i*3]     + Math.sin(tp)     * amp[i] * 0.15;
+          pos[i*3 + 1] += vel[i*3 + 1] + Math.cos(tp * 1.4) * amp[i] * 0.12;
+          pos[i*3 + 2] += vel[i*3 + 2] + Math.cos(tp * 0.8) * amp[i] * 0.15;
           // 重力：轻微下落
-          vel[i*3 + 1] -= 0.007;
+          vel[i*3 + 1] -= 0.004;
           // 生命周期
           life[i] -= 0.016;
           // 边界回绕 + 重生
@@ -4196,9 +4196,9 @@
             pos[i*3]     = Math.cos(theta) * r;
             pos[i*3 + 1] = (Math.random() - 0.5) * 7;
             pos[i*3 + 2] = Math.sin(theta) * r;
-            vel[i*3]     = (Math.random()-0.5) * 0.03;
-            vel[i*3 + 1] = Math.random() * 0.05;
-            vel[i*3 + 2] = (Math.random()-0.5) * 0.03;
+            vel[i*3]     = (Math.random()-0.5) * 0.05;
+            vel[i*3 + 1] = 0.02 + Math.random() * 0.08;
+            vel[i*3 + 2] = (Math.random()-0.5) * 0.05;
             life[i] = mLife[i] = 3 + Math.random() * 9;
           }
         }
