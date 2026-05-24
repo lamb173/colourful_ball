@@ -5065,15 +5065,15 @@ function showSaturn() {
           c.position.y += Math.cos(t * 0.08 + i * 0.5) * 0.015;
         }
       }
-        // 光带旋转动画
-        if (earthBgGroup.userData && earthBgGroup.userData.isRibbonGroup) {
-          earthBgGroup.children.forEach(child => {
-            if (child.userData && child.userData.isRibbon) {
-              child.rotation.z += child.userData.rotSpeed;
-              child.rotation.x += child.userData.rotSpeed * 0.3;
-            }
-          });
-        }
+      // 光带旋转动画（地球）
+      if (earthBgGroup && earthBgGroup.userData && earthBgGroup.userData.isRibbonGroup) {
+        earthBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.x += child.userData.rotSpeed * 0.3;
+          }
+        });
+      }
 
       // 土星漩涡粒子动画（地面漩涡旋转）
       if (saturnBgInScene && saturnBgGroup) {
@@ -5090,28 +5090,28 @@ function showSaturn() {
           }
         });
       }
-        // 光带旋转动画
-        if (saturnBgGroup.userData && saturnBgGroup.userData.isRibbonGroup) {
-          saturnBgGroup.children.forEach(child => {
-            if (child.userData && child.userData.isRibbon) {
-              child.rotation.z += child.userData.rotSpeed;
-              child.rotation.x += child.userData.rotSpeed * 0.4;
-            }
-          });
-        }
+      // 光带旋转动画（土星）
+      if (saturnBgGroup && saturnBgGroup.userData && saturnBgGroup.userData.isRibbonGroup) {
+        saturnBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.x += child.userData.rotSpeed * 0.4;
+          }
+        });
+      }
 
       // 主题背景缓慢旋转
       if (earthBgInScene && earthBgGroup) earthBgGroup.rotation.y += 0.00003;
       if (moonBgInScene && moonBgGroup) moonBgGroup.rotation.y += 0.00002;
-        // 光带旋转动画
-        if (moonBgGroup.userData && moonBgGroup.userData.isRibbonGroup) {
-          moonBgGroup.children.forEach(child => {
-            if (child.userData && child.userData.isRibbon) {
-              child.rotation.z += child.userData.rotSpeed;
-              child.rotation.y += child.userData.rotSpeed * 0.5;
-            }
-          });
-        }
+      // 光带旋转动画（月球）
+      if (moonBgGroup && moonBgGroup.userData && moonBgGroup.userData.isRibbonGroup) {
+        moonBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.y += child.userData.rotSpeed * 0.5;
+          }
+        });
+      }
 
       if (saturnBgInScene && saturnBgGroup) saturnBgGroup.rotation.y += 0.00004;
       // 沙尘粒子动画（第5关，飞扬尘土效果）
