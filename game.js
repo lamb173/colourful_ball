@@ -99,6 +99,8 @@
     let saturnInScene = false;
 
     function createSaturnProcedural() {
+      console.log('[SATURN] createSaturnProcedural() called');
+      try {
       const group = new THREE.Group();
 
       // 土星本体（深黄褐色）
@@ -110,6 +112,7 @@
       });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       group.add(body);
+      console.log('[SATURN] body added');
 
       // 光环（3个同心圆环，不同半径/透明度）
       const ringColors = [0xc8b88a, 0xddd0a0, 0xb8a870];
@@ -133,6 +136,7 @@
         rMesh.rotation.x = -Math.PI / 2; // 平铺
         group.add(rMesh);
       }
+      console.log('[SATURN] 3 rings added');
 
       // 大气云雾感（半透明外层）
       const atmoGeo = new THREE.SphereGeometry(1.08, 64, 48);
@@ -144,6 +148,7 @@
         roughness: 1.0,
       });
       group.add(new THREE.Mesh(atmoGeo, atmoMat));
+      console.log('[SATURN] atmosphere added');
 
       // 倾斜光环（土星真实倾角 ~27°）
       group.rotation.x = 0.48;  // ~27 degrees
@@ -152,26 +157,42 @@
       // 固定位置和超大缩放
       group.position.set(0, -40, -350);
       group.scale.set(55, 55, 55);
+      console.log('[SATURN] group created, pos:', group.position, 'scale:', group.scale);
 
       return group;
+      } catch(e) {
+        console.error('[SATURN] createSaturnProcedural ERROR:', e);
+        return null;
+      }
     }
 
     function showSaturn() {
+      console.log('[SATURN] showSaturn() called, mode=', gameMode, '_currentStage=', _currentStage ? _currentStage.id : null);
+      try {
       if (!saturnGroup) {
         saturnGroup = createSaturnProcedural();
+        console.log('[SATURN] createSaturnProcedural returned:', saturnGroup);
       }
-      if (!saturnInScene && saturnGroup) {
+      if (saturnGroup && !saturnInScene) {
         scene.add(saturnGroup);
         saturnInScene = true;
-        console.log('[SATURN] procedural model added to scene');
+        console.log('[SATURN] added to scene, saturnInScene=', saturnInScene);
+      }
+      } catch(e) {
+        console.error('[SATURN] showSaturn ERROR:', e);
       }
     }
 
     function hideSaturn() {
+      console.log('[SATURN] hideSaturn() called');
+      try {
       if (saturnInScene && saturnGroup) {
         scene.remove(saturnGroup);
         saturnInScene = false;
         console.log('[SATURN] removed from scene');
+      }
+      } catch(e) {
+        console.error('[SATURN] hideSaturn ERROR:', e);
       }
     }
 
