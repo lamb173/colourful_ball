@@ -109,6 +109,7 @@
         color: 0xd4a017,
         roughness: 0.65,
         metalness: 0.05,
+        fog: false,
       });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       group.add(body);
@@ -131,6 +132,7 @@
           opacity: 0.55 - i * 0.10,
           roughness: 0.7,
           metalness: 0.0,
+          fog: false,
         });
         const rMesh = new THREE.Mesh(rGeo, rMat);
         rMesh.rotation.x = -Math.PI / 2; // 平铺
@@ -146,6 +148,7 @@
         opacity: 0.12,
         side: THREE.BackSide,
         roughness: 1.0,
+        fog: false,
       });
       group.add(new THREE.Mesh(atmoGeo, atmoMat));
       console.log('[SATURN] atmosphere added');
@@ -155,7 +158,7 @@
       group.rotation.y = 0.15;
 
       // 固定位置和超大缩放
-      group.position.set(0, -40, -350);
+      group.position.set(0, -40, -180);
       group.scale.set(55, 55, 55);
       console.log('[SATURN] group created, pos:', group.position, 'scale:', group.scale);
 
