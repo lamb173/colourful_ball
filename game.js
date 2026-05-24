@@ -99,10 +99,11 @@
     //  土星3D场景（第5关 土星风暴 场景包围 · 程序化生成）
     // ═════════════════════════════════════════════════════
 
-    let saturnGroup     = null;   // THREE.Group 土星本体+光环
+    let saturnGroup     = null;   // THREE.Group 土星（从.glb加载）
     let saturnStarfield = null;   // THREE.Points 第5关专属星空
     let saturnInScene  = false;
     let starfieldInScene = false;
+    let saturnLoadError  = false;
 
     // ─── 辅助：生成土星条纹纹理（Canvas 2D） ───
     function makeSaturnBodyTexture() {
@@ -358,12 +359,48 @@
     function showSaturn() {
       console.log("[SATURN] showSaturn(), stage=", _currentStage ? _currentStage.id : null);
       try {
-        if (!saturnGroup) saturnGroup = createSaturnProcedural();
+        // 加载 .glb 模型（异步）
+        if (!saturnGroup && !saturnLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') {
+            console.error("[SATURN] GLTFLoader not loaded!");
+            saturnLoadError = true;
+            return;
+          }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            'assets/models/saturn_20260524.glb',
+            (gltf) => {
+              saturnGroup = gltf.scene;
+              saturnGroup.scale.set(8, 8, 8);
+              saturnGroup.position.set(0, 0, 0);
+              saturnGroup.traverse((child) => {
+                if (child.isMesh) {
+                  child.castShadow = true;
+                  child.receiveShadow = true;
+                }
+              });
+              console.log('[SATURN] .glb model loaded');
+              if (saturnInScene) scene.add(saturnGroup);
+            },
+            (xhr) => {
+              if (xhr.total > 0) {
+                const pct = ((xhr.loaded / xhr.total) * 100).toFixed(0);
+                console.log('[SATURN] loading: ' + pct + '%');
+              }
+            },
+            (err) => {
+              console.error('[SATURN] .glb load error:', err);
+              saturnLoadError = true;
+            }
+          );
+        }
+        // 模型加载完成后加入场景
         if (saturnGroup && !saturnInScene) {
           scene.add(saturnGroup);
           saturnInScene = true;
-          console.log("[SATURN] added to scene, pos:", saturnGroup.position);
+          console.log("[SATURN] model added to scene");
         }
+        // 星空部分（保持不变）
         if (!saturnStarfield) saturnStarfield = createSaturnStarfield();
         if (saturnStarfield && !starfieldInScene) {
           scene.add(saturnStarfield);
