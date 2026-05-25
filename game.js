@@ -119,6 +119,42 @@
     let starfieldInScene = false;
     let saturnLoadError  = false;
     let preloadStarted = false;
+
+    // ─── 第3关 火星基地 ───
+    let marsModel       = null;
+    let marsModelUrl    = 'assets/models/mars_planet_20260525.glb';
+    let marsModelScale  = 25;
+    let marsInScene     = false;
+    let marsLoadError   = false;
+
+    // ─── 第4关 木星风暴 ───
+    let jupiterModel       = null;
+    let jupiterModelUrl    = 'assets/models/jupiter_planet_20260525.glb';
+    let jupiterModelScale  = 25;
+    let jupiterInScene     = false;
+    let jupiterLoadError   = false;
+
+    // ─── 第6关 天王星极光 ───
+    let uranusModel       = null;
+    let uranusModelUrl    = 'assets/models/uranus_planet_20260525.glb';
+    let uranusModelScale  = 25;
+    let uranusInScene     = false;
+    let uranusLoadError   = false;
+
+    // ─── 第7关 海王星冰暴 ───
+    let neptuneModel       = null;
+    let neptuneModelUrl    = 'assets/models/neptune_planet_20260525.glb';
+    let neptuneModelScale  = 25;
+    let neptuneInScene     = false;
+    let neptuneLoadError   = false;
+
+    // ─── 第8关 冥王星冰原 ───
+    let plutoModel       = null;
+    let plutoModelUrl    = 'assets/models/pluto_planet_20260525.glb';
+    let plutoModelScale  = 25;
+    let plutoInScene     = false;
+    let plutoLoadError   = false;
+
     // ─── 关卡主题背景（程序化天空球 + 星云粒子） ───
     let earthBgGroup    = null;
     let moonBgGroup     = null;
@@ -126,6 +162,18 @@
     let earthBgInScene  = false;
     let moonBgInScene   = false;
     let saturnBgInScene = false;
+
+    // ─── 第3/4/6/7/8关 主题背景 ───
+    let marsBgGroup      = null;
+    let jupiterBgGroup   = null;
+    let uranusBgGroup    = null;
+    let neptuneBgGroup   = null;
+    let plutoBgGroup     = null;
+    let marsBgInScene      = false;
+    let jupiterBgInScene   = false;
+    let uranusBgInScene    = false;
+    let neptuneBgInScene   = false;
+    let plutoBgInScene     = false;
 
     // ─── 第1关 地球大气层粒子 ───
     let earthAtmosphere   = null;   // THREE.Group
@@ -150,6 +198,66 @@
     let moonDustMaxLife   = null;
     let moonDustMesh      = null;
     let moonDustInScene   = false;
+
+    // ─── 第3关 火星尘埃粒子 ───
+    let marsDustField    = null;   // THREE.Group
+    let marsDustPositions  = null;
+    let marsDustVelocities = null;
+    let marsDustPhase     = null;
+    let marsDustFreq      = null;
+    let marsDustAmp       = null;
+    let marsDustLife      = null;
+    let marsDustMaxLife   = null;
+    let marsDustMesh      = null;
+    let marsDustInScene   = false;
+
+    // ─── 第4关 木星闪电粒子 ───
+    let jupiterLightningField = null;   // THREE.Group
+    let jupiterDustPositions  = null;
+    let jupiterDustVelocities = null;
+    let jupiterDustPhase     = null;
+    let jupiterDustFreq      = null;
+    let jupiterDustAmp       = null;
+    let jupiterDustLife      = null;
+    let jupiterDustMaxLife   = null;
+    let jupiterDustMesh      = null;
+    let jupiterDustInScene   = false;
+
+    // ─── 第6关 天王星极光粒子 ───
+    let uranusAuroraField = null;   // THREE.Group
+    let uranusDustPositions  = null;
+    let uranusDustVelocities = null;
+    let uranusDustPhase     = null;
+    let uranusDustFreq      = null;
+    let uranusDustAmp       = null;
+    let uranusDustLife      = null;
+    let uranusDustMaxLife   = null;
+    let uranusDustMesh      = null;
+    let uranusDustInScene   = false;
+
+    // ─── 第7关 海王星冰晶粒子 ───
+    let neptuneIceField  = null;   // THREE.Group
+    let neptuneDustPositions  = null;
+    let neptuneDustVelocities = null;
+    let neptuneDustPhase     = null;
+    let neptuneDustFreq      = null;
+    let neptuneDustAmp       = null;
+    let neptuneDustLife      = null;
+    let neptuneDustMaxLife   = null;
+    let neptuneDustMesh      = null;
+    let neptuneDustInScene   = false;
+
+    // ─── 第8关 冥王星暗星粒子 ───
+    let plutoDarkField   = null;   // THREE.Group
+    let plutoDustPositions  = null;
+    let plutoDustVelocities = null;
+    let plutoDustPhase     = null;
+    let plutoDustFreq      = null;
+    let plutoDustAmp       = null;
+    let plutoDustLife      = null;
+    let plutoDustMaxLife   = null;
+    let plutoDustMesh      = null;
+    let plutoDustInScene   = false;
 
     // ─── 辅助：生成土星条纹纹理（Canvas 2D） ───
     function makeSaturnBodyTexture() {
@@ -548,6 +656,224 @@ function showSaturn() {
               saturnModel = gltf.scene;
               saturnModel.scale.set(saturnModelScale, saturnModelScale, saturnModelScale);
               saturnModel.position.set(0, 0, 0);
+    // ═══════════════════════════════════════════════════════
+    //  第3关 火星基地 — showMars() / hideMars()
+    // ═══════════════════════════════════════════════════════
+    function showMars() {
+      console.log('[MARS] showMars(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        // 1. 加载/显示 .glb 模型
+        if (!marsModel && !marsLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[MARS] GLTFLoader not loaded!'); marsLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            marsModelUrl,
+            (gltf) => {
+              marsModel = gltf.scene;
+              marsModel.scale.set(marsModelScale, marsModelScale, marsModelScale);
+              marsModel.position.set(0, 0, 0);
+              marsModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[MARS] .glb model loaded');
+              if (marsInScene) { marsModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[MARS] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[MARS] .glb load error:', err); marsLoadError = true; }
+          );
+        }
+        // 2. 模型 visible 切换
+        if (marsModel) {
+          if (!marsInScene) { scene.add(marsModel); marsInScene = true; }
+          marsModel.visible = true;
+          marsModel.position.x = 18;
+          marsModel.position.y = -3;
+          if (sphere) marsModel.position.z = sphere.position.z + 22;
+          console.log('[MARS] model shown (visible=true)');
+        }
+        // 3. 主题背景
+        if (!marsBgGroup) marsBgGroup = createStageBackground(3);
+        if (marsBgGroup && !marsBgInScene) { scene.add(marsBgGroup); marsBgInScene = true; }
+        if (marsBgGroup) marsBgGroup.visible = true;
+      } catch(e) { console.error('[MARS] showMars ERROR:', e); }
+    }
+    function hideMars() {
+      console.log("[MARS] hideMars()");
+      try {
+        if (marsInScene && marsModel) { marsModel.visible = false; }
+        if (marsBgGroup && marsBgInScene) { marsBgGroup.visible = false; }
+      } catch(e) { console.error("[MARS] hideMars ERROR:", e); }
+    }
+    // ═══════════════════════════════════════════════════════
+    //  第4关 木星风暴 — showJupiter() / hideJupiter()
+    // ═══════════════════════════════════════════════════════
+    function showJupiter() {
+      console.log('[JUPITER] showJupiter(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!jupiterModel && !jupiterLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[JUPITER] GLTFLoader not loaded!'); jupiterLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            jupiterModelUrl,
+            (gltf) => {
+              jupiterModel = gltf.scene;
+              jupiterModel.scale.set(jupiterModelScale, jupiterModelScale, jupiterModelScale);
+              jupiterModel.position.set(0, 0, 0);
+              jupiterModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[JUPITER] .glb model loaded');
+              if (jupiterInScene) { jupiterModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[JUPITER] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[JUPITER] .glb load error:', err); jupiterLoadError = true; }
+          );
+        }
+        if (jupiterModel) {
+          if (!jupiterInScene) { scene.add(jupiterModel); jupiterInScene = true; }
+          jupiterModel.visible = true;
+          jupiterModel.position.x = -20;
+          jupiterModel.position.y = -3;
+          if (sphere) jupiterModel.position.z = sphere.position.z + 20;
+          console.log('[JUPITER] model shown (visible=true)');
+        }
+        if (!jupiterBgGroup) jupiterBgGroup = createStageBackground(4);
+        if (jupiterBgGroup && !jupiterBgInScene) { scene.add(jupiterBgGroup); jupiterBgInScene = true; }
+        if (jupiterBgGroup) jupiterBgGroup.visible = true;
+      } catch(e) { console.error('[JUPITER] showJupiter ERROR:', e); }
+    }
+    function hideJupiter() {
+      console.log("[JUPITER] hideJupiter()");
+      try {
+        if (jupiterInScene && jupiterModel) { jupiterModel.visible = false; }
+        if (jupiterBgGroup && jupiterBgInScene) { jupiterBgGroup.visible = false; }
+      } catch(e) { console.error("[JUPITER] hideJupiter ERROR:", e); }
+    }
+    // ═══════════════════════════════════════════════════════
+    //  第6关 天王星极光 — showUranus() / hideUranus()
+    // ═══════════════════════════════════════════════════════
+    function showUranus() {
+      console.log('[URANUS] showUranus(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!uranusModel && !uranusLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[URANUS] GLTFLoader not loaded!'); uranusLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            uranusModelUrl,
+            (gltf) => {
+              uranusModel = gltf.scene;
+              uranusModel.scale.set(uranusModelScale, uranusModelScale, uranusModelScale);
+              uranusModel.position.set(0, 0, 0);
+              uranusModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[URANUS] .glb model loaded');
+              if (uranusInScene) { uranusModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[URANUS] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[URANUS] .glb load error:', err); uranusLoadError = true; }
+          );
+        }
+        if (uranusModel) {
+          if (!uranusInScene) { scene.add(uranusModel); uranusInScene = true; }
+          uranusModel.visible = true;
+          uranusModel.position.x = 16;
+          uranusModel.position.y = -3;
+          if (sphere) uranusModel.position.z = sphere.position.z + 24;
+          console.log('[URANUS] model shown (visible=true)');
+        }
+        if (!uranusBgGroup) uranusBgGroup = createStageBackground(6);
+        if (uranusBgGroup && !uranusBgInScene) { scene.add(uranusBgGroup); uranusBgInScene = true; }
+        if (uranusBgGroup) uranusBgGroup.visible = true;
+      } catch(e) { console.error('[URANUS] showUranus ERROR:', e); }
+    }
+    function hideUranus() {
+      console.log("[URANUS] hideUranus()");
+      try {
+        if (uranusInScene && uranusModel) { uranusModel.visible = false; }
+        if (uranusBgGroup && uranusBgInScene) { uranusBgGroup.visible = false; }
+      } catch(e) { console.error("[URANUS] hideUranus ERROR:", e); }
+    }
+    // ═══════════════════════════════════════════════════════
+    //  第7关 海王星冰暴 — showNeptune() / hideNeptune()
+    // ═══════════════════════════════════════════════════════
+    function showNeptune() {
+      console.log('[NEPTUNE] showNeptune(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!neptuneModel && !neptuneLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[NEPTUNE] GLTFLoader not loaded!'); neptuneLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            neptuneModelUrl,
+            (gltf) => {
+              neptuneModel = gltf.scene;
+              neptuneModel.scale.set(neptuneModelScale, neptuneModelScale, neptuneModelScale);
+              neptuneModel.position.set(0, 0, 0);
+              neptuneModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[NEPTUNE] .glb model loaded');
+              if (neptuneInScene) { neptuneModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[NEPTUNE] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[NEPTUNE] .glb load error:', err); neptuneLoadError = true; }
+          );
+        }
+        if (neptuneModel) {
+          if (!neptuneInScene) { scene.add(neptuneModel); neptuneInScene = true; }
+          neptuneModel.visible = true;
+          neptuneModel.position.x = -18;
+          neptuneModel.position.y = -3;
+          if (sphere) neptuneModel.position.z = sphere.position.z + 20;
+          console.log('[NEPTUNE] model shown (visible=true)');
+        }
+        if (!neptuneBgGroup) neptuneBgGroup = createStageBackground(7);
+        if (neptuneBgGroup && !neptuneBgInScene) { scene.add(neptuneBgGroup); neptuneBgInScene = true; }
+        if (neptuneBgGroup) neptuneBgGroup.visible = true;
+      } catch(e) { console.error('[NEPTUNE] showNeptune ERROR:', e); }
+    }
+    function hideNeptune() {
+      console.log("[NEPTUNE] hideNeptune()");
+      try {
+        if (neptuneInScene && neptuneModel) { neptuneModel.visible = false; }
+        if (neptuneBgGroup && neptuneBgInScene) { neptuneBgGroup.visible = false; }
+      } catch(e) { console.error("[NEPTUNE] hideNeptune ERROR:", e); }
+    }
+    // ═══════════════════════════════════════════════════════
+    //  第8关 冥王星冰原 — showPluto() / hidePluto()
+    // ═══════════════════════════════════════════════════════
+    function showPluto() {
+      console.log('[PLUTO] showPluto(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!plutoModel && !plutoLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[PLUTO] GLTFLoader not loaded!'); plutoLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            plutoModelUrl,
+            (gltf) => {
+              plutoModel = gltf.scene;
+              plutoModel.scale.set(plutoModelScale, plutoModelScale, plutoModelScale);
+              plutoModel.position.set(0, 0, 0);
+              plutoModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[PLUTO] .glb model loaded');
+              if (plutoInScene) { plutoModel.visible = true; }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[PLUTO] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[PLUTO] .glb load error:', err); plutoLoadError = true; }
+          );
+        }
+        if (plutoModel) {
+          if (!plutoInScene) { scene.add(plutoModel); plutoInScene = true; }
+          plutoModel.visible = true;
+          plutoModel.position.x = 20;
+          plutoModel.position.y = -3;
+          if (sphere) plutoModel.position.z = sphere.position.z + 26;
+          console.log('[PLUTO] model shown (visible=true)');
+        }
+        if (!plutoBgGroup) plutoBgGroup = createStageBackground(8);
+        if (plutoBgGroup && !plutoBgInScene) { scene.add(plutoBgGroup); plutoBgInScene = true; }
+        if (plutoBgGroup) plutoBgGroup.visible = true;
+      } catch(e) { console.error('[PLUTO] showPluto ERROR:', e); }
+    }
+    function hidePluto() {
+      console.log("[PLUTO] hidePluto()");
+      try {
+        if (plutoInScene && plutoModel) { plutoModel.visible = false; }
+        if (plutoBgGroup && plutoBgInScene) { plutoBgGroup.visible = false; }
+      } catch(e) { console.error("[PLUTO] hidePluto ERROR:", e); }
+    }
               saturnModel.traverse((child) => {
                 if (child.isMesh) {
                   child.castShadow = true;
@@ -4987,19 +5313,39 @@ function showSaturn() {
       // 关卡3D模型场景（根据 _currentStage.id 显示对应模型）
       if (gameMode === 'stages' && _currentStage) {
         const sid = _currentStage.id;
-        // 隐藏非当前关卡的模型
-        if (sid !== 1) hideEarth();
-        if (sid !== 2) hideMoonBase();
-        if (sid !== 5) hideSaturn();
-        // 显示当前关卡模型
+        // 隐藏所有关卡模型（非当前关）
+        hideEarth(); hideMoonBase(); hideSaturn();
+        if (typeof hideMars === 'function') hideMars();
+        if (typeof hideJupiter === 'function') hideJupiter();
+        if (typeof hideUranus === 'function') hideUranus();
+        if (typeof hideNeptune === 'function') hideNeptune();
+        if (typeof hidePluto === 'function') hidePluto();
+        // 隐藏所有背景
+        if (earthBgGroup && earthBgInScene) earthBgGroup.visible = false;
+        if (moonBgGroup && moonBgInScene) moonBgGroup.visible = false;
+        if (saturnBgGroup && saturnBgInScene) saturnBgGroup.visible = false;
+        if (marsBgGroup && marsBgInScene) marsBgGroup.visible = false;
+        if (jupiterBgGroup && jupiterBgInScene) jupiterBgGroup.visible = false;
+        if (uranusBgGroup && uranusBgInScene) uranusBgGroup.visible = false;
+        if (neptuneBgGroup && neptuneBgInScene) neptuneBgGroup.visible = false;
+        if (plutoBgGroup && plutoBgInScene) plutoBgGroup.visible = false;
+        // 显示当前关卡
         if (sid === 1) showEarth();
         else if (sid === 2) showMoonBase();
+        else if (sid === 3) { if (typeof showMars === 'function') showMars(); }
+        else if (sid === 4) { if (typeof showJupiter === 'function') showJupiter(); }
         else if (sid === 5) showSaturn();
+        else if (sid === 6) { if (typeof showUranus === 'function') showUranus(); }
+        else if (sid === 7) { if (typeof showNeptune === 'function') showNeptune(); }
+        else if (sid === 8) { if (typeof showPluto === 'function') showPluto(); }
       } else {
         // 非闯关模式：隐藏所有
-        hideEarth();
-        hideMoonBase();
-        hideSaturn();
+        hideEarth(); hideMoonBase(); hideSaturn();
+        if (typeof hideMars === 'function') hideMars();
+        if (typeof hideJupiter === 'function') hideJupiter();
+        if (typeof hideUranus === 'function') hideUranus();
+        if (typeof hideNeptune === 'function') hideNeptune();
+        if (typeof hidePluto === 'function') hidePluto();
       }
     }
 
