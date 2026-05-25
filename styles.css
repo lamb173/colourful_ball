@@ -1107,21 +1107,12 @@
        ═════════════════════════════════════════════════════ */
     #music-ctrl {
       position: fixed;
-      top: 18px;
-      right: 18px;
+      top: 14px;
+      right: 14px;
       z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0,0,0,0.45);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 22px;
-      padding: 6px 14px 6px 10px;
-      transition: opacity 0.4s, transform 0.3s;
       opacity: 0;
       pointer-events: none;
+      transition: opacity 0.4s;
     }
     #music-ctrl.show {
       opacity: 1;
@@ -1131,24 +1122,87 @@
       opacity: 0 !important;
       pointer-events: none !important;
     }
+
+    /* ---- 扬声器按钮 ---- */
     #music-btn {
-      width: 36px;
-      height: 36px;
-      border: none;
-      background: rgba(255,255,255,0.08);
-      border-radius: 50%;
-      font-size: 18px;
-      line-height: 36px;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       cursor: pointer;
-      transition: background 0.2s, transform 0.15s;
-      flex-shrink: 0;
+      transition: border-color 0.2s;
     }
-    #music-btn:hover { background: rgba(255,255,255,0.18); }
-    #music-btn:active { transform: scale(0.9); }
-    #music-btn.muted { opacity: 0.5; }
+    #music-btn:hover { border-color: rgba(255,255,255,0.35); }
+
+    .music-icon-text {
+      font-size: 17px;
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    #music-btn.muted .music-icon-text {
+      filter: grayscale(1);
+      opacity: 0.55;
+    }
+
+    /* ---- 信号条 ---- */
+    .music-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 16px;
+    }
+    .mbar {
+      display: block;
+      width: 3px;
+      border-radius: 1px;
+      background: rgba(255,255,255,0.25);
+      transition: background 0.2s, height 0.25s;
+    }
+    .mbar:nth-child(1) { height: 4px;  }
+    .mbar:nth-child(2) { height: 7px;  }
+    .mbar:nth-child(3) { height: 11px; }
+    .mbar:nth-child(4) { height: 15px; }
+    #music-btn.lvl-1 .mbar:nth-child(1) { background: #88cc88; }
+    #music-btn.lvl-2 .mbar:nth-child(1),
+    #music-btn.lvl-2 .mbar:nth-child(2) { background: #88cc88; }
+    #music-btn.lvl-3 .mbar:nth-child(1),
+    #music-btn.lvl-3 .mbar:nth-child(2),
+    #music-btn.lvl-3 .mbar:nth-child(3) { background: #88cc88; }
+    #music-btn.lvl-4 .mbar { background: #aadd66; }
+    #music-btn.muted .mbar { background: rgba(255,255,255,0.18) !important; }
+
+    /* ---- 弹出面板 ---- */
+    #music-popup {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 6px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.95);
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+    #music-popup.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    /* ---- 滑块 ---- */
     #music-vol {
-      width: 90px;
+      width: 100px;
       height: 4px;
       -webkit-appearance: none;
       appearance: none;
@@ -1156,20 +1210,19 @@
       border-radius: 2px;
       outline: none;
       cursor: pointer;
-      transition: opacity 0.3s;
     }
     #music-vol::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       background: #88aaff;
       cursor: pointer;
-      box-shadow: 0 0 6px rgba(136,170,255,0.5);
+      box-shadow: 0 0 6px rgba(136,170,255,0.4);
     }
     #music-vol::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       border: none;
       border-radius: 50%;
       background: #88aaff;

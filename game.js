@@ -6821,54 +6821,100 @@ function showSaturn() {
    背景音乐控制器
    ═════════════════════════════════════════════════════ */
 (function initMusicCtrl() {
-  const audio      = new Audio('科技新时代 by 杰杰-完整版.mp3');
+  const audio = new Audio('科技新时代 by 杰杰-完整版.mp3');
   audio.loop     = true;
   audio.volume   = 0.5;
   audio.autoplay = false;
 
-  const btn    = document.getElementById('music-btn');
-  const vol    = document.getElementById('music-vol');
-  const ctrl   = document.getElementById('music-ctrl');
-  let   played = false;   // 是否已开始播放（处理浏览器自动播放限制）
+  const btn      = document.getElementById('music-btn');
+  const icon     = document.getElementById('music-icon');
+  const bars     = document.getElementById('music-bars');
+  const vol      = document.getElementById('music-vol');
+  const popup    = document.getElementById('music-popup');
+  const ctrl     = document.getElementById('music-ctrl');
+  let   played   = false;
+  let   popupOpen= false;
 
-  /* 音量滑块 → 取消静音 + 设置音量 */
+  /* 更新图标 & 信号条 */
+  function updateIcon() {
+    if (!icon || !btn) return;
+    let lvl = 0;
+    if (!audio.muted && audio.volume > 0) {
+      if (audio.volume <= 0.33)      { lvl = 1; icon.textContent = '🔈'; }
+      else if (audio.volume <= 0.66) { lvl = 2; icon.textContent = '🔉'; }
+      else                           { lvl = 3; icon.textContent = '🔊'; }
+    } else {
+      icon.textContent = '🔇';
+    }
+    btn.classList.toggle('muted', audio.muted || audio.volume === 0);
+    /* 信号条级别 */
+    btn.classList.remove('lvl-1','lvl-2','lvl-3','lvl-4');
+    if (lvl > 0) btn.classList.add('lvl-' + lvl);
+  }
+
+  /* 滑块同步 */
+  function syncSlider() {
+    if (!vol) return;
+    vol.value = Math.round(audio.volume * 100);
+  }
+
+  /* 打开/关闭弹出面板 */
+  function togglePopup(force) {
+    if (!popup) return;
+    popupOpen = (typeof force === 'boolean') ? force : !popupOpen;
+    popup.classList.toggle('open', popupOpen);
+  }
+
+  /* 扬声器按钮 → 切换静音 / 打开面板 */
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!popupOpen) {
+      togglePopup(true);
+    } else {
+      /* 面板已开 → 切换静音 */
+      audio.muted = !audio.muted;
+      updateIcon();
+      syncSlider();
+    }
+  });
+
+  /* 滑块变化 */
   vol.addEventListener('input', () => {
     audio.muted  = false;
-    audio.volume  = vol.value / 100;
-    btn.classList.remove('muted');
-    btn.textContent = audio.volume === 0 ? '🔇' : '🔊';
+    audio.volume = vol.value / 100;
+    updateIcon();
   });
 
-  /* 扬声器按钮 → 切换静音 */
-  btn.addEventListener('click', () => {
-    audio.muted = !audio.muted;
-    btn.classList.toggle('muted', audio.muted);
-    btn.textContent = audio.muted ? '🔇' : (audio.volume === 0 ? '🔇' : '🔊');
+  /* 点击外部关闭面板 */
+  document.addEventListener('click', (e) => {
+    if (popupOpen && !ctrl.contains(e.target)) {
+      togglePopup(false);
+    }
   });
 
-  /* 在第一次用户交互时开始播放 */
+  /* 首次交互播放 */
   function tryPlay() {
     if (played) return;
     played = true;
     audio.play().then(() => {
-      /* 播放成功后：非欢迎页且非游戏中才显示控制器 */
       if (!document.getElementById('welcome-page')?.classList.contains('active') && !gameStarted) {
         ctrl.classList.add('show');
         ctrl.classList.remove('hide');
       }
+      updateIcon();
+      syncSlider();
       console.log('[MUSIC] 背景音乐开始播放');
     }).catch(err => {
       console.warn('[MUSIC] 自动播放被阻止，等待用户交互', err);
-      played = false;   // 允许重试
+      played = false;
     });
   }
 
-  /* 监听所有点击（欢迎页点击、按钮点击等）*/
   ['click','touchstart'].forEach(ev => {
     document.addEventListener(ev, tryPlay, { once: false });
   });
 
-  /* 导出全局控制函数，供 game.js 在界面切换时调用 */
+  /* 导出 */
   window.showMusicCtrl = function () {
     if (!ctrl) return;
     if (document.getElementById('welcome-page')?.classList.contains('active')) return;
@@ -6882,20 +6928,15 @@ function showSaturn() {
     ctrl.classList.add('hide');
   };
 
-  /* 每秒检查界面状态，控制控制器显示/隐藏 */
+  /* 每秒轮询 */
   setInterval(() => {
     if (!ctrl) return;
-    const welcomeActive  = !!document.getElementById('welcome-page')?.classList.contains('active');
-    const modeActive     = !!document.getElementById('mode-page')?.classList.contains('active');
-    const startActive    = !!document.getElementById('start-screen')?.classList.contains('active');
-    const stageActive   = !!document.getElementById('stage-select-page')?.classList.contains('active');
-    const gameoverActive = !!document.getElementById('gameover')?.classList.contains('active');
-    const victoryActive  = !!document.getElementById('victory')?.classList.contains('active');
-    const inGame        = !!gameStarted;
-
+    const welcomeActive = !!document.getElementById('welcome-page')?.classList.contains('active');
+    const inGame       = !!gameStarted;
     if (welcomeActive || inGame) {
       ctrl.classList.remove('show');
       ctrl.classList.add('hide');
+      togglePopup(false);
     } else {
       ctrl.classList.remove('hide');
       ctrl.classList.add('show');

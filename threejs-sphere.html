@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!-- v2026-05-23-split -->
   <title>弹跳小球 · 星际穿越</title>
-  <link rel="stylesheet" href="styles.css?v=20.6">
+  <link rel="stylesheet" href="styles.css?v=20.7">
 </head>
 <body>
   <!-- ① 欢迎页 -->
@@ -152,13 +152,20 @@
 
   <!-- 背景音乐控制器 -->
   <div id="music-ctrl" class="music-ctrl">
-    <button id="music-btn" class="music-btn" title="背景音乐">🔊</button>
-    <input type="range" id="music-vol" class="music-vol" min="0" max="100" value="50" title="音量">
+    <button id="music-btn" class="music-btn" title="背景音乐">
+      <span id="music-icon" class="music-icon-text">🔊</span>
+      <span class="music-bars" id="music-bars">
+        <i class="mbar"></i><i class="mbar"></i><i class="mbar"></i><i class="mbar"></i>
+      </span>
+    </button>
+    <div id="music-popup" class="music-popup">
+      <input type="range" id="music-vol" class="music-vol" min="0" max="100" value="50" title="音量">
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="game.js?v=20.6e"></script>
+  <script src="game.js?v=20.7"></script>
   <!-- 调试：错误显示 -->
 </body>
 </html>
