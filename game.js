@@ -550,7 +550,7 @@
           if (!earthInScene) { scene.add(earthModel); earthInScene = true; }
           earthModel.visible = true;
           earthModel.position.x = -8;
-          earthModel.position.y = -3;
+          earthModel.position.y = -6;
           if (sphere) earthModel.position.z = sphere.position.z + 40;
           console.log('[EARTH] model shown (visible=true)');
         }
@@ -5695,7 +5695,7 @@ function showSaturn() {
       // 第1关 地球
       if (earthInScene && earthModel) {
         earthModel.rotation.y += 0.01;
-        if (sphere) { earthModel.position.x = -8; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 40; }
+        if (sphere) { earthModel.position.x = -8; earthModel.position.y = -6; earthModel.position.z = sphere.position.z + 40; }
       }
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
