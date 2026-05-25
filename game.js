@@ -6852,13 +6852,9 @@ function showSaturn() {
     played = true;
     audio.play().then(() => {
       /* 播放成功后：非欢迎页且非游戏中才显示控制器 */
-      console.log('[MUSIC] ctrl exists?', !!ctrl, 'gameStarted?', !!gameStarted, 'welcome active?', !!document.getElementById('welcome-page')?.classList.contains('active'));
       if (!document.getElementById('welcome-page')?.classList.contains('active') && !gameStarted) {
         ctrl.classList.add('show');
         ctrl.classList.remove('hide');
-        console.log('[MUSIC] ctrl shown, classes:', ctrl.className);
-      } else {
-        console.log('[MUSIC] ctrl NOT shown (welcome or game active)');
       }
       console.log('[MUSIC] 背景音乐开始播放');
     }).catch(err => {
