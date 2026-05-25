@@ -6816,3 +6816,83 @@ function showSaturn() {
       console.log('[PLUTO-DARK] done, stars=' + STAR_COUNT);
       return group;
     }
+
+/* ═════════════════════════════════════════════════════
+   背景音乐控制器
+   ═════════════════════════════════════════════════════ */
+(function initMusicCtrl() {
+  const audio      = new Audio('科技新时代 by 杰杰-完整版.mp3');
+  audio.loop     = true;
+  audio.volume   = 0.5;
+  audio.autoplay = false;
+
+  const btn    = document.getElementById('music-btn');
+  const vol    = document.getElementById('music-vol');
+  const ctrl   = document.getElementById('music-ctrl');
+  let   played = false;   // 是否已开始播放（处理浏览器自动播放限制）
+
+  /* 音量滑块 → 取消静音 + 设置音量 */
+  vol.addEventListener('input', () => {
+    audio.muted  = false;
+    audio.volume  = vol.value / 100;
+    btn.classList.remove('muted');
+    btn.textContent = audio.volume === 0 ? '🔇' : '🔊';
+  });
+
+  /* 扬声器按钮 → 切换静音 */
+  btn.addEventListener('click', () => {
+    audio.muted = !audio.muted;
+    btn.classList.toggle('muted', audio.muted);
+    btn.textContent = audio.muted ? '🔇' : (audio.volume === 0 ? '🔇' : '🔊');
+  });
+
+  /* 在第一次用户交互时开始播放 */
+  function tryPlay() {
+    if (played) return;
+    played = true;
+    audio.play().then(() => {
+      ctrl.classList.add('show');
+      console.log('[MUSIC] 背景音乐开始播放');
+    }).catch(err => {
+      console.warn('[MUSIC] 自动播放被阻止，等待用户交互', err);
+      played = false;   // 允许重试
+    });
+  }
+
+  /* 监听所有点击（欢迎页点击、按钮点击等）*/
+  ['click','touchstart'].forEach(ev => {
+    document.addEventListener(ev, tryPlay, { once: false });
+  });
+
+  /* 根据当前界面显示/隐藏音乐控制器 */
+  function updateMusicCtrlVisibility() {
+    if (!ctrl) return;
+    const welcomeActive  = document.getElementById('welcome-page')?.classList.contains('active');
+    const modeActive     = document.getElementById('mode-page')?.classList.contains('active');
+    const startActive    = document.getElementById('start-screen')?.classList.contains('active');
+    const stageActive   = document.getElementById('stage-select-page')?.classList.contains('active');
+    const gameoverActive = document.getElementById('gameover')?.classList.contains('active');
+    const victoryActive  = document.getElementById('victory')?.classList.contains('active');
+    const inGame         = !welcomeActive && !modeActive && !startActive && !stageActive && !gameoverActive && !victoryActive;
+
+    if (welcomeActive || inGame) {
+      ctrl.classList.remove('show');
+      ctrl.classList.add('hide');
+    } else {
+      ctrl.classList.remove('hide');
+      ctrl.classList.add('show');
+    }
+  }
+
+  /* 监听界面切换 */
+  const obs = new MutationObserver(updateMusicCtrlVisibility);
+  ['welcome-page','mode-page','start-screen','stage-select-page','gameover','victory'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  /* 立即检查一次 */
+  updateMusicCtrlVisibility();
+
+  console.log('[MUSIC] 背景音乐控制器已初始化');
+})();

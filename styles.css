@@ -1102,3 +1102,77 @@
       line-height: 1.4;
     }
 
+    /* ═════════════════════════════════════════════════════
+       背景音乐控制器
+       ═════════════════════════════════════════════════════ */
+    #music-ctrl {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 22px;
+      padding: 6px 14px 6px 10px;
+      transition: opacity 0.4s, transform 0.3s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #music-ctrl.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #music-ctrl.hide {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    #music-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+      font-size: 18px;
+      line-height: 36px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      flex-shrink: 0;
+    }
+    #music-btn:hover { background: rgba(255,255,255,0.18); }
+    #music-btn:active { transform: scale(0.9); }
+    #music-btn.muted { opacity: 0.5; }
+    #music-vol {
+      width: 90px;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+    #music-vol::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #88aaff;
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(136,170,255,0.5);
+    }
+    #music-vol::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: #88aaff;
+      cursor: pointer;
+    }
+  
