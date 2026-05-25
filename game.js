@@ -99,21 +99,21 @@
     // ─── 第1关 地球轨道 ───
     let earthModel       = null;
     let earthModelUrl    = 'assets/models/earth_moon_20260524.glb';
-    let earthModelScale  = 25;
+    let earthModelScale  = 35;
     let earthInScene     = false;
     let earthLoadError   = false;
 
     // ─── 第2关 月球中转站 ───
     let moonBaseModel    = null;
     let moonBaseModelUrl = 'assets/models/moon_base_20260524.glb';
-    let moonBaseModelScale = 25;
+    let moonBaseModelScale = 35;
     let moonBaseInScene = false;
     let moonBaseLoadError = false;
 
     // ─── 第5关 土星风暴 ───
     let saturnModel       = null;
     let saturnModelUrl    = 'assets/models/saturn_20260524.glb';
-    let saturnModelScale  = 25;
+    let saturnModelScale  = 35;
     let saturnStarfield   = null;
     let saturnInScene    = false;
     let starfieldInScene = false;
@@ -5705,7 +5705,7 @@ function showSaturn() {
       // 第5关 土星
       if (saturnInScene && saturnModel) {
         saturnModel.rotation.y += 0.01;
-        if (sphere) { saturnModel.position.x = 10; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 45; }
+        if (sphere) { saturnModel.position.x = 5; saturnModel.position.y = -6; saturnModel.position.z = sphere.position.z + 45; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
