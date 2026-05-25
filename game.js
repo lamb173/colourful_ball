@@ -6851,7 +6851,15 @@ function showSaturn() {
     if (played) return;
     played = true;
     audio.play().then(() => {
-      ctrl.classList.add('show');
+      /* 播放成功后：非欢迎页且非游戏中才显示控制器 */
+      console.log('[MUSIC] ctrl exists?', !!ctrl, 'gameStarted?', !!gameStarted, 'welcome active?', !!document.getElementById('welcome-page')?.classList.contains('active'));
+      if (!document.getElementById('welcome-page')?.classList.contains('active') && !gameStarted) {
+        ctrl.classList.add('show');
+        ctrl.classList.remove('hide');
+        console.log('[MUSIC] ctrl shown, classes:', ctrl.className);
+      } else {
+        console.log('[MUSIC] ctrl NOT shown (welcome or game active)');
+      }
       console.log('[MUSIC] 背景音乐开始播放');
     }).catch(err => {
       console.warn('[MUSIC] 自动播放被阻止，等待用户交互', err);
@@ -6864,16 +6872,30 @@ function showSaturn() {
     document.addEventListener(ev, tryPlay, { once: false });
   });
 
-  /* 根据当前界面显示/隐藏音乐控制器 */
-  function updateMusicCtrlVisibility() {
+  /* 导出全局控制函数，供 game.js 在界面切换时调用 */
+  window.showMusicCtrl = function () {
     if (!ctrl) return;
-    const welcomeActive  = document.getElementById('welcome-page')?.classList.contains('active');
-    const modeActive     = document.getElementById('mode-page')?.classList.contains('active');
-    const startActive    = document.getElementById('start-screen')?.classList.contains('active');
-    const stageActive   = document.getElementById('stage-select-page')?.classList.contains('active');
-    const gameoverActive = document.getElementById('gameover')?.classList.contains('active');
-    const victoryActive  = document.getElementById('victory')?.classList.contains('active');
-    const inGame         = !welcomeActive && !modeActive && !startActive && !stageActive && !gameoverActive && !victoryActive;
+    if (document.getElementById('welcome-page')?.classList.contains('active')) return;
+    if (gameStarted) return;
+    ctrl.classList.remove('hide');
+    ctrl.classList.add('show');
+  };
+  window.hideMusicCtrl = function () {
+    if (!ctrl) return;
+    ctrl.classList.remove('show');
+    ctrl.classList.add('hide');
+  };
+
+  /* 每秒检查界面状态，控制控制器显示/隐藏 */
+  setInterval(() => {
+    if (!ctrl) return;
+    const welcomeActive  = !!document.getElementById('welcome-page')?.classList.contains('active');
+    const modeActive     = !!document.getElementById('mode-page')?.classList.contains('active');
+    const startActive    = !!document.getElementById('start-screen')?.classList.contains('active');
+    const stageActive   = !!document.getElementById('stage-select-page')?.classList.contains('active');
+    const gameoverActive = !!document.getElementById('gameover')?.classList.contains('active');
+    const victoryActive  = !!document.getElementById('victory')?.classList.contains('active');
+    const inGame        = !!gameStarted;
 
     if (welcomeActive || inGame) {
       ctrl.classList.remove('show');
@@ -6882,17 +6904,7 @@ function showSaturn() {
       ctrl.classList.remove('hide');
       ctrl.classList.add('show');
     }
-  }
-
-  /* 监听界面切换 */
-  const obs = new MutationObserver(updateMusicCtrlVisibility);
-  ['welcome-page','mode-page','start-screen','stage-select-page','gameover','victory'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] });
-  });
-
-  /* 立即检查一次 */
-  updateMusicCtrlVisibility();
+  }, 1000);
 
   console.log('[MUSIC] 背景音乐控制器已初始化');
 })();
