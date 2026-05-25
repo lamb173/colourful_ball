@@ -982,6 +982,81 @@ function showSaturn() {
           (err) => { console.error('[PRELOAD] 土星模型加载失败:', err); saturnLoadError = true; }
         );
       }
+      // 第3关 火星
+      if (!marsModel && !marsLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          marsModelUrl,
+          (gltf) => {
+            marsModel = gltf.scene;
+            marsModel.scale.set(marsModelScale, marsModelScale, marsModelScale);
+            marsModel.position.set(0, 0, 0);
+            marsModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 火星模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 火星模型加载失败:', err); marsLoadError = true; }
+        );
+      }
+      // 第4关 木星
+      if (!jupiterModel && !jupiterLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          jupiterModelUrl,
+          (gltf) => {
+            jupiterModel = gltf.scene;
+            jupiterModel.scale.set(jupiterModelScale, jupiterModelScale, jupiterModelScale);
+            jupiterModel.position.set(0, 0, 0);
+            jupiterModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 木星模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 木星模型加载失败:', err); jupiterLoadError = true; }
+        );
+      }
+      // 第6关 天王星
+      if (!uranusModel && !uranusLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          uranusModelUrl,
+          (gltf) => {
+            uranusModel = gltf.scene;
+            uranusModel.scale.set(uranusModelScale, uranusModelScale, uranusModelScale);
+            uranusModel.position.set(0, 0, 0);
+            uranusModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 天王星模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 天王星模型加载失败:', err); uranusLoadError = true; }
+        );
+      }
+      // 第7关 海王星
+      if (!neptuneModel && !neptuneLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          neptuneModelUrl,
+          (gltf) => {
+            neptuneModel = gltf.scene;
+            neptuneModel.scale.set(neptuneModelScale, neptuneModelScale, neptuneModelScale);
+            neptuneModel.position.set(0, 0, 0);
+            neptuneModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 海王星模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 海王星模型加载失败:', err); neptuneLoadError = true; }
+        );
+      }
+      // 第8关 冥王星
+      if (!plutoModel && !plutoLoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          plutoModelUrl,
+          (gltf) => {
+            plutoModel = gltf.scene;
+            plutoModel.scale.set(plutoModelScale, plutoModelScale, plutoModelScale);
+            plutoModel.position.set(0, 0, 0);
+            plutoModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 冥王星模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 冥王星模型加载失败:', err); plutoLoadError = true; }
+        );
+      }
     }
     // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
 
@@ -1079,6 +1154,111 @@ function showSaturn() {
           ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.65) + ',' + Math.floor(v*0.2) + ',0.5)';
           ctx.fillRect(x, y, 1+Math.random()*2, 1+Math.random()*2);
         }
+      } else if (stageId === 3) {
+        // 火星：铁锈红 + 岩石纹理 + 沙尘
+        ctx.fillStyle = '#8B3A00';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 80; i++) {
+          const cx = Math.random()*size, cy = Math.random()*size;
+          const cr = 5 + Math.random()*25;
+          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+          grad.addColorStop(0,   'rgba(60,20,0,0.8)');
+          grad.addColorStop(0.7, 'rgba(100,40,10,0.4)');
+          grad.addColorStop(1,   'rgba(139,58,0,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI*2); ctx.fill();
+        }
+        for (let i = 0; i < 3000; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(80 + Math.random()*60);
+          ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.45) + ',0,0.5)';
+          ctx.fillRect(x, y, 1+Math.random()*2, 1);
+        }
+      } else if (stageId === 4) {
+        // 木星：气体云纹理 + 条纹
+        ctx.fillStyle = '#1a2a5a';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 50; i++) {
+          const cx = size/2 + (Math.random()-0.5)*size*0.9;
+          const cy = size/2 + (Math.random()-0.5)*size*0.9;
+          const rx = 15 + Math.random()*80, ry = 6 + Math.random()*30;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(Math.random()*Math.PI*2);
+          const r2 = Math.floor(Math.random()*60)+40, g2 = Math.floor(Math.random()*40)+30, b2 = Math.floor(Math.random()*80)+100;
+          ctx.fillStyle = 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',0.3)';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        }
+        for (let i = 0; i < 2000; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(50 + Math.random()*80);
+          ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.7) + ',' + Math.floor(v*1.2) + ',0.4)';
+          ctx.fillRect(x, y, 1, 1);
+        }
+      } else if (stageId === 6) {
+        // 天王星：冰蓝绿 + 极光条纹
+        ctx.fillStyle = '#004444';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 60; i++) {
+          const cx = Math.random()*size, cy = Math.random()*size;
+          const cr = 8 + Math.random()*35;
+          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+          grad.addColorStop(0,   'rgba(0,80,80,0.6)');
+          grad.addColorStop(0.6, 'rgba(0,60,60,0.3)');
+          grad.addColorStop(1,   'rgba(0,68,68,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI*2); ctx.fill();
+        }
+        for (let i = 0; i < 2500; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(0 + Math.random()*40);
+          ctx.fillStyle = 'rgba(0,' + (v+60) + ',' + (v+80) + ',0.45)';
+          ctx.fillRect(x, y, 1+Math.random()*2, 1);
+        }
+      } else if (stageId === 7) {
+        // 海王星：深海蓝 + 冰晶纹理
+        ctx.fillStyle = '#000822';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 70; i++) {
+          const cx = Math.random()*size, cy = Math.random()*size;
+          const cr = 6 + Math.random()*30;
+          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+          grad.addColorStop(0,   'rgba(20,30,100,0.7)');
+          grad.addColorStop(0.5, 'rgba(10,20,60,0.3)');
+          grad.addColorStop(1,   'rgba(0,8,34,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI*2); ctx.fill();
+        }
+        for (let i = 0; i < 3000; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(100 + Math.random()*100);
+          ctx.fillStyle = 'rgba(' + Math.floor(v*0.3) + ',' + Math.floor(v*0.4) + ',' + v + ',0.5)';
+          ctx.fillRect(x, y, 1, 1);
+        }
+      } else if (stageId === 8) {
+        // 冥王星：漆黑 + 冰晶反光
+        ctx.fillStyle = '#050510';
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 40; i++) {
+          const cx = Math.random()*size, cy = Math.random()*size;
+          const cr = 4 + Math.random()*20;
+          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+          grad.addColorStop(0,   'rgba(200,200,255,0.4)');
+          grad.addColorStop(0.8, 'rgba(100,100,180,0.15)');
+          grad.addColorStop(1,   'rgba(5,5,16,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI*2); ctx.fill();
+        }
+        for (let i = 0; i < 1500; i++) {
+          const x = Math.random()*size, y = Math.random()*size;
+          const v = Math.floor(150 + Math.random()*80);
+          ctx.fillStyle = 'rgba(' + Math.floor(v) + ',' + Math.floor(v) + ',' + Math.floor(v*1.1) + ',0.35)';
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
       const tex = new THREE.Texture(canvas);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
@@ -1112,6 +1292,36 @@ function showSaturn() {
         ribbons = [
           { pts: [[-250,100,-80],[-80,150,60],[100,80,-40],[220,120,90]], color: 0xffaa44, emissive: 0xcc7700 },
           { pts: [[-150,160,40],[50,110,140],[180,140,-20],[300,90,110]], color: 0xffdd88, emissive: 0xcc9900 },
+        ];
+      } else if (stageId === 3) {
+        // 火星：红橙色光带
+        ribbons = [
+          { pts: [[-200,110,-70],[-70,140,50],[90,75,-30],[210,115,85]], color: 0xff4400, emissive: 0xcc3300 },
+          { pts: [[-130,150,30],[30,105,130],[170,145,-25],[290,95,105]], color: 0xff8833, emissive: 0x994400 },
+        ];
+      } else if (stageId === 4) {
+        // 木星：深蓝白色光带
+        ribbons = [
+          { pts: [[-220,105,-75],[-75,145,55],[95,78,-35],[215,118,88]], color: 0x4488ff, emissive: 0x2244cc },
+          { pts: [[-140,155,35],[35,108,135],[175,142,-22],[295,92,108]], color: 0x88bbff, emissive: 0x4466aa },
+        ];
+      } else if (stageId === 6) {
+        // 天王星：冰蓝绿光带
+        ribbons = [
+          { pts: [[-210,108,-72],[-72,142,52],[92,73,-28],[212,112,82]], color: 0x00ccaa, emissive: 0x008866 },
+          { pts: [[-135,152,32],[32,102,132],[172,148,-28],[292,98,102]], color: 0x44ffcc, emissive: 0x22aa88 },
+        ];
+      } else if (stageId === 7) {
+        // 海王星：深海蓝冰蓝光带
+        ribbons = [
+          { pts: [[-230,102,-78],[-78,148,58],[98,72,-25],[218,108,92]], color: 0x0044ff, emissive: 0x0022aa },
+          { pts: [[-145,158,38],[38,112,138],[178,138,-18],[298,88,112]], color: 0x4488ff, emissive: 0x2244aa },
+        ];
+      } else if (stageId === 8) {
+        // 冥王星：暗紫 White 光带
+        ribbons = [
+          { pts: [[-240,100,-80],[-80,150,60],[100,70,-20],[220,110,80]], color: 0x222244, emissive: 0x111122 },
+          { pts: [[-150,160,40],[50,100,140],[180,150,-30],[300,90,100]], color: 0x444466, emissive: 0x222233 },
         ];
       }
 
@@ -1386,6 +1596,131 @@ function showSaturn() {
         group.add(saturnRibbons);
 
         console.log('[BG] Saturn scenic background done');
+      } else if (stageId === 3) {
+        // ─── Stage 3: Mars Canyon - Red sky, rocky ground ───
+        // 1. Sky dome (red-orange)
+        const skyGeo3 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat3 = new THREE.MeshBasicMaterial({ color: 0x8B3A00, side: THREE.BackSide, fog: false });
+        group.add(new THREE.Mesh(skyGeo3, skyMat3));
+        // 2. Ground plane (red rocky)
+        const groundGeo3 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos3 = groundGeo3.attributes.position;
+        for (let i = 0; i < gPos3.count; i++) {
+          const x = gPos3.getX(i), y = gPos3.getY(i);
+          gPos3.setZ(i, (Math.sin(x*0.015)*4 + Math.cos(y*0.015)*4) * 0.5);
+        }
+        gPos3.needsUpdate = true;
+        groundGeo3.computeVertexNormals();
+        const groundMat3 = new THREE.MeshPhongMaterial({ color: 0x8B3A00, map: createGroundTexture(3), fog: false });
+        const ground3 = new THREE.Mesh(groundGeo3, groundMat3);
+        ground3.rotation.x = -Math.PI/2;
+        ground3.position.y = -50;
+        ground3.receiveShadow = true;
+        group.add(ground3);
+        // 3. Light ribbons
+        const marsRibbons = createLightRibbons(3);
+        group.add(marsRibbons);
+        console.log('[BG] Mars scenic background done');
+      } else if (stageId === 4) {
+        // ─── Stage 4: Jupiter Ice Ring - Deep gas blue sky ───
+        // 1. Sky dome (deep gas blue)
+        const skyGeo4 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat4 = new THREE.MeshBasicMaterial({ color: 0x1a2a5a, side: THREE.BackSide, fog: false });
+        group.add(new THREE.Mesh(skyGeo4, skyMat4));
+        // 2. Ground plane (gas cloud)
+        const groundGeo4 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos4 = groundGeo4.attributes.position;
+        for (let i = 0; i < gPos4.count; i++) {
+          const x = gPos4.getX(i), y = gPos4.getY(i);
+          gPos4.setZ(i, (Math.sin(x*0.012)*5 + Math.cos(y*0.012)*5) * 0.4);
+        }
+        gPos4.needsUpdate = true;
+        groundGeo4.computeVertexNormals();
+        const groundMat4 = new THREE.MeshPhongMaterial({ color: 0x1a2a5a, map: createGroundTexture(4), fog: false });
+        const ground4 = new THREE.Mesh(groundGeo4, groundMat4);
+        ground4.rotation.x = -Math.PI/2;
+        ground4.position.y = -50;
+        ground4.receiveShadow = true;
+        group.add(ground4);
+        // 3. Light ribbons
+        const jupiterRibbons = createLightRibbons(4);
+        group.add(jupiterRibbons);
+        console.log('[BG] Jupiter scenic background done');
+      } else if (stageId === 6) {
+        // ─── Stage 6: Uranus Polar - Ice blue-green sky ───
+        // 1. Sky dome (ice blue-green)
+        const skyGeo6 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat6 = new THREE.MeshBasicMaterial({ color: 0x004444, side: THREE.BackSide, fog: false });
+        group.add(new THREE.Mesh(skyGeo6, skyMat6));
+        // 2. Ground plane (ice)
+        const groundGeo6 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos6 = groundGeo6.attributes.position;
+        for (let i = 0; i < gPos6.count; i++) {
+          const x = gPos6.getX(i), y = gPos6.getY(i);
+          gPos6.setZ(i, (Math.sin(x*0.01)*3 + Math.cos(y*0.01)*3) * 0.3);
+        }
+        gPos6.needsUpdate = true;
+        groundGeo6.computeVertexNormals();
+        const groundMat6 = new THREE.MeshPhongMaterial({ color: 0x004444, map: createGroundTexture(6), fog: false });
+        const ground6 = new THREE.Mesh(groundGeo6, groundMat6);
+        ground6.rotation.x = -Math.PI/2;
+        ground6.position.y = -50;
+        ground6.receiveShadow = true;
+        group.add(ground6);
+        // 3. Light ribbons
+        const uranusRibbons = createLightRibbons(6);
+        group.add(uranusRibbons);
+        console.log('[BG] Uranus scenic background done');
+      } else if (stageId === 7) {
+        // ─── Stage 7: Neptune Abyss - Deep sea blue sky ───
+        // 1. Sky dome (deep sea blue)
+        const skyGeo7 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat7 = new THREE.MeshBasicMaterial({ color: 0x000822, side: THREE.BackSide, fog: false });
+        group.add(new THREE.Mesh(skyGeo7, skyMat7));
+        // 2. Ground plane (ice crystal)
+        const groundGeo7 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos7 = groundGeo7.attributes.position;
+        for (let i = 0; i < gPos7.count; i++) {
+          const x = gPos7.getX(i), y = gPos7.getY(i);
+          gPos7.setZ(i, (Math.sin(x*0.018)*4 + Math.cos(y*0.018)*4) * 0.4);
+        }
+        gPos7.needsUpdate = true;
+        groundGeo7.computeVertexNormals();
+        const groundMat7 = new THREE.MeshPhongMaterial({ color: 0x000822, map: createGroundTexture(7), fog: false });
+        const ground7 = new THREE.Mesh(groundGeo7, groundMat7);
+        ground7.rotation.x = -Math.PI/2;
+        ground7.position.y = -50;
+        ground7.receiveShadow = true;
+        group.add(ground7);
+        // 3. Light ribbons
+        const neptuneRibbons = createLightRibbons(7);
+        group.add(neptuneRibbons);
+        console.log('[BG] Neptune scenic background done');
+      } else if (stageId === 8) {
+        // ─── Stage 8: Pluto Dark Zone - Pitch black sky ───
+        // 1. Sky dome (pitch black)
+        const skyGeo8 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat8 = new THREE.MeshBasicMaterial({ color: 0x050510, side: THREE.BackSide, fog: false });
+        group.add(new THREE.Mesh(skyGeo8, skyMat8));
+        // 2. Ground plane (frozen)
+        const groundGeo8 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos8 = groundGeo8.attributes.position;
+        for (let i = 0; i < gPos8.count; i++) {
+          const x = gPos8.getX(i), y = gPos8.getY(i);
+          gPos8.setZ(i, (Math.sin(x*0.008)*6 + Math.cos(y*0.008)*6) * 0.3);
+        }
+        gPos8.needsUpdate = true;
+        groundGeo8.computeVertexNormals();
+        const groundMat8 = new THREE.MeshPhongMaterial({ color: 0x050510, map: createGroundTexture(8), fog: false });
+        const ground8 = new THREE.Mesh(groundGeo8, groundMat8);
+        ground8.rotation.x = -Math.PI/2;
+        ground8.position.y = -50;
+        ground8.receiveShadow = true;
+        group.add(ground8);
+        // 3. Light ribbons
+        const plutoRibbons = createLightRibbons(8);
+        group.add(plutoRibbons);
+        console.log('[BG] Pluto scenic background done');
       }
 
       return group;
@@ -5460,6 +5795,61 @@ function showSaturn() {
       }
 
       if (saturnBgInScene && saturnBgGroup) saturnBgGroup.rotation.y += 0.00004;
+      // 第3/4/6/7/8关 背景旋转
+      if (marsBgInScene && marsBgGroup) marsBgGroup.rotation.y += 0.00004;
+      if (jupiterBgInScene && jupiterBgGroup) jupiterBgGroup.rotation.y += 0.00003;
+      if (uranusBgInScene && uranusBgGroup) uranusBgGroup.rotation.y += 0.00002;
+      if (neptuneBgInScene && neptuneBgGroup) neptuneBgGroup.rotation.y += 0.000025;
+      if (plutoBgInScene && plutoBgGroup) plutoBgGroup.rotation.y += 0.000015;
+      // 主题背景 Z 跟随球（防止背景落在后面）
+      if (sphere) {
+        if (marsBgInScene && marsBgGroup) marsBgGroup.position.z = sphere.position.z;
+        if (jupiterBgInScene && jupiterBgGroup) jupiterBgGroup.position.z = sphere.position.z;
+        if (uranusBgInScene && uranusBgGroup) uranusBgGroup.position.z = sphere.position.z;
+        if (neptuneBgInScene && neptuneBgGroup) neptuneBgGroup.position.z = sphere.position.z;
+        if (plutoBgInScene && plutoBgGroup) plutoBgGroup.position.z = sphere.position.z;
+      }
+      // 光带旋转动画（第3/4/6/7/8关）
+      if (marsBgGroup && marsBgGroup.userData && marsBgGroup.userData.isRibbonGroup) {
+        marsBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.x += child.userData.rotSpeed * 0.35;
+          }
+        });
+      }
+      if (jupiterBgGroup && jupiterBgGroup.userData && jupiterBgGroup.userData.isRibbonGroup) {
+        jupiterBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.x += child.userData.rotSpeed * 0.3;
+          }
+        });
+      }
+      if (uranusBgGroup && uranusBgGroup.userData && uranusBgGroup.userData.isRibbonGroup) {
+        uranusBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.y += child.userData.rotSpeed * 0.4;
+          }
+        });
+      }
+      if (neptuneBgGroup && neptuneBgGroup.userData && neptuneBgGroup.userData.isRibbonGroup) {
+        neptuneBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.x += child.userData.rotSpeed * 0.45;
+          }
+        });
+      }
+      if (plutoBgGroup && plutoBgGroup.userData && plutoBgGroup.userData.isRibbonGroup) {
+        plutoBgGroup.children.forEach(child => {
+          if (child.userData && child.userData.isRibbon) {
+            child.rotation.z += child.userData.rotSpeed;
+            child.rotation.y += child.userData.rotSpeed * 0.35;
+          }
+        });
+      }
       // 沙尘粒子动画（第5关，飞扬尘土效果）
       if (starfieldInScene && saturnDustPositions && saturnDustPhase) {
         // 星空+尘土整体跟随球
@@ -6286,3 +6676,163 @@ function showSaturn() {
         selectPath(style);
       });
     });
+
+    // ─── 第3关 火星尘埃粒子 ───
+    function createMarsDust() {
+      console.log('[MARS-DUST] creating Mars dust...');
+      const group = new THREE.Group();
+      const DUST_COUNT = 600;
+      const dPos   = new Float32Array(DUST_COUNT * 3);
+      const dCol   = new Float32Array(DUST_COUNT * 3);
+      for (let i = 0; i < DUST_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r     = 10 + Math.random() * 60;
+        dPos[i*3]     = Math.cos(theta) * r;
+        dPos[i*3 + 1] = (Math.random() - 0.5) * 8;
+        dPos[i*3 + 2] = Math.sin(theta) * r;
+        const t = Math.random();
+        dCol[i*3]     = 0.35 + t * 0.30;
+        dCol[i*3 + 1] = 0.22 + t * 0.25;
+        dCol[i*3 + 2] = 0.08 + t * 0.15;
+      }
+      const dustGeo = new THREE.BufferGeometry();
+      dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      dustGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const dustMat = new THREE.PointsMaterial({
+        size: 0.4, map: createCircleTexture(64), alphaTest: 0.08,
+        vertexColors: true, transparent: true, opacity: 0.7,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+      });
+      marsDustMesh = new THREE.Points(dustGeo, dustMat);
+      group.add(marsDustMesh);
+      console.log('[MARS-DUST] done, count=' + DUST_COUNT);
+      return group;
+    }
+
+    // ─── 第4关 木星闪电粒子 ───
+    function createJupiterLightning() {
+      console.log('[JUPITER-LIGHTNING] creating lightning...');
+      const group = new THREE.Group();
+      const LIGHTNING_COUNT = 200;
+      const dPos   = new Float32Array(LIGHTNING_COUNT * 3);
+      const dCol   = new Float32Array(LIGHTNING_COUNT * 3);
+      for (let i = 0; i < LIGHTNING_COUNT; i++) {
+        dPos[i*3]     = (Math.random()-0.5) * 400;
+        dPos[i*3 + 1] = Math.random() * 100;
+        dPos[i*3 + 2] = (Math.random()-0.5) * 400;
+        dCol[i*3]     = 0.9 + Math.random() * 0.1;
+        dCol[i*3 + 1] = 0.9 + Math.random() * 0.1;
+        dCol[i*3 + 2] = 1.0;
+      }
+      const lightGeo = new THREE.BufferGeometry();
+      lightGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      lightGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const lightMat = new THREE.PointsMaterial({
+        size: 1.5, map: createCircleTexture(64), vertexColors: true,
+        transparent: true, opacity: 0.8, sizeAttenuation: true,
+        fog: false, depthWrite: false, blending: THREE.AdditiveBlending,
+      });
+      const lightning = new THREE.Points(lightGeo, lightMat);
+      lightning.userData = { isJupiterLightning: true };
+      group.add(lightning);
+      console.log('[JUPITER-LIGHTNING] done, count=' + LIGHTNING_COUNT);
+      return group;
+    }
+
+    // ─── 第6关 天王星极光粒子 ───
+    function createUranusAurora() {
+      console.log('[URANUS-AURORA] creating aurora...');
+      const group = new THREE.Group();
+      const AURORA_COUNT = 150;
+      const dPos   = new Float32Array(AURORA_COUNT * 3);
+      const dCol   = new Float32Array(AURORA_COUNT * 3);
+      for (let i = 0; i < AURORA_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r     = 50 + Math.random() * 200;
+        dPos[i*3]     = Math.cos(theta) * r;
+        dPos[i*3 + 1] = 60 + Math.random() * 80;
+        dPos[i*3 + 2] = Math.sin(theta) * r;
+        const t = Math.random();
+        dCol[i*3]     = 0.0 + t * 0.3;
+        dCol[i*3 + 1] = 0.6 + t * 0.4;
+        dCol[i*3 + 2] = 0.5 + t * 0.5;
+      }
+      const auroraGeo = new THREE.BufferGeometry();
+      auroraGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      auroraGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const auroraMat = new THREE.PointsMaterial({
+        size: 2.0, map: createCircleTexture(64), vertexColors: true,
+        transparent: true, opacity: 0.6, sizeAttenuation: true,
+        fog: false, depthWrite: false, blending: THREE.AdditiveBlending,
+      });
+      const aurora = new THREE.Points(auroraGeo, auroraMat);
+      aurora.userData = { isUranusAurora: true };
+      group.add(aurora);
+      console.log('[URANUS-AURORA] done, count=' + AURORA_COUNT);
+      return group;
+    }
+
+    // ─── 第7关 海王星冰晶粒子 ───
+    function createNeptuneIce() {
+      console.log('[NEPTUNE-ICE] creating ice crystals...');
+      const group = new THREE.Group();
+      const ICE_COUNT = 500;
+      const dPos   = new Float32Array(ICE_COUNT * 3);
+      const dCol   = new Float32Array(ICE_COUNT * 3);
+      for (let i = 0; i < ICE_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r     = 8 + Math.random() * 50;
+        dPos[i*3]     = Math.cos(theta) * r;
+        dPos[i*3 + 1] = (Math.random() - 0.5) * 6;
+        dPos[i*3 + 2] = Math.sin(theta) * r;
+        const t = Math.random();
+        dCol[i*3]     = 0.10 + t * 0.30;
+        dCol[i*3 + 1] = 0.62 + t * 0.33;
+        dCol[i*3 + 2] = 0.95 + t * 0.05;
+      }
+      const iceGeo = new THREE.BufferGeometry();
+      iceGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      iceGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const iceMat = new THREE.PointsMaterial({
+        size: 0.4, map: createCircleTexture(64), vertexColors: true,
+        transparent: true, opacity: 0.7, sizeAttenuation: true,
+        fog: false, depthWrite: false, blending: THREE.AdditiveBlending,
+      });
+      neptuneDustMesh = new THREE.Points(iceGeo, iceMat);
+      group.add(neptuneDustMesh);
+      console.log('[NEPTUNE-ICE] done, count=' + ICE_COUNT);
+      return group;
+    }
+
+    // ─── 第8关 冥王星暗星粒子 ───
+    function createPlutoDark() {
+      console.log('[PLUTO-DARK] creating dark stars...');
+      const group = new THREE.Group();
+      const STAR_COUNT = 300;
+      const dPos   = new Float32Array(STAR_COUNT * 3);
+      const dCol   = new Float32Array(STAR_COUNT * 3);
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const r     = 200 + Math.random() * 300;
+        dPos[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+        dPos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        dPos[i*3 + 2] = r * Math.cos(phi);
+        const t = Math.random();
+        dCol[i*3]     = t * 0.5;
+        dCol[i*3 + 1] = t * 0.5;
+        dCol[i*3 + 2] = 0.3 + t * 0.7;
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+      starGeo.setAttribute('color',    new THREE.BufferAttribute(dCol, 3));
+      const starMat = new THREE.PointsMaterial({
+        size: 0.8, vertexColors: true, transparent: true, opacity: 0.5,
+        sizeAttenuation: true, fog: false, depthWrite: false,
+      });
+      const stars = new THREE.Points(starGeo, starMat);
+      stars.userData = { isPlutoDark: true };
+      group.add(stars);
+      console.log('[PLUTO-DARK] done, stars=' + STAR_COUNT);
+      return group;
+    }
