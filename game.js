@@ -549,9 +549,9 @@
         if (earthModel) {
           if (!earthInScene) { scene.add(earthModel); earthInScene = true; }
           earthModel.visible = true;
-          earthModel.position.x = -16;
+          earthModel.position.x = -8;
           earthModel.position.y = -3;
-          if (sphere) earthModel.position.z = sphere.position.z + 20;
+          if (sphere) earthModel.position.z = sphere.position.z + 40;
           console.log('[EARTH] model shown (visible=true)');
         }
         // 3. 大气层粒子（不在 .glb 回调里！）
@@ -610,9 +610,9 @@ function hideEarth() {
         if (moonBaseModel) {
           if (!moonBaseInScene) { scene.add(moonBaseModel); moonBaseInScene = true; }
           moonBaseModel.visible = true;
-          moonBaseModel.position.x = 22;
+          moonBaseModel.position.x = 12;
           moonBaseModel.position.y = -3;
-          if (sphere) moonBaseModel.position.z = sphere.position.z + 18;
+          if (sphere) moonBaseModel.position.z = sphere.position.z + 35;
           console.log('[MOON] model shown (visible=true)');
         }
         // 3. 月球尘埃粒子
@@ -1367,7 +1367,7 @@ function showSaturn() {
         });
         const lake = new THREE.Mesh(lakeGeo, lakeMat);
         lake.rotation.x = -Math.PI/2;
-        lake.position.set(100, -48, 60);
+        lake.position.set(100, -45, 60);
         group.add(lake);
 
         // 4. Clouds (AdditiveBlending, bright on blue sky)
@@ -5695,17 +5695,17 @@ function showSaturn() {
       // 第1关 地球
       if (earthInScene && earthModel) {
         earthModel.rotation.y += 0.01;
-        if (sphere) { earthModel.position.x = -16; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 20; }
+        if (sphere) { earthModel.position.x = -8; earthModel.position.y = -3; earthModel.position.z = sphere.position.z + 40; }
       }
       // 第2关 月球基地
       if (moonBaseInScene && moonBaseModel) {
         moonBaseModel.rotation.y += 0.01;
-        if (sphere) { moonBaseModel.position.x = 22; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 18; }
+        if (sphere) { moonBaseModel.position.x = 12; moonBaseModel.position.y = -3; moonBaseModel.position.z = sphere.position.z + 35; }
       }
       // 第5关 土星
       if (saturnInScene && saturnModel) {
         saturnModel.rotation.y += 0.01;
-        if (sphere) { saturnModel.position.x = 20; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 22; }
+        if (sphere) { saturnModel.position.x = 10; saturnModel.position.y = -3; saturnModel.position.z = sphere.position.z + 45; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
