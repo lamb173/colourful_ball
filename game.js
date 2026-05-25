@@ -1134,26 +1134,6 @@ function showSaturn() {
           ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.7) + ',' + Math.floor(v*0.2) + ',0.6)';
           ctx.fillRect(x, y, 1+Math.random()*2, 1);
         }
-      }
-        // 土星：土黄 + 旋涡条纹 + 沙尘颗粒
-        ctx.fillStyle = '#885522';
-        ctx.fillRect(0, 0, size, size);
-        for (let i = 0; i < 30; i++) {
-          const cx = size/2 + (Math.random()-0.5)*size*0.8;
-          const cy = size/2 + (Math.random()-0.5)*size*0.8;
-          const cr = 30 + Math.random()*120;
-          ctx.strokeStyle = 'rgba(' + Math.floor(100+Math.random()*60) + ',' + Math.floor(60+Math.random()*30) + ',10,0.25)';
-          ctx.lineWidth = 3+Math.random()*8;
-          ctx.beginPath();
-          ctx.arc(cx, cy, cr, Math.random()*Math.PI*2, Math.random()*Math.PI*2 + Math.PI*1.2);
-          ctx.stroke();
-        }
-        for (let i = 0; i < 2500; i++) {
-          const x = Math.random()*size, y = Math.random()*size;
-          const v = Math.floor(100 + Math.random()*50);
-          ctx.fillStyle = 'rgba(' + v + ',' + Math.floor(v*0.65) + ',' + Math.floor(v*0.2) + ',0.5)';
-          ctx.fillRect(x, y, 1+Math.random()*2, 1+Math.random()*2);
-        }
       } else if (stageId === 3) {
         // 火星：铁锈红 + 岩石纹理 + 沙尘
         ctx.fillStyle = '#8B3A00';
