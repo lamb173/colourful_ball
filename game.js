@@ -746,7 +746,7 @@ function showMars() {
         marsBackgroundUrl,
         (gltf) => {
           marsBackgroundModel = gltf.scene;
-          marsBackgroundModel.scale.set(80, 80, 80);
+          marsBackgroundModel.scale.set(100, 100, 100);
           marsBackgroundModel.position.y = -30;
           let meshCount = 0;
           marsBackgroundModel.traverse((child) => { if (child.isMesh) { meshCount++; child.castShadow = true; child.receiveShadow = true; } });
@@ -761,9 +761,9 @@ function showMars() {
     if (marsBackgroundModel) {
       if (!marsBackgroundInScene) { scene.add(marsBackgroundModel); marsBackgroundInScene = true; }
       marsBackgroundModel.visible = true;
-      marsBackgroundModel.scale.set(80, 80, 80);
+      marsBackgroundModel.scale.set(100, 100, 100);
       if (sphere) {
-        marsBackgroundModel.position.set(0, -30, 90);
+        marsBackgroundModel.position.set(0, -30, 130);
       }
       // 红色线框调试框
       if (!marsBgHelper) {
