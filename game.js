@@ -760,7 +760,7 @@ function showMars() {
       marsBackgroundModel.visible = true;
       marsBackgroundModel.scale.set(2500, 2500, 2500);
       if (sphere) {
-        marsBackgroundModel.position.set(0, -30, sphere.position.z + 80);
+        marsBackgroundModel.position.set(0, -30, sphere.position.z);
       }
       console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
     }
