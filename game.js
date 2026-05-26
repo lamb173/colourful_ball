@@ -912,7 +912,7 @@ function hideJupiter() {
                 scene.add(uranusModel);
                 uranusModel.visible = true;
                 uranusModel.position.x = 5;
-                uranusModel.position.y = -6;
+                uranusModel.position.y = -3;
                 if (sphere) uranusModel.position.z = sphere.position.z + 45;
                 console.log('[URANUS] model added to scene after async load');
               }
@@ -925,7 +925,7 @@ function hideJupiter() {
           scene.add(uranusModel);
           uranusModel.visible = true;
           uranusModel.position.x = 5;
-          uranusModel.position.y = -6;
+          uranusModel.position.y = -3;
           if (sphere) uranusModel.position.z = sphere.position.z + 45;
           console.log('[URANUS] model shown (visible=true)');
         }
@@ -5886,7 +5886,7 @@ function hidePluto() {
       // 第6关 天王星
       if (uranusInScene && uranusModel) {
         uranusModel.rotation.y += 0.008;
-        if (sphere) { uranusModel.position.x = 5; uranusModel.position.y = -6; uranusModel.position.z = sphere.position.z + 45; }
+        if (sphere) { uranusModel.position.x = 5; uranusModel.position.y = -3; uranusModel.position.z = sphere.position.z + 45; }
       }
       // 第7关 海王星
       if (neptuneInScene && neptuneModel) {
