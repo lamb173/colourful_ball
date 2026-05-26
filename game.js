@@ -134,10 +134,12 @@
 
     // ─── 第4关 木星风暴 ───
     let jupiterModel       = null;
-    let jupiterModelUrl    = 'assets/models/jupiter_planet_20260525.glb';
-    let jupiterModelScale  = 25;
+    let jupiterModelUrl    = 'assets/models/jupiter_20260526.glb';  // v20.11: 更新为AI生成模型
+    let jupiterModelScale  = 35;  // v20.11: 35，模仿土星
     let jupiterInScene     = false;
     let jupiterLoadError   = false;
+    let jupiterBgGroup     = null;
+    let jupiterBgInScene  = false;
 
     // ─── 第6关 天王星极光 ───
     let uranusModel       = null;
@@ -823,9 +825,9 @@ function showJupiter() {
     if (jupiterModel) {
       if (!jupiterInScene) { scene.add(jupiterModel); jupiterInScene = true; }
       jupiterModel.visible = true;
-      jupiterModel.position.x = -20;
-      jupiterModel.position.y = -3;
-      if (sphere) jupiterModel.position.z = sphere.position.z + 20;
+      jupiterModel.position.x = 5;
+      jupiterModel.position.y = -6;
+      if (sphere) jupiterModel.position.z = sphere.position.z + 45;
       console.log('[JUPITER] model shown (visible=true)');
     }
     if (!jupiterBgGroup) jupiterBgGroup = createStageBackground(4);
@@ -5764,6 +5766,11 @@ function hidePluto() {
       if (marsInScene && marsModel) {
         marsModel.rotation.y += 0.01;
         if (sphere) { marsModel.position.x = 5; marsModel.position.y = -6; marsModel.position.z = sphere.position.z + 45; }
+      }
+      // 第4关 木星
+      if (jupiterInScene && jupiterModel) {
+        jupiterModel.rotation.y += 0.01;
+        if (sphere) { jupiterModel.position.x = 5; jupiterModel.position.y = -6; jupiterModel.position.z = sphere.position.z + 45; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
