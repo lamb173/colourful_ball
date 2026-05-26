@@ -737,7 +737,7 @@ function showMars() {
       if (sphere) marsModel.position.z = sphere.position.z + 45;
       console.log('[MARS] model shown (visible=true)');
     }
-    // 1.5 加载/显示 3D 装饰模型（原尺寸放在程序化地面上）
+    // 1.5 加载/显示 3D 装饰模型（轨道上固定装饰，放大50倍）
     if (!marsBackgroundModel && !marsBackgroundLoadError) {
       if (typeof THREE.GLTFLoader === 'undefined') { console.error('[MARS BG] GLTFLoader not loaded!'); marsBackgroundLoadError = true; return; }
       const loader = new THREE.GLTFLoader();
@@ -745,23 +745,23 @@ function showMars() {
         marsBackgroundUrl,
         (gltf) => {
           marsBackgroundModel = gltf.scene;
-          marsBackgroundModel.scale.set(1, 1, 1);
-          marsBackgroundModel.position.set(0, 0, 0);
+          marsBackgroundModel.scale.set(50, 50, 50);
+          marsBackgroundModel.position.set(0, -80, 0);
           marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[MARS BG] .glb model loaded, scale=1');
+          console.log('[MARS BG] .glb model loaded, scale=50, y=-80');
           if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
         (err) => { console.error('[MARS BG] .glb load error:', err); marsBackgroundLoadError = true; }
       );
     }
-    // 显示3D装饰模型（放在地面上，球体前方）
+    // 显示3D装饰模型（轨道上固定位置，不跟随球体x）
     if (marsBackgroundModel) {
       if (!marsBackgroundInScene) { scene.add(marsBackgroundModel); marsBackgroundInScene = true; }
       marsBackgroundModel.visible = true;
-      marsBackgroundModel.scale.set(1, 1, 1);
+      marsBackgroundModel.scale.set(50, 50, 50);
       if (sphere) {
-        marsBackgroundModel.position.set(sphere.position.x + 4, 0, sphere.position.z + 12);
+        marsBackgroundModel.position.set(0, -80, sphere.position.z + 50);
       }
       console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
     }
