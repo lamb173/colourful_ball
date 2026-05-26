@@ -527,6 +527,7 @@
       console.log('[EARTH] showEarth(), stage=', _currentStage ? _currentStage.id : null);
       try {
         // 1. 加载/显示 .glb 模型
+        earthInScene = true;  // v20.14: 先标记
         if (!earthModel && !earthLoadError) {
           if (typeof THREE.GLTFLoader === 'undefined') {
             console.error('[EARTH] GLTFLoader not loaded!');
@@ -544,7 +545,15 @@
                 if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
               });
               console.log('[EARTH] .glb model loaded');
-              if (earthInScene) { earthModel.visible = true; }
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (earthInScene) {
+                scene.add(earthModel);
+                earthModel.visible = true;
+                earthModel.position.x = -6.5;
+                earthModel.position.y = -6;
+                if (sphere) earthModel.position.z = sphere.position.z + 40;
+                console.log('[EARTH] model added to scene after async load');
+              }
             },
             (xhr) => { if (xhr.total > 0) console.log('[EARTH] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
             (err) => { console.error('[EARTH] .glb load error:', err); earthLoadError = true; }
@@ -552,7 +561,7 @@
         }
         // 2. 模型 visible 切换（无论是否刚加载）
         if (earthModel) {
-          if (!earthInScene) { scene.add(earthModel); earthInScene = true; }
+          scene.add(earthModel);  // v20.14: 无条件add，Three.js安全
           earthModel.visible = true;
           earthModel.position.x = -6.5;
           earthModel.position.y = -6;
@@ -585,6 +594,7 @@ function hideEarth() {
 
 // ─── 第2关 月球中转站 3D模型 ───
     function showMoonBase() {
+      moonBaseInScene = true;  // v20.14: 先标记
       console.log('[MOON] showMoonBase(), stage=', _currentStage ? _currentStage.id : null);
       try {
         // 1. 加载/显示 .glb 模型
@@ -605,15 +615,23 @@ function hideEarth() {
                 if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
               });
               console.log('[MOON] .glb model loaded');
-              if (moonBaseInScene) { moonBaseModel.visible = true; }
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (moonBaseInScene) {
+                scene.add(moonBaseModel);
+                moonBaseModel.visible = true;
+                moonBaseModel.position.x = 12;
+                moonBaseModel.position.y = -3;
+                if (sphere) moonBaseModel.position.z = sphere.position.z + 35;
+                console.log('[MOON] model added to scene after async load');
+              }
             },
             (xhr) => { if (xhr.total > 0) console.log('[MOON] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
             (err) => { console.error('[MOON] .glb load error:', err); moonBaseLoadError = true; }
           );
         }
-        // 2. 模型 visible 切换
+        // 2. 模型 visible 切换（无论是否刚加载）
         if (moonBaseModel) {
-          if (!moonBaseInScene) { scene.add(moonBaseModel); moonBaseInScene = true; }
+          scene.add(moonBaseModel);  // v20.14: 无条件add，Three.js安全
           moonBaseModel.visible = true;
           moonBaseModel.position.x = 12;
           moonBaseModel.position.y = -3;
@@ -645,6 +663,7 @@ function hideMoonBase() {
     }
 
 function showSaturn() {
+      saturnInScene = true;  // v20.14: 先标记
       console.log("[SATURN] showSaturn(), stage=", _currentStage ? _currentStage.id : null);
       try {
         // 加载 .glb 模型（异步）
@@ -668,7 +687,15 @@ function showSaturn() {
                 }
               });
               console.log('[SATURN] .glb model loaded');
-              if (saturnInScene) scene.add(saturnModel);
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (saturnInScene) {
+                scene.add(saturnModel);
+                saturnModel.visible = true;
+                saturnModel.position.x = 5;
+                saturnModel.position.y = -6;
+                if (sphere) saturnModel.position.z = sphere.position.z + 45;
+                console.log('[SATURN] model added to scene after async load');
+              }
             },
             (xhr) => {
               if (xhr.total > 0) {
@@ -683,10 +710,13 @@ function showSaturn() {
           );
         }
         // 模型加载完成后加入场景
-        if (saturnModel && !saturnInScene) {
-          scene.add(saturnModel);
-          saturnInScene = true;
-          console.log("[SATURN] model added to scene");
+        if (saturnModel) {
+          scene.add(saturnModel);  // v20.14: 无条件add，Three.js安全
+          saturnModel.visible = true;
+          saturnModel.position.x = 5;
+          saturnModel.position.y = -6;
+          if (sphere) saturnModel.position.z = sphere.position.z + 45;
+          console.log("[SATURN] model shown (visible=true)");
         }
         // 星空部分（保持不变）
         if (!saturnStarfield) saturnStarfield = createSaturnStarfield();
@@ -709,8 +739,10 @@ function showSaturn() {
 //  第3关 火星基地 — showMars() / hideMars()
 // ═══════════════════════════════════════════════════════
 function showMars() {
-  console.log('[MARS] showMars(), stage=', _currentStage ? _currentStage.id : null);
-  try {
+      marsInScene = true;  // v20.14: 先标记
+      marsBackgroundInScene = true;
+      console.log('[MARS] showMars(), stage=', _currentStage ? _currentStage.id : null);
+      try {
     // 1. 加载/显示 .glb 模型
     if (!marsModel && !marsLoadError) {
       if (typeof THREE.GLTFLoader === 'undefined') { console.error('[MARS] GLTFLoader not loaded!'); marsLoadError = true; return; }
@@ -723,15 +755,23 @@ function showMars() {
           marsModel.position.set(0, 0, 0);
           marsModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
           console.log('[MARS] .glb model loaded');
-          if (marsInScene) { marsModel.visible = true; }
+          // v20.14: onLoad时若已在场景中，立即加入并定位
+          if (marsInScene) {
+            scene.add(marsModel);
+            marsModel.visible = true;
+            marsModel.position.x = 5;
+            marsModel.position.y = -6;
+            if (sphere) marsModel.position.z = sphere.position.z + 45;
+            console.log('[MARS] model added to scene after async load');
+          }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
         (err) => { console.error('[MARS] .glb load error:', err); marsLoadError = true; }
       );
     }
-    // 2. 模型 visible 切换
+    // 2. 模型 visible 切换（无论是否刚加载）
     if (marsModel) {
-      if (!marsInScene) { scene.add(marsModel); marsInScene = true; }
+      scene.add(marsModel);  // v20.14: 无条件add，Three.js安全
       marsModel.visible = true;
       marsModel.position.x = 5;
       marsModel.position.y = -6;
@@ -750,8 +790,14 @@ function showMars() {
           marsBackgroundModel.position.y = -30;
           let meshCount = 0;
           marsBackgroundModel.traverse((child) => { if (child.isMesh) { meshCount++; child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[MARS BG] .glb model loaded, scale=50, meshCount=', meshCount);
-          if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
+          console.log('[MARS BG] .glb model loaded, scale=100, meshCount=', meshCount);
+          // v20.14: onLoad时若已在场景中，立即加入并定位
+          if (marsBackgroundInScene) {
+            scene.add(marsBackgroundModel);
+            marsBackgroundModel.visible = true;
+            if (sphere) marsBackgroundModel.position.set(0, -30, sphere.position.z + 130);
+            console.log('[MARS BG] model added to scene after async load');
+          }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
         (err) => { console.error('[MARS BG] .glb load error:', err); marsBackgroundLoadError = true; }
@@ -759,19 +805,13 @@ function showMars() {
     }
     // 显示3D装饰模型（轨道上固定位置，不跟随球体x）
     if (marsBackgroundModel) {
-      if (!marsBackgroundInScene) { scene.add(marsBackgroundModel); marsBackgroundInScene = true; }
+      scene.add(marsBackgroundModel);  // v20.14: 无条件add
       marsBackgroundModel.visible = true;
       marsBackgroundModel.scale.set(100, 100, 100);
       if (sphere) {
-        marsBackgroundModel.position.set(0, -30, 130);
+        marsBackgroundModel.position.set(0, -30, sphere.position.z + 130);
       }
-      // 红色线框调试框
-      if (!marsBgHelper) {
-        marsBgHelper = new THREE.BoxHelper(marsBackgroundModel, 0xff0000);
-        scene.add(marsBgHelper);
-      }
-      marsBgHelper.update();
-      console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1), 'with helper');
+      console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
     }
     // 2.5 程序化背景（天空 + 地面）
     if (!marsBgGroup) marsBgGroup = createStageBackground(3);
@@ -800,34 +840,43 @@ function hideMars() {
 // ═══════════════════════════════════════════════════════
 //  第4关 木星风暴 — showJupiter() / hideJupiter()
 // ═══════════════════════════════════════════════════════
-function showJupiter() {
-  console.log('[JUPITER] showJupiter(), stage=', _currentStage ? _currentStage.id : null);
-  try {
-    if (!jupiterModel && !jupiterLoadError) {
-      if (typeof THREE.GLTFLoader === 'undefined') { console.error('[JUPITER] GLTFLoader not loaded!'); jupiterLoadError = true; return; }
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        jupiterModelUrl,
-        (gltf) => {
-          jupiterModel = gltf.scene;
-          jupiterModel.scale.set(jupiterModelScale, jupiterModelScale, jupiterModelScale);
-          jupiterModel.position.set(0, 0, 0);
-          jupiterModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[JUPITER] .glb model loaded');
-          if (jupiterInScene) { jupiterModel.visible = true; }
-        },
-        (xhr) => { if (xhr.total > 0) console.log('[JUPITER] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
-        (err) => { console.error('[JUPITER] .glb load error:', err); jupiterLoadError = true; }
-      );
-    }
-    if (jupiterModel) {
-      if (!jupiterInScene) { scene.add(jupiterModel); jupiterInScene = true; }
-      jupiterModel.visible = true;
-      jupiterModel.position.x = 5;
-      jupiterModel.position.y = -4;
-      if (sphere) jupiterModel.position.z = sphere.position.z + 60;
-      console.log('[JUPITER] model shown (visible=true)');
-    }
+    function showJupiter() {
+      jupiterInScene = true;  // v20.14: 先标记，确保onLoad回调能正确加入场景
+      console.log('[JUPITER] showJupiter(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!jupiterModel && !jupiterLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[JUPITER] GLTFLoader not loaded!'); jupiterLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            jupiterModelUrl,
+            (gltf) => {
+              jupiterModel = gltf.scene;
+              jupiterModel.scale.set(jupiterModelScale, jupiterModelScale, jupiterModelScale);
+              jupiterModel.position.set(0, 0, 0);
+              jupiterModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[JUPITER] .glb model loaded');
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (jupiterInScene) {
+                scene.add(jupiterModel);
+                jupiterModel.visible = true;
+                jupiterModel.position.x = 5;
+                jupiterModel.position.y = -4;
+                if (sphere) jupiterModel.position.z = sphere.position.z + 60;
+                console.log('[JUPITER] model added to scene after async load');
+              }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[JUPITER] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[JUPITER] .glb load error:', err); jupiterLoadError = true; }
+          );
+        }
+        if (jupiterModel) {
+          scene.add(jupiterModel);  // v20.14: 无条件add，Three.js安全
+          jupiterModel.visible = true;
+          jupiterModel.position.x = 5;
+          jupiterModel.position.y = -4;
+          if (sphere) jupiterModel.position.z = sphere.position.z + 60;
+          console.log('[JUPITER] model shown (visible=true)');
+        }
     if (!jupiterBgGroup) jupiterBgGroup = createStageBackground(4);
     if (jupiterBgGroup && !jupiterBgInScene) { scene.add(jupiterBgGroup); jupiterBgInScene = true; }
     if (jupiterBgGroup) jupiterBgGroup.visible = true;
@@ -843,34 +892,43 @@ function hideJupiter() {
 // ═══════════════════════════════════════════════════════
 //  第6关 天王星极光 — showUranus() / hideUranus()
 // ═══════════════════════════════════════════════════════
-function showUranus() {
-  console.log('[URANUS] showUranus(), stage=', _currentStage ? _currentStage.id : null);
-  try {
-    if (!uranusModel && !uranusLoadError) {
-      if (typeof THREE.GLTFLoader === 'undefined') { console.error('[URANUS] GLTFLoader not loaded!'); uranusLoadError = true; return; }
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        uranusModelUrl,
-        (gltf) => {
-          uranusModel = gltf.scene;
-          uranusModel.scale.set(uranusModelScale, uranusModelScale, uranusModelScale);
-          uranusModel.position.set(0, 0, 0);
-          uranusModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[URANUS] .glb model loaded');
-          if (uranusInScene) { uranusModel.visible = true; }
-        },
-        (xhr) => { if (xhr.total > 0) console.log('[URANUS] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
-        (err) => { console.error('[URANUS] .glb load error:', err); uranusLoadError = true; }
-      );
-    }
-    if (uranusModel) {
-      if (!uranusInScene) { scene.add(uranusModel); uranusInScene = true; }
-      uranusModel.visible = true;
-      uranusModel.position.x = 16;
-      uranusModel.position.y = -3;
-      if (sphere) uranusModel.position.z = sphere.position.z + 24;
-      console.log('[URANUS] model shown (visible=true)');
-    }
+    function showUranus() {
+      uranusInScene = true;  // v20.14: 先标记
+      console.log('[URANUS] showUranus(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!uranusModel && !uranusLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[URANUS] GLTFLoader not loaded!'); uranusLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            uranusModelUrl,
+            (gltf) => {
+              uranusModel = gltf.scene;
+              uranusModel.scale.set(uranusModelScale, uranusModelScale, uranusModelScale);
+              uranusModel.position.set(0, 0, 0);
+              uranusModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[URANUS] .glb model loaded');
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (uranusInScene) {
+                scene.add(uranusModel);
+                uranusModel.visible = true;
+                uranusModel.position.x = 16;
+                uranusModel.position.y = -3;
+                if (sphere) uranusModel.position.z = sphere.position.z + 24;
+                console.log('[URANUS] model added to scene after async load');
+              }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[URANUS] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[URANUS] .glb load error:', err); uranusLoadError = true; }
+          );
+        }
+        if (uranusModel) {
+          scene.add(uranusModel);  // v20.14: 无条件add，Three.js安全
+          uranusModel.visible = true;
+          uranusModel.position.x = 16;
+          uranusModel.position.y = -3;
+          if (sphere) uranusModel.position.z = sphere.position.z + 24;
+          console.log('[URANUS] model shown (visible=true)');
+        }
     if (!uranusBgGroup) uranusBgGroup = createStageBackground(6);
     if (uranusBgGroup && !uranusBgInScene) { scene.add(uranusBgGroup); uranusBgInScene = true; }
     if (uranusBgGroup) uranusBgGroup.visible = true;
@@ -886,34 +944,43 @@ function hideUranus() {
 // ═══════════════════════════════════════════════════════
 //  第7关 海王星冰暴 — showNeptune() / hideNeptune()
 // ═══════════════════════════════════════════════════════
-function showNeptune() {
-  console.log('[NEPTUNE] showNeptune(), stage=', _currentStage ? _currentStage.id : null);
-  try {
-    if (!neptuneModel && !neptuneLoadError) {
-      if (typeof THREE.GLTFLoader === 'undefined') { console.error('[NEPTUNE] GLTFLoader not loaded!'); neptuneLoadError = true; return; }
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        neptuneModelUrl,
-        (gltf) => {
-          neptuneModel = gltf.scene;
-          neptuneModel.scale.set(neptuneModelScale, neptuneModelScale, neptuneModelScale);
-          neptuneModel.position.set(0, 0, 0);
-          neptuneModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[NEPTUNE] .glb model loaded');
-          if (neptuneInScene) { neptuneModel.visible = true; }
-        },
-        (xhr) => { if (xhr.total > 0) console.log('[NEPTUNE] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
-        (err) => { console.error('[NEPTUNE] .glb load error:', err); neptuneLoadError = true; }
-      );
-    }
-    if (neptuneModel) {
-      if (!neptuneInScene) { scene.add(neptuneModel); neptuneInScene = true; }
-      neptuneModel.visible = true;
-      neptuneModel.position.x = -18;
-      neptuneModel.position.y = -3;
-      if (sphere) neptuneModel.position.z = sphere.position.z + 20;
-      console.log('[NEPTUNE] model shown (visible=true)');
-    }
+    function showNeptune() {
+      neptuneInScene = true;  // v20.14: 先标记
+      console.log('[NEPTUNE] showNeptune(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!neptuneModel && !neptuneLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[NEPTUNE] GLTFLoader not loaded!'); neptuneLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            neptuneModelUrl,
+            (gltf) => {
+              neptuneModel = gltf.scene;
+              neptuneModel.scale.set(neptuneModelScale, neptuneModelScale, neptuneModelScale);
+              neptuneModel.position.set(0, 0, 0);
+              neptuneModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[NEPTUNE] .glb model loaded');
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (neptuneInScene) {
+                scene.add(neptuneModel);
+                neptuneModel.visible = true;
+                neptuneModel.position.x = -18;
+                neptuneModel.position.y = -3;
+                if (sphere) neptuneModel.position.z = sphere.position.z + 20;
+                console.log('[NEPTUNE] model added to scene after async load');
+              }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[NEPTUNE] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[NEPTUNE] .glb load error:', err); neptuneLoadError = true; }
+          );
+        }
+        if (neptuneModel) {
+          scene.add(neptuneModel);  // v20.14: 无条件add，Three.js安全
+          neptuneModel.visible = true;
+          neptuneModel.position.x = -18;
+          neptuneModel.position.y = -3;
+          if (sphere) neptuneModel.position.z = sphere.position.z + 20;
+          console.log('[NEPTUNE] model shown (visible=true)');
+        }
     if (!neptuneBgGroup) neptuneBgGroup = createStageBackground(7);
     if (neptuneBgGroup && !neptuneBgInScene) { scene.add(neptuneBgGroup); neptuneBgInScene = true; }
     if (neptuneBgGroup) neptuneBgGroup.visible = true;
@@ -929,34 +996,43 @@ function hideNeptune() {
 // ═══════════════════════════════════════════════════════
 //  第8关 冥王星冰原 — showPluto() / hidePluto()
 // ═══════════════════════════════════════════════════════
-function showPluto() {
-  console.log('[PLUTO] showPluto(), stage=', _currentStage ? _currentStage.id : null);
-  try {
-    if (!plutoModel && !plutoLoadError) {
-      if (typeof THREE.GLTFLoader === 'undefined') { console.error('[PLUTO] GLTFLoader not loaded!'); plutoLoadError = true; return; }
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        plutoModelUrl,
-        (gltf) => {
-          plutoModel = gltf.scene;
-          plutoModel.scale.set(plutoModelScale, plutoModelScale, plutoModelScale);
-          plutoModel.position.set(0, 0, 0);
-          plutoModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[PLUTO] .glb model loaded');
-          if (plutoInScene) { plutoModel.visible = true; }
-        },
-        (xhr) => { if (xhr.total > 0) console.log('[PLUTO] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
-        (err) => { console.error('[PLUTO] .glb load error:', err); plutoLoadError = true; }
-      );
-    }
-    if (plutoModel) {
-      if (!plutoInScene) { scene.add(plutoModel); plutoInScene = true; }
-      plutoModel.visible = true;
-      plutoModel.position.x = 20;
-      plutoModel.position.y = -3;
-      if (sphere) plutoModel.position.z = sphere.position.z + 26;
-      console.log('[PLUTO] model shown (visible=true)');
-    }
+    function showPluto() {
+      plutoInScene = true;  // v20.14: 先标记
+      console.log('[PLUTO] showPluto(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!plutoModel && !plutoLoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[PLUTO] GLTFLoader not loaded!'); plutoLoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            plutoModelUrl,
+            (gltf) => {
+              plutoModel = gltf.scene;
+              plutoModel.scale.set(plutoModelScale, plutoModelScale, plutoModelScale);
+              plutoModel.position.set(0, 0, 0);
+              plutoModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[PLUTO] .glb model loaded');
+              // v20.14: onLoad时若已在场景中，立即加入并定位
+              if (plutoInScene) {
+                scene.add(plutoModel);
+                plutoModel.visible = true;
+                plutoModel.position.x = 20;
+                plutoModel.position.y = -3;
+                if (sphere) plutoModel.position.z = sphere.position.z + 26;
+                console.log('[PLUTO] model added to scene after async load');
+              }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[PLUTO] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[PLUTO] .glb load error:', err); plutoLoadError = true; }
+          );
+        }
+        if (plutoModel) {
+          scene.add(plutoModel);  // v20.14: 无条件add，Three.js安全
+          plutoModel.visible = true;
+          plutoModel.position.x = 20;
+          plutoModel.position.y = -3;
+          if (sphere) plutoModel.position.z = sphere.position.z + 26;
+          console.log('[PLUTO] model shown (visible=true)');
+        }
     if (!plutoBgGroup) plutoBgGroup = createStageBackground(8);
     if (plutoBgGroup && !plutoBgInScene) { scene.add(plutoBgGroup); plutoBgInScene = true; }
     if (plutoBgGroup) plutoBgGroup.visible = true;
