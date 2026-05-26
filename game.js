@@ -737,7 +737,7 @@ function showMars() {
       if (sphere) marsModel.position.z = sphere.position.z + 45;
       console.log('[MARS] model shown (visible=true)');
     }
-    // 1.5 加载/显示 3D 远景模型（作为地面远景装饰，非背景替代）
+    // 1.5 加载/显示 3D 装饰模型（原尺寸放在程序化地面上）
     if (!marsBackgroundModel && !marsBackgroundLoadError) {
       if (typeof THREE.GLTFLoader === 'undefined') { console.error('[MARS BG] GLTFLoader not loaded!'); marsBackgroundLoadError = true; return; }
       const loader = new THREE.GLTFLoader();
@@ -745,28 +745,27 @@ function showMars() {
         marsBackgroundUrl,
         (gltf) => {
           marsBackgroundModel = gltf.scene;
-          // 原始模型 bbox 仅 15x4x15，极大缩放至 ~750x200x750 作为远景
-          marsBackgroundModel.scale.set(50, 50, 50);
-          marsBackgroundModel.position.set(0, -8, 0);
-          marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = false; child.receiveShadow = false; } });
-          console.log('[MARS BG] .glb model loaded, scale=50');
+          marsBackgroundModel.scale.set(1, 1, 1);
+          marsBackgroundModel.position.set(0, 0, 0);
+          marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+          console.log('[MARS BG] .glb model loaded, scale=1');
           if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
         (err) => { console.error('[MARS BG] .glb load error:', err); marsBackgroundLoadError = true; }
       );
     }
-    // 显示远景模型
+    // 显示3D装饰模型（放在地面上，球体前方）
     if (marsBackgroundModel) {
       if (!marsBackgroundInScene) { scene.add(marsBackgroundModel); marsBackgroundInScene = true; }
       marsBackgroundModel.visible = true;
+      marsBackgroundModel.scale.set(1, 1, 1);
       if (sphere) {
-        marsBackgroundModel.position.x = sphere.position.x;
-        marsBackgroundModel.position.z = sphere.position.z - 40;
+        marsBackgroundModel.position.set(sphere.position.x + 4, 0, sphere.position.z + 12);
       }
       console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
     }
-    // 2.5 程序化背景（天空 + 地面，3D模型仅作远景补充）
+    // 2.5 程序化背景（天空 + 地面）
     if (!marsBgGroup) marsBgGroup = createStageBackground(3);
     if (marsBgGroup && !marsBgInScene) { scene.add(marsBgGroup); marsBgInScene = true; }
     if (marsBgGroup) { marsBgGroup.visible = true; marsBgGroup.position.z = sphere ? sphere.position.z : 0; }
@@ -778,8 +777,6 @@ function showMars() {
       console.log('[MARS-DUST] added to scene');
     }
     if (marsDustField) marsDustField.visible = true;
-    // 4. 主题背景（已由3D模型 mars_background_20260526.glb 代替，不再生成程序化背景）
-    console.log('[MARS] using 3D background model instead of procedural background');
   } catch(e) { console.error('[MARS] showMars ERROR:', e); }
 }
 function hideMars() {
