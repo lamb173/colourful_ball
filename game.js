@@ -5883,6 +5883,21 @@ function hidePluto() {
         jupiterModel.rotation.y += 0.01;
         if (sphere) { jupiterModel.position.x = 5; jupiterModel.position.y = -4; jupiterModel.position.z = sphere.position.z + 60; }
       }
+      // 第6关 天王星
+      if (uranusInScene && uranusModel) {
+        uranusModel.rotation.y += 0.008;
+        if (sphere) { uranusModel.position.x = 16; uranusModel.position.y = -3; uranusModel.position.z = sphere.position.z + 24; }
+      }
+      // 第7关 海王星
+      if (neptuneInScene && neptuneModel) {
+        neptuneModel.rotation.y += 0.009;
+        if (sphere) { neptuneModel.position.x = -18; neptuneModel.position.y = -3; neptuneModel.position.z = sphere.position.z + 20; }
+      }
+      // 第8关 冥王星
+      if (plutoInScene && plutoModel) {
+        plutoModel.rotation.y += 0.007;
+        if (sphere) { plutoModel.position.x = 20; plutoModel.position.y = -3; plutoModel.position.z = sphere.position.z + 26; }
+      }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
@@ -5893,6 +5908,9 @@ function hidePluto() {
         if (marsBgInScene && marsBgGroup) marsBgGroup.position.z = sphere.position.z;
         if (moonBgInScene && moonBgGroup) moonBgGroup.position.z = sphere.position.z;
         if (saturnBgInScene && saturnBgGroup) saturnBgGroup.position.z = sphere.position.z;
+        if (uranusBgInScene && uranusBgGroup) uranusBgGroup.position.z = sphere.position.z;
+        if (neptuneBgInScene && neptuneBgGroup) neptuneBgGroup.position.z = sphere.position.z;
+        if (plutoBgInScene && plutoBgGroup) plutoBgGroup.position.z = sphere.position.z;
       }
       // 云朵缓慢漂移（地球关卡）
       if (earthBgInScene && earthBgGroup && earthBgGroup.userData && earthBgGroup.userData.clouds) {
