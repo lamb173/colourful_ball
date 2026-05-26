@@ -138,8 +138,6 @@
     let jupiterModelScale  = 35;  // v20.11: 35，模仿土星
     let jupiterInScene     = false;
     let jupiterLoadError   = false;
-    let jupiterBgGroup     = null;
-    let jupiterBgInScene  = false;
 
     // ─── 第6关 天王星极光 ───
     let uranusModel       = null;

@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<Error>
+	<Code>SignatureDoesNotMatch</Code>
+	<Message>The Signature you specified is invalid.</Message>
+	<StringToSign>sha1
+1779759793;1779846193
+12cdd5ecfaf4be931c8ff40035376ad5940b83c3
+</StringToSign>
+	<FormatString>get
+/3d/output/1379431822/preview_e6297bb8-514e-4fe8-ab6b-fe5b1e117e04_0.png
+
+host=hunyuan-prod-1258344699.cos.ap-guangzhou.tencentcos.cn
+</FormatString>
+	<Resource>/3d/output/1379431822/preview_e6297bb8-514e-4fe8-ab6b-fe5b1e117e04_0.png</Resource>
+	<RequestId>NmExNGZhZTFfMWIxNDc2MGJfZTRlY18xNjFiYjQz</RequestId>
+	<TraceId>OGVmYzZiMmQzYjA2OWNhODk0NTRkMTBiOWVmMDAxODc0OWRkZjk0ZDM1NmI1M2E2MTRlY2MzZDhmNmI5MWI1OTQyYWVlY2QwZTk2MDVmZDQ3MmI2Y2I4ZmI5ZmM4ODFjNWUzMTJiNDQ5MjAyZTI4YmY3YzA0ODBkODE4ZjJmYmU=</TraceId>
+</Error>
+
