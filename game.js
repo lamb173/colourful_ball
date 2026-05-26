@@ -130,6 +130,7 @@
     let marsBackgroundInScene = false;
     let marsBackgroundLoadError = false;
     let marsBackgroundUrl    = 'assets/models/mars_background_20260526.glb';
+    let marsBgHelper         = null;
 
     // ─── 第4关 木星风暴 ───
     let jupiterModel       = null;
@@ -746,9 +747,10 @@ function showMars() {
         (gltf) => {
           marsBackgroundModel = gltf.scene;
           marsBackgroundModel.scale.set(2500, 2500, 2500);
-          marsBackgroundModel.position.y = -30;
-          marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[MARS BG] .glb model loaded, scale=50, y=-30');
+          marsBackgroundModel.position.y = 5;
+          let meshCount = 0;
+          marsBackgroundModel.traverse((child) => { if (child.isMesh) { meshCount++; child.castShadow = true; child.receiveShadow = true; } });
+          console.log('[MARS BG] .glb model loaded, scale=2500, meshCount=', meshCount);
           if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
@@ -761,9 +763,15 @@ function showMars() {
       marsBackgroundModel.visible = true;
       marsBackgroundModel.scale.set(2500, 2500, 2500);
       if (sphere) {
-        marsBackgroundModel.position.set(0, -30, -50);
+        marsBackgroundModel.position.set(0, 5, -50);
       }
-      console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
+      // 红色线框调试框
+      if (!marsBgHelper) {
+        marsBgHelper = new THREE.BoxHelper(marsBackgroundModel, 0xff0000);
+        scene.add(marsBgHelper);
+      }
+      marsBgHelper.update();
+      console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1), 'with helper');
     }
     // 2.5 程序化背景（天空 + 地面）
     if (!marsBgGroup) marsBgGroup = createStageBackground(3);
@@ -786,6 +794,7 @@ function hideMars() {
     if (marsBackgroundInScene && marsBackgroundModel) { marsBackgroundModel.visible = false; }
     if (marsDustField && marsDustInScene) { marsDustField.visible = false; }
     if (marsBgGroup && marsBgInScene) { marsBgGroup.visible = false; }
+    if (marsBgHelper) { marsBgHelper.visible = false; }
   } catch(e) { console.error("[MARS] hideMars ERROR:", e); }
 }
 // ═══════════════════════════════════════════════════════
