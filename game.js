@@ -745,10 +745,14 @@ function showMars() {
         marsBackgroundUrl,
         (gltf) => {
           marsBackgroundModel = gltf.scene;
-          marsBackgroundModel.scale.set(0.5, 0.5, 0.5);
-          marsBackgroundModel.position.set(0, -50, 0);
-          marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[MARS BG] .glb model loaded');
+          marsBackgroundModel.scale.set(8, 8, 8);
+          marsBackgroundModel.position.set(0, -30, 0);
+          marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = false; child.receiveShadow = false; } });
+          const box = new THREE.Box3().setFromObject(marsBackgroundModel);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          console.log('[MARS BG] .glb model loaded, bbox size=', size.x.toFixed(1), size.y.toFixed(1), size.z.toFixed(1),
+                      'center=', center.x.toFixed(1), center.y.toFixed(1), center.z.toFixed(1));
           if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
@@ -759,7 +763,11 @@ function showMars() {
     if (marsBackgroundModel) {
       if (!marsBackgroundInScene) { scene.add(marsBackgroundModel); marsBackgroundInScene = true; }
       marsBackgroundModel.visible = true;
-      if (sphere) marsBackgroundModel.position.z = sphere.position.z;
+      if (sphere) {
+        marsBackgroundModel.position.x = sphere.position.x;
+        marsBackgroundModel.position.z = sphere.position.z;
+      }
+      console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
     }
     // 3. 火星尘埃粒子
     if (!marsDustField) marsDustField = createMarsDust();
