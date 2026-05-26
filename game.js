@@ -123,7 +123,7 @@
     // ─── 第3关 火星基地 ───
     let marsModel       = null;
     let marsModelUrl    = 'assets/models/mars_planet_20260526.glb';
-    let marsModelScale  = 25;
+    let marsModelScale  = 35;
     let marsInScene     = false;
     let marsLoadError   = false;
 
@@ -728,9 +728,9 @@ function showMars() {
     if (marsModel) {
       if (!marsInScene) { scene.add(marsModel); marsInScene = true; }
       marsModel.visible = true;
-      marsModel.position.x = 18;
-      marsModel.position.y = -3;
-      if (sphere) marsModel.position.z = sphere.position.z + 22;
+      marsModel.position.x = 5;
+      marsModel.position.y = -6;
+      if (sphere) marsModel.position.z = sphere.position.z + 45;
       console.log('[MARS] model shown (visible=true)');
     }
     // 3. 火星尘埃粒子
@@ -5718,6 +5718,11 @@ function hidePluto() {
         saturnModel.rotation.y += 0.01;
         if (sphere) { saturnModel.position.x = 5; saturnModel.position.y = -6; saturnModel.position.z = sphere.position.z + 45; }
       }
+      // 第3关 火星
+      if (marsInScene && marsModel) {
+        marsModel.rotation.y += 0.01;
+        if (sphere) { marsModel.position.x = 5; marsModel.position.y = -6; marsModel.position.z = sphere.position.z + 45; }
+      }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
         saturnStarfield.rotation.y += 0.00005;
@@ -5725,6 +5730,7 @@ function hidePluto() {
       // 主题背景 Z 跟随球（防止背景落在后面）
       if (sphere) {
         if (earthBgInScene && earthBgGroup) earthBgGroup.position.z = sphere.position.z;
+        if (marsBgInScene && marsBgGroup) marsBgGroup.position.z = sphere.position.z;
         if (moonBgInScene && moonBgGroup) moonBgGroup.position.z = sphere.position.z;
         if (saturnBgInScene && saturnBgGroup) saturnBgGroup.position.z = sphere.position.z;
       }
