@@ -749,8 +749,23 @@ function showMars() {
           marsBackgroundModel.scale.set(500, 500, 500);
           marsBackgroundModel.position.y = -35;
           let meshCount = 0;
-          marsBackgroundModel.traverse((child) => { if (child.isMesh) { meshCount++; child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[MARS BG] .glb model loaded, scale=2500, meshCount=', meshCount);
+          marsBackgroundModel.traverse((child) => {
+            if (child.isMesh && child.material) {
+              meshCount++;
+              // 改成不受光照影响的Basic材质，确保能看到
+              const oldMat = child.material;
+              child.material = new THREE.MeshBasicMaterial({
+                map: oldMat.map || null,
+                color: oldMat.color || new THREE.Color(0x888888),
+                transparent: oldMat.transparent || false,
+                opacity: oldMat.opacity || 1.0,
+                side: THREE.DoubleSide
+              });
+              child.castShadow = false;
+              child.receiveShadow = false;
+            }
+          });
+          console.log('[MARS BG] .glb model loaded, scale=500, meshCount=', meshCount);
           if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
@@ -763,7 +778,7 @@ function showMars() {
       marsBackgroundModel.visible = true;
       marsBackgroundModel.scale.set(500, 500, 500);
       if (sphere) {
-        marsBackgroundModel.position.set(0, -35, 61.8);
+        marsBackgroundModel.position.set(0, -35, 20);
       }
       // 红色线框调试框
       if (!marsBgHelper) {
