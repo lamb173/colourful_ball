@@ -824,7 +824,7 @@ function showJupiter() {
       if (!jupiterInScene) { scene.add(jupiterModel); jupiterInScene = true; }
       jupiterModel.visible = true;
       jupiterModel.position.x = 5;
-      jupiterModel.position.y = -6;
+      jupiterModel.position.y = -4;
       if (sphere) jupiterModel.position.z = sphere.position.z + 60;
       console.log('[JUPITER] model shown (visible=true)');
     }
@@ -5768,7 +5768,7 @@ function hidePluto() {
       // 第4关 木星
       if (jupiterInScene && jupiterModel) {
         jupiterModel.rotation.y += 0.01;
-        if (sphere) { jupiterModel.position.x = 5; jupiterModel.position.y = -6; jupiterModel.position.z = sphere.position.z + 60; }
+        if (sphere) { jupiterModel.position.x = 5; jupiterModel.position.y = -4; jupiterModel.position.z = sphere.position.z + 60; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
