@@ -6628,12 +6628,15 @@ function hidePluto() {
             targetEl.classList.add('revealed');
           }
 
-          // ── 黑洞跳入检测（球到达黑洞 Z 附近时触发）──
+          // ── 黑洞跳入检测（球到达或越过黑洞 Z 时触发）──
           if (blackholeActive && blackhole && !victoryTriggered) {
             const bhPos = blackhole.group.position;
-            const dz = Math.abs(sphere.position.z - bhPos.z);
-            // 球跳到黑洞 Z 范围内（±半个跳跃距离）且 X 偏移不太远
-            if (dz < LONG_D * 1.2 && Math.abs(sphere.position.x - bhPos.x) < BLACKHOLE_RADIUS * 1.2) {
+            const ballZ = sphere.position.z;
+            const ballX = sphere.position.x;
+            // 球已到达黑洞区域：Z 在黑洞前 1.5 个跳跃距离内，或已越过黑洞
+            const reachedZ = ballZ >= bhPos.z - LONG_D * 1.5;
+            const nearX    = Math.abs(ballX - bhPos.x) < BLACKHOLE_RADIUS * 2.0;
+            if (reachedZ && nearX) {
               victoryTriggered = true;
               gameOver = true;
               triggerVictoryAnim();
