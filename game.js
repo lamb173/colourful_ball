@@ -746,9 +746,9 @@ function showMars() {
         (gltf) => {
           marsBackgroundModel = gltf.scene;
           marsBackgroundModel.scale.set(50, 50, 50);
-          marsBackgroundModel.position.set(0, -80, 0);
+          marsBackgroundModel.position.set(0, -30, 0);
           marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-          console.log('[MARS BG] .glb model loaded, scale=50, y=-80');
+          console.log('[MARS BG] .glb model loaded, scale=50, y=-30');
           if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
         },
         (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
@@ -761,7 +761,7 @@ function showMars() {
       marsBackgroundModel.visible = true;
       marsBackgroundModel.scale.set(50, 50, 50);
       if (sphere) {
-        marsBackgroundModel.position.set(0, -80, sphere.position.z + 50);
+        marsBackgroundModel.position.set(0, -30, sphere.position.z + 50);
       }
       console.log('[MARS BG] model shown at', marsBackgroundModel.position.x.toFixed(1), marsBackgroundModel.position.y.toFixed(1), marsBackgroundModel.position.z.toFixed(1));
     }
