@@ -123,7 +123,7 @@
     // ─── 第3关 火星基地 ───
     let marsModel       = null;
     let marsModelUrl    = 'assets/models/mars_planet_20260526.glb';
-    let marsModelScale  = 35;
+    let marsModelScale  = 28;
     let marsInScene     = false;
     let marsLoadError   = false;
 
