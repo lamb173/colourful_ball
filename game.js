@@ -142,21 +142,21 @@
     // ─── 第6关 天王星极光 ───
     let uranusModel       = null;
     let uranusModelUrl    = 'assets/models/uranus_planet_20260525.glb';
-    let uranusModelScale  = 25;
+    let uranusModelScale  = 20;  // v20.16: 缩小，模仿土星尺寸比例
     let uranusInScene     = false;
     let uranusLoadError   = false;
 
     // ─── 第7关 海王星冰暴 ───
     let neptuneModel       = null;
     let neptuneModelUrl    = 'assets/models/neptune_planet_20260525.glb';
-    let neptuneModelScale  = 25;
+    let neptuneModelScale  = 20;  // v20.16: 缩小，模仿土星尺寸比例
     let neptuneInScene     = false;
     let neptuneLoadError   = false;
 
     // ─── 第8关 冥王星冰原 ───
     let plutoModel       = null;
     let plutoModelUrl    = 'assets/models/pluto_planet_20260525.glb';
-    let plutoModelScale  = 25;
+    let plutoModelScale  = 20;  // v20.16: 缩小，模仿土星尺寸比例
     let plutoInScene     = false;
     let plutoLoadError   = false;
 
@@ -911,9 +911,9 @@ function hideJupiter() {
               if (uranusInScene) {
                 scene.add(uranusModel);
                 uranusModel.visible = true;
-                uranusModel.position.x = 16;
-                uranusModel.position.y = -3;
-                if (sphere) uranusModel.position.z = sphere.position.z + 24;
+                uranusModel.position.x = 5;
+                uranusModel.position.y = -6;
+                if (sphere) uranusModel.position.z = sphere.position.z + 45;
                 console.log('[URANUS] model added to scene after async load');
               }
             },
@@ -922,11 +922,11 @@ function hideJupiter() {
           );
         }
         if (uranusModel) {
-          scene.add(uranusModel);  // v20.14: 无条件add，Three.js安全
+          scene.add(uranusModel);
           uranusModel.visible = true;
-          uranusModel.position.x = 16;
-          uranusModel.position.y = -3;
-          if (sphere) uranusModel.position.z = sphere.position.z + 24;
+          uranusModel.position.x = 5;
+          uranusModel.position.y = -6;
+          if (sphere) uranusModel.position.z = sphere.position.z + 45;
           console.log('[URANUS] model shown (visible=true)');
         }
     if (!uranusBgGroup) uranusBgGroup = createStageBackground(6);
@@ -963,9 +963,9 @@ function hideUranus() {
               if (neptuneInScene) {
                 scene.add(neptuneModel);
                 neptuneModel.visible = true;
-                neptuneModel.position.x = -18;
-                neptuneModel.position.y = -3;
-                if (sphere) neptuneModel.position.z = sphere.position.z + 20;
+                neptuneModel.position.x = 5;
+                neptuneModel.position.y = -6;
+                if (sphere) neptuneModel.position.z = sphere.position.z + 45;
                 console.log('[NEPTUNE] model added to scene after async load');
               }
             },
@@ -1015,9 +1015,9 @@ function hideNeptune() {
               if (plutoInScene) {
                 scene.add(plutoModel);
                 plutoModel.visible = true;
-                plutoModel.position.x = 20;
-                plutoModel.position.y = -3;
-                if (sphere) plutoModel.position.z = sphere.position.z + 26;
+                plutoModel.position.x = 5;
+                plutoModel.position.y = -6;
+                if (sphere) plutoModel.position.z = sphere.position.z + 45;
                 console.log('[PLUTO] model added to scene after async load');
               }
             },
@@ -1028,9 +1028,9 @@ function hideNeptune() {
         if (plutoModel) {
           scene.add(plutoModel);  // v20.14: 无条件add，Three.js安全
           plutoModel.visible = true;
-          plutoModel.position.x = 20;
-          plutoModel.position.y = -3;
-          if (sphere) plutoModel.position.z = sphere.position.z + 26;
+          plutoModel.position.x = 5;
+          plutoModel.position.y = -6;
+          if (sphere) plutoModel.position.z = sphere.position.z + 45;
           console.log('[PLUTO] model shown (visible=true)');
         }
     if (!plutoBgGroup) plutoBgGroup = createStageBackground(8);
@@ -5886,17 +5886,17 @@ function hidePluto() {
       // 第6关 天王星
       if (uranusInScene && uranusModel) {
         uranusModel.rotation.y += 0.008;
-        if (sphere) { uranusModel.position.x = 16; uranusModel.position.y = -3; uranusModel.position.z = sphere.position.z + 24; }
+        if (sphere) { uranusModel.position.x = 5; uranusModel.position.y = -6; uranusModel.position.z = sphere.position.z + 45; }
       }
       // 第7关 海王星
       if (neptuneInScene && neptuneModel) {
         neptuneModel.rotation.y += 0.009;
-        if (sphere) { neptuneModel.position.x = -18; neptuneModel.position.y = -3; neptuneModel.position.z = sphere.position.z + 20; }
+        if (sphere) { neptuneModel.position.x = 5; neptuneModel.position.y = -6; neptuneModel.position.z = sphere.position.z + 45; }
       }
       // 第8关 冥王星
       if (plutoInScene && plutoModel) {
         plutoModel.rotation.y += 0.007;
-        if (sphere) { plutoModel.position.x = 20; plutoModel.position.y = -3; plutoModel.position.z = sphere.position.z + 26; }
+        if (sphere) { plutoModel.position.x = 5; plutoModel.position.y = -6; plutoModel.position.z = sphere.position.z + 45; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
