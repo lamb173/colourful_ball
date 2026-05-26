@@ -135,7 +135,7 @@
     // ─── 第4关 木星风暴 ───
     let jupiterModel       = null;
     let jupiterModelUrl    = 'assets/models/jupiter_20260526.glb';  // v20.11: 更新为AI生成模型
-    let jupiterModelScale  = 35;  // v20.11: 35，模仿土星
+    let jupiterModelScale  = 22;  // v20.12: 缩小，原35
     let jupiterInScene     = false;
     let jupiterLoadError   = false;
 
@@ -825,7 +825,7 @@ function showJupiter() {
       jupiterModel.visible = true;
       jupiterModel.position.x = 5;
       jupiterModel.position.y = -6;
-      if (sphere) jupiterModel.position.z = sphere.position.z + 45;
+      if (sphere) jupiterModel.position.z = sphere.position.z + 80;
       console.log('[JUPITER] model shown (visible=true)');
     }
     if (!jupiterBgGroup) jupiterBgGroup = createStageBackground(4);
@@ -5768,7 +5768,7 @@ function hidePluto() {
       // 第4关 木星
       if (jupiterInScene && jupiterModel) {
         jupiterModel.rotation.y += 0.01;
-        if (sphere) { jupiterModel.position.x = 5; jupiterModel.position.y = -6; jupiterModel.position.z = sphere.position.z + 45; }
+        if (sphere) { jupiterModel.position.x = 5; jupiterModel.position.y = -6; jupiterModel.position.z = sphere.position.z + 80; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
