@@ -731,7 +731,29 @@
       padding: 6px 16px;
       border-radius: 20px;
       letter-spacing: 0.06em;
+      z-index: 2;
     }
+    #ad-audio-btn {
+      position: absolute;
+      top: 20px;
+      right: 120px;
+      z-index: 2;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #fff;
+      transition: background 0.2s;
+      line-height: 1;
+    }
+    #ad-audio-btn:hover { background: rgba(255,255,255,0.18); }
+    #ad-audio-btn.muted { opacity: 0.5; }
     #ad-skip {
       position: absolute;
       bottom: 30px;

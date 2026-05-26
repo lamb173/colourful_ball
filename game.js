@@ -5408,12 +5408,44 @@ function hidePluto() {
 
     // 观看广告复活
     function playAdThenRevive() {
-      const overlay = document.getElementById('ad-overlay');
-      const video = document.getElementById('ad-video');
-      const timerEl = document.getElementById('ad-timer');
-      const skipBtn = document.getElementById('ad-skip');
+      const overlay  = document.getElementById('ad-overlay');
+      const video    = document.getElementById('ad-video');
+      const timerEl  = document.getElementById('ad-timer');
+      const skipBtn  = document.getElementById('ad-skip');
+      const audioBtn = document.getElementById('ad-audio-btn');
       overlay.classList.add('show');
       video.currentTime = 0;
+
+      // 暂停背景音乐
+      if (window.__bgmAudio && typeof window.__bgmAudio.pause === 'function') {
+        window.__bgmAudio.pause();
+        console.log('[AD] BGM paused');
+      }
+
+      // 广告音量设置（默认 0.7，非静音）
+      video.muted  = false;
+      video.volume = 0.7;
+
+      // 初始化广告音频按钮
+      function updateAdAudioBtn() {
+        if (!audioBtn) return;
+        if (video.muted || video.volume === 0) {
+          audioBtn.textContent = '🔇';
+          audioBtn.classList.add('muted');
+        } else if (video.volume <= 0.5) {
+          audioBtn.textContent = '🔉';
+          audioBtn.classList.remove('muted');
+        } else {
+          audioBtn.textContent = '🔊';
+          audioBtn.classList.remove('muted');
+        }
+      }
+      updateAdAudioBtn();
+      audioBtn.onclick = () => {
+        video.muted = !video.muted;
+        updateAdAudioBtn();
+      };
+
       video.play().catch(() => {});
 
       let remaining = 10;
@@ -5434,6 +5466,11 @@ function hidePluto() {
         clearInterval(timer);
         video.pause();
         overlay.classList.remove('show');
+        // 恢复背景音乐
+        if (window.__bgmAudio && typeof window.__bgmAudio.play === 'function') {
+          window.__bgmAudio.play().catch(() => {});
+          console.log('[AD] BGM resumed');
+        }
         document.getElementById('gameover').classList.remove('show');
         revivePlayer();
         startCountdown(() => { showGameUI(); gameStarted = true; });
@@ -7064,4 +7101,7 @@ function hidePluto() {
   }, 1000);
 
   console.log('[MUSIC] 背景音乐控制器已初始化');
+
+  /* 暴露 audio 对象，供广告模块控制 BGM 暂停/恢复 */
+  window.__bgmAudio = audio;
 })();
