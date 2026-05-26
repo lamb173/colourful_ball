@@ -126,6 +126,9 @@
     let marsModelScale  = 28;
     let marsInScene     = false;
     let marsLoadError   = false;
+    let marsBackgroundModel     = null;
+    let marsBackgroundInScene = false;
+    let marsBackgroundUrl    = 'assets/models/mars_background_20260526.glb';
 
     // ─── 第4关 木星风暴 ───
     let jupiterModel       = null;
@@ -733,6 +736,30 @@ function showMars() {
       if (sphere) marsModel.position.z = sphere.position.z + 45;
       console.log('[MARS] model shown (visible=true)');
     }
+    // 1.5 加载/显示 3D 背景模型（代替程序化背景）
+    if (!marsBackgroundModel && !marsBackgroundLoadError) {
+      if (typeof THREE.GLTFLoader === 'undefined') { console.error('[MARS BG] GLTFLoader not loaded!'); marsBackgroundLoadError = true; return; }
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        marsBackgroundUrl,
+        (gltf) => {
+          marsBackgroundModel = gltf.scene;
+          marsBackgroundModel.scale.set(0.5, 0.5, 0.5);
+          marsBackgroundModel.position.set(0, -50, 0);
+          marsBackgroundModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+          console.log('[MARS BG] .glb model loaded');
+          if (marsBackgroundInScene) { marsBackgroundModel.visible = true; }
+        },
+        (xhr) => { if (xhr.total > 0) console.log('[MARS BG] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+        (err) => { console.error('[MARS BG] .glb load error:', err); marsBackgroundLoadError = true; }
+      );
+    }
+    // 显示背景模型
+    if (marsBackgroundModel) {
+      if (!marsBackgroundInScene) { scene.add(marsBackgroundModel); marsBackgroundInScene = true; }
+      marsBackgroundModel.visible = true;
+      if (sphere) marsBackgroundModel.position.z = sphere.position.z;
+    }
     // 3. 火星尘埃粒子
     if (!marsDustField) marsDustField = createMarsDust();
     if (marsDustField && !marsDustInScene) {
@@ -741,16 +768,15 @@ function showMars() {
       console.log('[MARS-DUST] added to scene');
     }
     if (marsDustField) marsDustField.visible = true;
-    // 4. 主题背景
-    if (!marsBgGroup) marsBgGroup = createStageBackground(3);
-    if (marsBgGroup && !marsBgInScene) { scene.add(marsBgGroup); marsBgInScene = true; }
-    if (marsBgGroup) marsBgGroup.visible = true;
+    // 4. 主题背景（已由3D模型 mars_background_20260526.glb 代替，不再生成程序化背景）
+    console.log('[MARS] using 3D background model instead of procedural background');
   } catch(e) { console.error('[MARS] showMars ERROR:', e); }
 }
 function hideMars() {
   console.log("[MARS] hideMars()");
   try {
     if (marsInScene && marsModel) { marsModel.visible = false; }
+    if (marsBackgroundInScene && marsBackgroundModel) { marsBackgroundModel.visible = false; }
     if (marsDustField && marsDustInScene) { marsDustField.visible = false; }
     if (marsBgGroup && marsBgInScene) { marsBgGroup.visible = false; }
   } catch(e) { console.error("[MARS] hideMars ERROR:", e); }
