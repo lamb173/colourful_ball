@@ -128,6 +128,7 @@
     let marsLoadError   = false;
     let marsBackgroundModel     = null;
     let marsBackgroundInScene = false;
+    let marsBackgroundLoadError = false;
     let marsBackgroundUrl    = 'assets/models/mars_background_20260526.glb';
 
     // ─── 第4关 木星风暴 ───
