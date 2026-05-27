@@ -160,6 +160,20 @@
     let plutoInScene     = false;
     let plutoLoadError   = false;
 
+    // ─── 第9关 黑洞视界 ───
+    let stage9Model       = null;
+    let stage9ModelUrl    = 'assets/models/stage9_blackhole_20260527.glb';
+    let stage9ModelScale  = 18;  // 黑洞视界模型尺寸
+    let stage9InScene     = false;
+    let stage9LoadError   = false;
+
+    // ─── 第10关 奇点彼岸 ───
+    let stage10Model       = null;
+    let stage10ModelUrl    = 'assets/models/stage10_singularity_20260527.glb';
+    let stage10ModelScale  = 20;  // 奇点彼岸模型尺寸
+    let stage10InScene     = false;
+    let stage10LoadError   = false;
+
     // ─── 关卡主题背景（程序化天空球 + 星云粒子） ───
     let earthBgGroup    = null;
     let moonBgGroup     = null;
@@ -179,6 +193,10 @@
     let uranusBgInScene    = false;
     let neptuneBgInScene   = false;
     let plutoBgInScene     = false;
+    let stage9BgGroup      = null;
+    let stage10BgGroup     = null;
+    let stage9BgInScene    = false;
+    let stage10BgInScene   = false;
 
     // ─── 第1关 地球大气层粒子 ───
     let earthAtmosphere   = null;   // THREE.Group
@@ -1046,6 +1064,109 @@ function hidePluto() {
   } catch(e) { console.error("[PLUTO] hidePluto ERROR:", e); }
 }
 
+// ═══════════════════════════════════════════════════
+//  第9关 黑洞视界 — showStage9() / hideStage9()
+// ═══════════════════════════════════════════════════
+    function showStage9() {
+      stage9InScene = true;
+      console.log('[STAGE9] showStage9(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!stage9Model && !stage9LoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[STAGE9] GLTFLoader not loaded!'); stage9LoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            stage9ModelUrl,
+            (gltf) => {
+              stage9Model = gltf.scene;
+              stage9Model.scale.set(stage9ModelScale, stage9ModelScale, stage9ModelScale);
+              stage9Model.position.set(0, 0, 0);
+              stage9Model.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[STAGE9] .glb model loaded');
+              if (stage9InScene) {
+                scene.add(stage9Model);
+                stage9Model.visible = true;
+                stage9Model.position.x = 5;
+                stage9Model.position.y = -6;
+                if (sphere) stage9Model.position.z = sphere.position.z + 50;
+                console.log('[STAGE9] model added to scene after async load');
+              }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[STAGE9] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[STAGE9] .glb load error:', err); stage9LoadError = true; }
+          );
+        }
+        if (stage9Model) {
+          scene.add(stage9Model);
+          stage9Model.visible = true;
+          stage9Model.position.x = 5;
+          stage9Model.position.y = -6;
+          if (sphere) stage9Model.position.z = sphere.position.z + 50;
+          console.log('[STAGE9] model shown (visible=true)');
+        }
+        if (!stage9BgGroup) stage9BgGroup = createStageBackground(9);
+        if (stage9BgGroup && !stage9BgInScene) { scene.add(stage9BgGroup); stage9BgInScene = true; }
+        if (stage9BgGroup) stage9BgGroup.visible = true;
+      } catch(e) { console.error('[STAGE9] showStage9 ERROR:', e); }
+    }
+    function hideStage9() {
+      console.log('[STAGE9] hideStage9()');
+      try {
+        if (stage9InScene && stage9Model) { stage9Model.visible = false; }
+        if (stage9BgGroup && stage9BgInScene) { stage9BgGroup.visible = false; }
+      } catch(e) { console.error('[STAGE9] hideStage9 ERROR:', e); }
+    }
+// ═══════════════════════════════════════════════════
+//  第10关 奇点彼岸 — showStage10() / hideStage10()
+// ═══════════════════════════════════════════════════
+    function showStage10() {
+      stage10InScene = true;
+      console.log('[STAGE10] showStage10(), stage=', _currentStage ? _currentStage.id : null);
+      try {
+        if (!stage10Model && !stage10LoadError) {
+          if (typeof THREE.GLTFLoader === 'undefined') { console.error('[STAGE10] GLTFLoader not loaded!'); stage10LoadError = true; return; }
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            stage10ModelUrl,
+            (gltf) => {
+              stage10Model = gltf.scene;
+              stage10Model.scale.set(stage10ModelScale, stage10ModelScale, stage10ModelScale);
+              stage10Model.position.set(0, 0, 0);
+              stage10Model.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+              console.log('[STAGE10] .glb model loaded');
+              if (stage10InScene) {
+                scene.add(stage10Model);
+                stage10Model.visible = true;
+                stage10Model.position.x = 5;
+                stage10Model.position.y = -6;
+                if (sphere) stage10Model.position.z = sphere.position.z + 55;
+                console.log('[STAGE10] model added to scene after async load');
+              }
+            },
+            (xhr) => { if (xhr.total > 0) console.log('[STAGE10] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
+            (err) => { console.error('[STAGE10] .glb load error:', err); stage10LoadError = true; }
+          );
+        }
+        if (stage10Model) {
+          scene.add(stage10Model);
+          stage10Model.visible = true;
+          stage10Model.position.x = 5;
+          stage10Model.position.y = -6;
+          if (sphere) stage10Model.position.z = sphere.position.z + 55;
+          console.log('[STAGE10] model shown (visible=true)');
+        }
+        if (!stage10BgGroup) stage10BgGroup = createStageBackground(10);
+        if (stage10BgGroup && !stage10BgInScene) { scene.add(stage10BgGroup); stage10BgInScene = true; }
+        if (stage10BgGroup) stage10BgGroup.visible = true;
+      } catch(e) { console.error('[STAGE10] showStage10 ERROR:', e); }
+    }
+    function hideStage10() {
+      console.log('[STAGE10] hideStage10()');
+      try {
+        if (stage10InScene && stage10Model) { stage10Model.visible = false; }
+        if (stage10BgGroup && stage10BgInScene) { stage10BgGroup.visible = false; }
+      } catch(e) { console.error('[STAGE10] hideStage10 ERROR:', e); }
+    }
+
     function hideSaturn() {
       console.log("[SATURN] hideSaturn()");
       try {
@@ -1184,6 +1305,36 @@ function hidePluto() {
           },
           null,
           (err) => { console.error('[PRELOAD] 冥王星模型加载失败:', err); plutoLoadError = true; }
+        );
+      }
+      // 第9关 黑洞视界
+      if (!stage9Model && !stage9LoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          stage9ModelUrl,
+          (gltf) => {
+            stage9Model = gltf.scene;
+            stage9Model.scale.set(stage9ModelScale, stage9ModelScale, stage9ModelScale);
+            stage9Model.position.set(0, 0, 0);
+            stage9Model.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 第9关黑洞视界模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 第9关模型加载失败:', err); stage9LoadError = true; }
+        );
+      }
+      // 第10关 奇点彼岸
+      if (!stage10Model && !stage10LoadError && typeof THREE.GLTFLoader !== 'undefined') {
+        new THREE.GLTFLoader().load(
+          stage10ModelUrl,
+          (gltf) => {
+            stage10Model = gltf.scene;
+            stage10Model.scale.set(stage10ModelScale, stage10ModelScale, stage10ModelScale);
+            stage10Model.position.set(0, 0, 0);
+            stage10Model.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            console.log('[PRELOAD] 第10关奇点彼岸模型加载完成');
+          },
+          null,
+          (err) => { console.error('[PRELOAD] 第10关模型加载失败:', err); stage10LoadError = true; }
         );
       }
     }
@@ -1431,6 +1582,18 @@ function hidePluto() {
         ribbons = [
           { pts: [[-240,100,-80],[-80,150,60],[100,70,-20],[220,110,80]], color: 0x222244, emissive: 0x111122 },
           { pts: [[-150,160,40],[50,100,140],[180,150,-30],[300,90,100]], color: 0x444466, emissive: 0x222233 },
+        ];
+      } else if (stageId === 9) {
+        // 第9关 黑洞视界：蓝紫橙红 光带
+        ribbons = [
+          { pts: [[-260,105,-85],[-90,148,65],[110,72,-35],[230,112,95]], color: 0x8844ff, emissive: 0x4400cc },
+          { pts: [[-160,158,45],[60,102,145],[190,148,-25],[310,98,115]], color: 0xff4400, emissive: 0xcc2200 },
+        ];
+      } else if (stageId === 10) {
+        // 第10关 奇点彼岸：蓝紫 能量波纹 光带
+        ribbons = [
+          { pts: [[-270,108,-88],[-95,152,68],[115,75,-38],[235,115,98]], color: 0x6600ff, emissive: 0x330077 },
+          { pts: [[-165,162,48],[65,105,148],[195,152,-28],[315,102,118]], color: 0x00ccff, emissive: 0x0077aa },
         ];
       }
 
@@ -1830,6 +1993,120 @@ function hidePluto() {
         const plutoRibbons = createLightRibbons(8);
         group.add(plutoRibbons);
         console.log('[BG] Pluto scenic background done');
+      } else if (stageId === 9) {
+        // ─── Stage 9: 黑洞视界 - 深空黑+吸积盘光晕 ───
+        // 1. Sky dome (deep black with subtle purple tint)
+        const skyGeo9 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat9 = new THREE.MeshBasicMaterial({
+          color: 0x05000a,
+          side: THREE.BackSide,
+          fog: false,
+        });
+        group.add(new THREE.Mesh(skyGeo9, skyMat9));
+
+        // 2. Ground plane (void black)
+        const groundGeo9 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos9 = groundGeo9.attributes.position;
+        for (let i = 0; i < gPos9.count; i++) {
+          const x = gPos9.getX(i), y = gPos9.getY(i);
+          gPos9.setZ(i, (Math.sin(x*0.008)*5 + Math.cos(y*0.008)*5) * 0.2);
+        }
+        gPos9.needsUpdate = true;
+        groundGeo9.computeVertexNormals();
+        const groundMat9 = new THREE.MeshPhongMaterial({ color: 0x05000a, fog: false });
+        const ground9 = new THREE.Mesh(groundGeo9, groundMat9);
+        ground9.rotation.x = -Math.PI/2;
+        ground9.position.y = -50;
+        ground9.receiveShadow = true;
+        group.add(ground9);
+
+        // 3. Accretion disk particles (glowing ring around black hole)
+        const diskCount = 2000;
+        const diskPos = new Float32Array(diskCount * 3);
+        const diskCol = new Float32Array(diskCount * 3);
+        for (let i = 0; i < diskCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = 30 + Math.random() * 120;
+          diskPos[i*3]   = Math.cos(angle) * r;
+          diskPos[i*3+1] = (Math.random()-0.5) * 6;
+          diskPos[i*3+2] = Math.sin(angle) * r;
+          const t = Math.random();
+          if (t < 0.5) { diskCol[i*3]=0.9; diskCol[i*3+1]=0.2; diskCol[i*3+2]=0.6; }
+          else if (t < 0.8) { diskCol[i*3]=1.0; diskCol[i*3+1]=0.4; diskCol[i*3+2]=0.1; }
+          else { diskCol[i*3]=0.3; diskCol[i*3+1]=0.1; diskCol[i*3+2]=0.9; }
+        }
+        const diskGeo = new THREE.BufferGeometry();
+        diskGeo.setAttribute('position', new THREE.BufferAttribute(diskPos, 3));
+        diskGeo.setAttribute('color',    new THREE.BufferAttribute(diskCol, 3));
+        const diskMat = new THREE.PointsMaterial({
+          size: 2.5, map: createCircleTexture(48), vertexColors: true,
+          transparent: true, opacity: 0.8, sizeAttenuation: true,
+          fog: false, depthWrite: false, blending: THREE.AdditiveBlending,
+        });
+        group.add(new THREE.Points(diskGeo, diskMat));
+
+        // 4. Light ribbons
+        const bhRibbons = createLightRibbons(9);
+        group.add(bhRibbons);
+
+        console.log('[BG] Stage 9 (Black Hole) scenic background done');
+      } else if (stageId === 10) {
+        // ─── Stage 10: 奇点彼岸 - 扭曲时空+能量裂缝 ───
+        // 1. Sky dome (twisted spacetime - deep violet)
+        const skyGeo10 = new THREE.SphereGeometry(500, 32, 32);
+        const skyMat10 = new THREE.MeshBasicMaterial({
+          color: 0x0a001a,
+          side: THREE.BackSide,
+          fog: false,
+        });
+        group.add(new THREE.Mesh(skyGeo10, skyMat10));
+
+        // 2. Ground plane (fractured reality)
+        const groundGeo10 = new THREE.PlaneGeometry(2000, 2000, 60, 60);
+        const gPos10 = groundGeo10.attributes.position;
+        for (let i = 0; i < gPos10.count; i++) {
+          const x = gPos10.getX(i), y = gPos10.getY(i);
+          const dist = Math.sqrt(x*x + y*y);
+          gPos10.setZ(i, Math.sin(dist*0.03 + x*0.01)*4 * Math.exp(-dist*0.002));
+        }
+        gPos10.needsUpdate = true;
+        groundGeo10.computeVertexNormals();
+        const groundMat10 = new THREE.MeshPhongMaterial({ color: 0x0a001a, fog: false });
+        const ground10 = new THREE.Mesh(groundGeo10, groundMat10);
+        ground10.rotation.x = -Math.PI/2;
+        ground10.position.y = -50;
+        ground10.receiveShadow = true;
+        group.add(ground10);
+
+        // 3. Energy fissures (glowing cracks in spacetime)
+        const fissureCount = 600;
+        const fissPos = new Float32Array(fissureCount * 3);
+        const fissCol = new Float32Array(fissureCount * 3);
+        for (let i = 0; i < fissureCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = 20 + Math.random() * 300;
+          fissPos[i*3]   = Math.cos(angle) * r;
+          fissPos[i*3+1] = -49 + Math.random() * 4;
+          fissPos[i*3+2] = Math.sin(angle) * r;
+          const t = Math.random();
+          if (t < 0.6) { fissCol[i*3]=0.5; fissCol[i*3+1]=0.0; fissCol[i*3+2]=0.9; }
+          else { fissCol[i*3]=0.9; fissCol[i*3+1]=0.3; fissCol[i*3+2]=0.7; }
+        }
+        const fissGeo = new THREE.BufferGeometry();
+        fissGeo.setAttribute('position', new THREE.BufferAttribute(fissPos, 3));
+        fissGeo.setAttribute('color',    new THREE.BufferAttribute(fissCol, 3));
+        const fissMat = new THREE.PointsMaterial({
+          size: 3.5, map: createCircleTexture(48), vertexColors: true,
+          transparent: true, opacity: 0.9, sizeAttenuation: true,
+          fog: false, depthWrite: false, blending: THREE.AdditiveBlending,
+        });
+        group.add(new THREE.Points(fissGeo, fissMat));
+
+        // 4. Light ribbons
+        const sgRibbons = createLightRibbons(10);
+        group.add(sgRibbons);
+
+        console.log('[BG] Stage 10 (Singularity) scenic background done');
       }
 
       return group;
@@ -5801,6 +6078,8 @@ function hidePluto() {
         if (typeof hideUranus === 'function') hideUranus();
         if (typeof hideNeptune === 'function') hideNeptune();
         if (typeof hidePluto === 'function') hidePluto();
+        if (typeof hideStage9 === 'function') hideStage9();
+        if (typeof hideStage10 === 'function') hideStage10();
         // 隐藏所有背景
         if (earthBgGroup && earthBgInScene) earthBgGroup.visible = false;
         if (moonBgGroup && moonBgInScene) moonBgGroup.visible = false;
@@ -5810,6 +6089,8 @@ function hidePluto() {
         if (uranusBgGroup && uranusBgInScene) uranusBgGroup.visible = false;
         if (neptuneBgGroup && neptuneBgInScene) neptuneBgGroup.visible = false;
         if (plutoBgGroup && plutoBgInScene) plutoBgGroup.visible = false;
+        if (stage9BgGroup && stage9BgInScene) stage9BgGroup.visible = false;
+        if (stage10BgGroup && stage10BgInScene) stage10BgGroup.visible = false;
         // 显示当前关卡
         if (sid === 1) showEarth();
         else if (sid === 2) showMoonBase();
@@ -5819,6 +6100,8 @@ function hidePluto() {
         else if (sid === 6) { if (typeof showUranus === 'function') showUranus(); }
         else if (sid === 7) { if (typeof showNeptune === 'function') showNeptune(); }
         else if (sid === 8) { if (typeof showPluto === 'function') showPluto(); }
+        else if (sid === 9) { if (typeof showStage9 === 'function') showStage9(); }
+        else if (sid === 10) { if (typeof showStage10 === 'function') showStage10(); }
       } else {
         // 非闯关模式：隐藏所有
         hideEarth(); hideMoonBase(); hideSaturn();
@@ -5827,6 +6110,8 @@ function hidePluto() {
         if (typeof hideUranus === 'function') hideUranus();
         if (typeof hideNeptune === 'function') hideNeptune();
         if (typeof hidePluto === 'function') hidePluto();
+        if (typeof hideStage9 === 'function') hideStage9();
+        if (typeof hideStage10 === 'function') hideStage10();
       }
     }
 
@@ -5897,6 +6182,16 @@ function hidePluto() {
       if (plutoInScene && plutoModel) {
         plutoModel.rotation.y += 0.007;
         if (sphere) { plutoModel.position.x = 5; plutoModel.position.y = -6; plutoModel.position.z = sphere.position.z + 45; }
+      }
+      // 第9关 黑洞视界
+      if (stage9InScene && stage9Model) {
+        stage9Model.rotation.y += 0.005;
+        if (sphere) { stage9Model.position.x = 5; stage9Model.position.y = -6; stage9Model.position.z = sphere.position.z + 50; }
+      }
+      // 第10关 奇点彼岸
+      if (stage10InScene && stage10Model) {
+        stage10Model.rotation.y += 0.006;
+        if (sphere) { stage10Model.position.x = 5; stage10Model.position.y = -6; stage10Model.position.z = sphere.position.z + 55; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
