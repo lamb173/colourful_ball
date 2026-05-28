@@ -1253,3 +1253,79 @@
       cursor: pointer;
     }
   
+
+    /* ─── 道具栏（左下角）──── */
+    #items-bar {
+      position: fixed;
+      left: 24px;
+      bottom: 24px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    #items-bar.visible { opacity: 1; }
+    .item-slot {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .item-slot.has-item {
+      border-color: rgba(0,255,136,0.5);
+      box-shadow: 0 0 12px rgba(0,255,136,0.25);
+    }
+    .item-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+    .item-count {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      background: #00ff88;
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      box-shadow: 0 2px 8px rgba(0,255,136,0.4);
+    }
+
+    /* ─── 道具通知动画 ─── */
+    @keyframes itemNotifAnim {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+      15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+      30%  { transform: translate(-50%, -50%) scale(1.0); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -50%) translateY(-20px); }
+    }
+
+    /* ─── Game Over 复活太空舱按钮 ─── */
+    .item-revive-btn {
+      background: linear-gradient(135deg, rgba(0,255,136,0.25), rgba(0,200,100,0.15));
+      border: 1px solid rgba(0,255,136,0.5);
+      color: #00ff88;
+      font-weight: 700;
+    }
+    .item-revive-btn:hover {
+      background: linear-gradient(135deg, rgba(0,255,136,0.4), rgba(0,200,100,0.25));
+      box-shadow: 0 0 20px rgba(0,255,136,0.3);
+    }

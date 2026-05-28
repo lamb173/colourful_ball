@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!-- v2026-05-23-split -->
   <title>弹跳小球 · 星际穿越</title>
-  <link rel="stylesheet" href="styles.css?v=20.16a">
+  <link rel="stylesheet" href="styles.css?v=20.19">
 </head>
 <body>
   <!-- ① 欢迎页 -->
@@ -59,6 +59,18 @@
   </div>
 
   <div id="info">🏀 跳跳跳…</div>
+
+  <!-- 道具栏（左下角） -->
+  <div id="items-bar">
+    <div class="item-slot" id="item-revive-slot" title="复活太空舱">
+      <span class="item-icon">🛸</span>
+      <span class="item-count" id="item-revive-count">0</span>
+    </div>
+    <div class="item-slot" id="item-anti-slip-slot" title="防滑外套">
+      <span class="item-icon">🧥</span>
+      <span class="item-count" id="item-anti-slip-count">0</span>
+    </div>
+  </div>
 
   <!-- 左上角距离显示 -->
   <div id="distance-board">
@@ -129,6 +141,9 @@
       <button class="go-btn exit-btn" id="exit-endless-btn">退出无尽模式</button>
       <button class="go-btn ad-btn" id="ad-revive-btn">观看广告复活</button>
       <button class="go-btn star-btn" id="star-revive-btn">使用 0 ★ 复活</button>
+      <button class="go-btn item-revive-btn" id="item-revive-btn" style="display:none">
+        🛸 使用复活太空舱 (<span id="revive-capsule-count">0</span>)
+      </button>
     </div>
   </div>
 
@@ -168,7 +183,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="game.js?v=20.17"></script>
+  <script src="game.js?v=20.19"></script>
   <!-- 调试：错误显示 -->
 </body>
 </html>

@@ -198,6 +198,15 @@
     let stage9BgInScene    = false;
     let stage10BgInScene   = false;
 
+    // ─── 道具系统 ───
+    let items             = [];   // { mesh, type, groupIdx, collected, bboxRadius, floatPhase }
+    const ITEM_TYPE      = { REVIVE: 0, ANTI_SLIP: 1 };
+    let itemReviveCount  = 0;    // 复活太空舱持有数
+    let itemAntiSlipCount = 0;    // 防滑外套持有数
+    let antiSlipActive   = false; // 当前冰面是否免疫
+    let antiSlipGroupRef = null;  // 当前免疫的冰面 group 引用
+    let itemModelCache   = {};   // GLB 模型缓存（克隆用）
+
     // ─── 第1关 地球大气层粒子 ───
     let earthAtmosphere   = null;   // THREE.Group
     let earthDustPositions  = null;
@@ -1337,7 +1346,285 @@ function hidePluto() {
           (err) => { console.error('[PRELOAD] 第10关模型加载失败:', err); stage10LoadError = true; }
         );
       }
+
+      // ── 道具模型预加载 ──
+      console.log('[PRELOAD] 开始预加载道具模型...');
+      const itemUrls = {
+        [ITEM_TYPE.REVIVE]: 'assets/models/item_revive_capsule.glb',
+        [ITEM_TYPE.ANTI_SLIP]: 'assets/models/item_anti_slip_shell.glb'
+      };
+      
+      Object.keys(itemUrls).forEach(typeKey => {
+        const type = parseInt(typeKey);
+        const url = itemUrls[type];
+        
+        if (itemModelCache[type]) return; // 已缓存
+        
+        if (typeof THREE.GLTFLoader !== 'undefined') {
+          new THREE.GLTFLoader().load(
+            url,
+            (gltf) => {
+              const model = gltf.scene;
+              // 缩小模型到合适大小（轨道板子的 0.3-0.5 倍）
+              model.scale.set(0.35, 0.35, 0.35);
+              model.traverse((child) => { 
+                if (child.isMesh) { 
+                  child.castShadow = true; 
+                  child.receiveShadow = true; 
+                } 
+              });
+              itemModelCache[type] = model;
+              console.log('[PRELOAD] 道具模型加载完成 type=' + type);
+            },
+            null,
+            (err) => { console.error('[PRELOAD] 道具模型加载失败:', err, 'url=' + url); }
+          );
+        }
+      });
     }
+    // ─── 道具系统函数 ───
+    // 尝试在指定 group 上生成道具
+    function trySpawnItem(group) {
+      if (group.type === 4 || group.type === 5) return;
+      const prob = group.type === 1 ? 0.08 : 0.12;
+      if (Math.random() >= prob) return;
+      const type = Math.random() < 0.4 ? ITEM_TYPE.REVIVE : ITEM_TYPE.ANTI_SLIP;
+      const modelTemplate = itemModelCache[type];
+      if (!modelTemplate) return;
+      const mesh = modelTemplate.clone(true);
+      mesh.traverse(child => {
+        if (child.isMesh && child.material) {
+          child.material = child.material.clone();
+        }
+      });
+      let x, z;
+      if (group.type === 1) {
+        x = 0;
+        z = group.landZ;
+      } else {
+        const keys = group.partColorKeys || ["r", "g", "b"];
+        const idx = Math.floor(Math.random() * keys.length);
+        const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
+        x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
+        z = group.landZ;
+      }
+      const y = PLAT_Y + PLAT_H / 2 + 1.5;
+      mesh.position.set(x, y, z);
+      const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: type === ITEM_TYPE.REVIVE ? 0x00ff88 : 0x44aaff,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.BackSide
+      });
+      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      glowMesh.position.copy(mesh.position);
+      scene.add(glowMesh);
+      mesh.userData.glow = glowMesh;
+      mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+      mesh.userData.type = type;
+      scene.add(mesh);
+      const bbox = new THREE.Box3().setFromObject(mesh);
+      const bboxSize = new THREE.Vector3();
+      bbox.getSize(bboxSize);
+      const bboxRadius = bboxSize.length() / 2;
+      items.push({
+        mesh,
+        type,
+        groupIdx: groups.length - 1,
+        collected: false,
+        bboxRadius: Math.max(bboxRadius, 0.8),
+        floatPhase: mesh.userData.floatPhase,
+        glowMesh
+      });
+      console.log("[ITEM] Spawned item type=" + type + " at x=" + x.toFixed(1) + " y=" + y.toFixed(1) + " z=" + z.toFixed(1));
+    }
+    
+    // 更新道具悬浮动画和碰撞检测
+    function updateItems(dt) {
+      const t = clock.getElapsedTime();
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        if (item.collected) {
+          items.splice(i, 1);
+          continue;
+        }
+        const floatY = Math.sin(t * 2.5 + item.floatPhase) * 0.15;
+        item.mesh.position.y = PLAT_Y + PLAT_H / 2 + 1.5 + floatY;
+        item.mesh.rotation.y += dt * 3.0;
+        if (item.glowMesh) {
+          item.glowMesh.position.copy(item.mesh.position);
+          const pulse = 0.7 + 0.3 * Math.sin(t * 4 + item.floatPhase);
+          item.glowMesh.material.opacity = 0.2 + 0.15 * pulse;
+          item.glowMesh.scale.setScalar(pulse);
+        }
+        const dx = sphere.position.x - item.mesh.position.x;
+        const dy = sphere.position.y - item.mesh.position.y;
+        const dz = sphere.position.z - item.mesh.position.z;
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        if (dist < item.bboxRadius + BALL_RADIUS) {
+          pickupItem(item.type);
+          item.collected = true;
+          triggerBurst(item.mesh.position.clone(), 
+            item.type === ITEM_TYPE.REVIVE ? new THREE.Color(0x00ff88) : new THREE.Color(0x44aaff));
+          scene.remove(item.mesh);
+          if (item.glowMesh) scene.remove(item.glowMesh);
+          item.mesh.traverse(child => {
+            if (child.isMesh) {
+              if (child.geometry) child.geometry.dispose();
+              if (child.material) child.material.dispose();
+            }
+          });
+          console.log("[ITEM] Picked up item type=" + item.type);
+        }
+      }
+    }
+    
+    // 拾取道具
+    function pickupItem(type) {
+      if (type === ITEM_TYPE.REVIVE) {
+        itemReviveCount++;
+        playPickupSound();
+        showItemNotification("🛸 获得复活太空舱！");
+      } else if (type === ITEM_TYPE.ANTI_SLIP) {
+        itemAntiSlipCount++;
+        playPickupSound();
+        showItemNotification("🧥 获得防滑外套！");
+      }
+      updateItemUI();
+    }
+    
+    // 更新道具数量显示
+    function updateItemUI() {
+      const reviveEl = document.getElementById("item-revive-count");
+      const antiSlipEl = document.getElementById("item-anti-slip-count");
+      const reviveBtn = document.getElementById("item-revive-btn");
+      const reviveCountEl = document.getElementById("revive-capsule-count");
+      if (reviveEl) reviveEl.textContent = itemReviveCount;
+      if (antiSlipEl) antiSlipEl.textContent = itemAntiSlipCount;
+      if (reviveCountEl) reviveCountEl.textContent = itemReviveCount;
+      if (reviveBtn) {
+        reviveBtn.style.display = itemReviveCount > 0 ? "block" : "none";
+      }
+    }
+    
+    // 显示道具通知
+    function showItemNotification(text) {
+      const notif = document.createElement("div");
+      notif.className = "item-notification";
+      notif.textContent = text;
+      notif.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,255,136,0.9);color:#000;padding:12px 24px;border-radius:8px;font-size:1.2rem;font-weight:bold;z-index:1000;pointer-events:none;animation:itemNotifAnim 1.5s ease-out forwards;";
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 1500);
+    }
+    
+    // 播放拾取音效
+    function playPickupSound() {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      } catch(e) {}
+    }
+    
+    // 使用复活太空舱
+    function useReviveCapsule() {
+      if (itemReviveCount <= 0) return false;
+      itemReviveCount--;
+      updateItemUI();
+      sphereMat.opacity = 1;
+      sphereMat.color.copy(lastDeathColor);
+      currentBallColorKey = lastDeathColorKey;
+      shield = SHIELD_MAX;
+      safeLandCount = 0;
+      isShieldBroken = false;
+      wasHitThisJump = false;
+      shieldBreakActive = false;
+      shieldBreakTimer = 0;
+      shieldWarningTimer = 0;
+      shieldRegenFlashTimer = 0;
+      shieldRingMat.opacity = 0;
+      shieldRing.visible = false;
+      let landed = findGroupAt(jumpToZ);
+      if (!landed) {
+        for (let i = 0; i < groups.length; i++) {
+          landed = { index: i, group: groups[i] };
+          break;
+        }
+      }
+      if (landed) {
+        const g = landed.group;
+        if (g.type === 5) {
+          ballX = 0;
+          ballZ = jumpToZ;
+          iceSliding = true;
+          iceGroupRef = g;
+          iceSlideAccelDir = 0;
+          iceAccelTimer = 0;
+          iceSlideVelX = 0;
+          jumpFromZ = jumpToZ;
+          currentGroupIdx = landed.index;
+        } else if (g.type === 1 || g.type === 4) {
+          ballX = 0;
+          ballZ = g.landZ;
+          jumpFromZ = g.landZ;
+          const next = pickNextGroup(landed.index);
+          jumpToZ = next.group.landZ;
+          currentGroupIdx = landed.index;
+        } else {
+          let matchPart = g.parts[0];
+          for (let pi = 0; pi < g.parts.length; pi++) {
+            if (g.partColorKeys[pi] === lastDeathColorKey) {
+              matchPart = g.parts[pi];
+              break;
+            }
+          }
+          ballX = matchPart.mesh.position.x;
+          ballZ = g.landZ;
+          jumpFromZ = g.landZ;
+          const next = pickNextGroup(landed.index);
+          jumpToZ = next.group.landZ;
+          currentGroupIdx = landed.index;
+        }
+      }
+      sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
+      jumpTimer = 0;
+      gameOver = false;
+      document.getElementById("gameover").classList.remove("show");
+      console.log("[ITEM] Used revive capsule, remaining=" + itemReviveCount);
+      return true;
+    }
+    
+    // 检查并设置防滑外套
+    function checkAntiSlip(group) {
+      if (itemAntiSlipCount <= 0) return false;
+      if (group.type !== 5) return false;
+      itemAntiSlipCount--;
+      updateItemUI();
+      antiSlipActive = true;
+      antiSlipGroupRef = group;
+      console.log("[ITEM] Anti-slip shell activated for ice platform");
+      return true;
+    }
+    
+    // 重置防滑外套状态
+    function resetAntiSlip() {
+      if (antiSlipActive) {
+        antiSlipActive = false;
+        antiSlipGroupRef = null;
+        console.log("[ITEM] Anti-slip shell deactivated");
+      }
+    }
+    
     // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
 
     // ══════════════════════════════════════════════════════
@@ -3181,10 +3468,16 @@ function hidePluto() {
       group.startZ = z;
       groups.push(group);
 
+      // ── 随机生成道具 ──
+      trySpawnItem(group);
+
       // 闯关模式：应用间距乘数（gapMul < 1.0 → 平台更紧凑 → 难度更高）
       if (_currentStage && _currentStage.gapMul && _currentStage.gapMul !== 1.0) {
         group.totalZ = group.totalZ * _currentStage.gapMul;
       }
+
+      // 尝试生成道具
+      trySpawnItem(group);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -4811,6 +5104,7 @@ function hidePluto() {
       document.getElementById('info').classList.add('visible');
       document.getElementById('score-board').classList.add('visible');
       document.getElementById('distance-board').classList.add('visible');
+      document.getElementById('items-bar').classList.add('visible');
       showShieldBar();
       updateShieldUI();
       // 无尽模式隐藏目标距离，显示星级；闯关模式反之
@@ -4826,6 +5120,7 @@ function hidePluto() {
       document.getElementById('info').classList.remove('visible');
       document.getElementById('score-board').classList.remove('visible');
       document.getElementById('distance-board').classList.remove('visible');
+      document.getElementById('items-bar').classList.remove('visible');
       hideShieldBar();
     }
 
@@ -5879,6 +6174,14 @@ function hidePluto() {
       }
     });
 
+    // 使用复活太空舱按钮
+    document.getElementById('item-revive-btn').addEventListener('click', () => {
+      playUIRevive();
+      if (useReviveCapsule()) {
+        console.log('[ITEM] 复活成功');
+      }
+    });
+
     // Victory 按钮
     document.getElementById('victory-btn').addEventListener('click', () => {
       document.getElementById('victory').classList.remove('show');
@@ -6141,6 +6444,8 @@ function hidePluto() {
       updateBlackhole(dt);
       updateVictoryAnim(dt);
       updateShieldBreak(dt);
+      // ── 道具更新（悬浮动画 + 碰撞检测）
+      if (!gameOver) updateItems(dt);
 
       // 关卡3D模型旋转动画 + 跟随球体
       // 第1关 地球
@@ -6511,14 +6816,16 @@ function hidePluto() {
         ballZ += ICE_SLIDE_SPEED * dt;
 
         // 随机横向推力：每隔 ICE_ACCEL_INTERVAL 秒切换方向
+        // 防滑外套激活时跳过推力
         iceAccelTimer += dt;
-        if (iceAccelTimer >= ICE_ACCEL_INTERVAL) {
+        if (iceAccelTimer >= ICE_ACCEL_INTERVAL && !antiSlipActive) {
           iceAccelTimer = 0;
           const rand = Math.random();
           iceSlideAccelDir = rand < 0.08 ? 0 : (rand < 0.54 ? -1 : 1);
         }
         // 速度驱动：加速度累积到速度，摩擦力缓缓衰减
-        if (iceSlideAccelDir !== 0) {
+        // 防滑外套激活时跳过加速度
+        if (iceSlideAccelDir !== 0 && !antiSlipActive) {
           iceSlideVelX += iceSlideAccelDir * ICE_SLIDE_ACCEL * dt;
         }
         // 低摩擦：速度不会立刻归零，惯性能累积
@@ -6613,6 +6920,8 @@ function hidePluto() {
           if (ballZ >= iceEndZ) {
             iceSliding = false;
             iceGroupRef = null;
+            // 重置防滑外套状态
+            resetAntiSlip();
             // 结束滑行后，找到当前所在 group 并设为下一次跳跃起点
             const landed = findGroupAt(ballZ);
             if (landed) {
@@ -6816,6 +7125,8 @@ function hidePluto() {
             iceAccelTimer = 0;
             iceSlideVelX = 0;
             currentGroupIdx = landed.index;
+            // 检查防滑外套
+            checkAntiSlip(g);
             // 冰霜段不变色不计分，只触发一个冰面涟漪
             triggerRipple(0, g.landZ, ICE_COLOR.clone(), ICE_W, ICE_D);
             return;
