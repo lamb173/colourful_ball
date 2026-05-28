@@ -1347,7 +1347,12 @@ function hidePluto() {
         );
       }
 
-      // ── 道具模型预加载 ──
+      // 无论什么模式，都预加载道具模型
+      preloadItemModels();
+    }
+    
+    // ── 预加载道具模型（独立函数，无尽模式和闯关模式都需要） ──
+    function preloadItemModels() {
       console.log('[PRELOAD] 开始预加载道具模型...');
       const itemUrls = {
         [ITEM_TYPE.REVIVE]: 'assets/models/item_revive_capsule.glb',
@@ -1382,6 +1387,7 @@ function hidePluto() {
         }
       });
     }
+    
     // ─── 道具系统函数 ───
     // 尝试在指定 group 上生成道具
     function trySpawnItem(group) {
@@ -6424,7 +6430,11 @@ function hidePluto() {
     function animate() {
       // 预加载关卡3D模型（仅首次执行）
       if (!preloadStarted && gameMode === 'stages') { preloadAllStageModels(); preloadStarted = true; }
-      if (!preloadStarted && gameMode !== 'stages') { preloadStarted = true; }  // 无尽模式不需要预加载
+      if (!preloadStarted && gameMode !== 'stages') { 
+        // 无尽模式：只预加载道具模型
+        preloadItemModels();
+        preloadStarted = true; 
+      }
       requestAnimationFrame(animate);
       try {
       const dt = Math.min(clock.getDelta(), 0.05);
