@@ -1396,7 +1396,7 @@ function hidePluto() {
       if (group.type === 4 || group.type === 5) return;
       // 防滑外套：必须生成在球当前颜色匹配的轨道部分上
       // 复活太空舱：随机位置即可
-      const prob = group.type === 1 ? 0.03 : 0.05;
+      const prob = group.type === 1 ? 0.05 : 0.08;
       if (Math.random() >= prob) return;
       // 决定生成哪种道具
       let type;
@@ -1626,14 +1626,16 @@ function hidePluto() {
         }
       }
       sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
-      sphere.visible = true;  // 复活后显示球
+      sphere.visible = true;
       sphereMat.opacity = 1;
-      jumpTimer = -0.5;  // 短暂延迟，让玩家有反应时间
       gameOver = false;
-      // 确保颜色状态正确
-      sphereMat.color.copy(lastDeathColor);
-      currentBallColorKey = lastDeathColorKey;
       document.getElementById("gameover").classList.remove("show");
+      // 倒计时恢复：先暂停，倒计时结束后恢复
+      isPaused = true;
+      jumpTimer = -0.5;
+      startCountdown(() => {
+        isPaused = false;
+      });
       console.log("[ITEM] Used revive capsule, remaining=" + itemReviveCount);
       return true;
     }
