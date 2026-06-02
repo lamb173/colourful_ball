@@ -1600,16 +1600,6 @@ function hidePluto() {
         antiSlipGroupRef = null;
         console.log("[ITEM] Anti-slip shell deactivated");
       }
-      // 修复：冰面结束后确保颜色状态同步
-      if (sphere && sphereMat) {
-        // 用当前球颜色反推 currentBallColorKey
-        const c = sphereMat.color;
-        const r = Math.round(c.r * 255), g = Math.round(c.g * 255), b = Math.round(c.b * 255);
-        if (r > 200 && b < 100)      currentBallColorKey = 'r';
-        else if (g > 200 && r < 100) currentBallColorKey = 'g';
-        else if (b > 200 && r < 100) currentBallColorKey = 'b';
-        else if (r > 200 && g > 200)  currentBallColorKey = 'y';
-      }
     }
     
     // ─── 第1关 地球大气层粒子（蓝白云絮 + 绿色陆地碎片） ───
