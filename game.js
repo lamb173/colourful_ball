@@ -1429,14 +1429,17 @@ function hidePluto() {
         z = group.landZ;
       } else {
         // 方形轨道：生成在球当前颜色匹配的部分上方（必经之路）
-        const ck = currentBallColorKey || 'r';
+        const ck = currentBallColorKey || 'blue';
         const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(ck) : -1;
         const idx = matchIdx >= 0 ? matchIdx : 0;  // 找不到匹配就放第一个，保证能拿到
         x = group.parts[idx].mesh.position.x;
         z = group.landZ;
+        // 调试输出
+        console.log('[ITEM] Spawn on square track: ck=' + ck + ' matchIdx=' + matchIdx + ' idx=' + idx + ' x=' + x.toFixed(2) + ' mesh.x=' + group.parts[idx].mesh.position.x.toFixed(2) + ' mesh.y=' + group.parts[idx].mesh.position.y.toFixed(2));
       }
       const y = PLAT_Y + PLAT_H / 2 + 1.5;
       mesh.position.set(x, y, z);
+      console.log('[ITEM] Item spawned at: x=' + x.toFixed(2) + ' y=' + y.toFixed(2) + ' z=' + z.toFixed(2) + ' group.landZ=' + group.landZ.toFixed(2));
       const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
       const glowMat = new THREE.MeshBasicMaterial({
         color: type === ITEM_TYPE.REVIVE ? 0x00ff88 : 0x44aaff,
@@ -1518,6 +1521,16 @@ function hidePluto() {
         itemAntiSlipCount++;
         playPickupSound();
         showItemNotification("🧥 获得防滑外套！");
+        // 修复：如果在冰面上且防滑外套未激活，立即激活
+        if (iceSliding && !antiSlipActive && currentGroupIdx >= 0) {
+          var cg = groups[currentGroupIdx];
+          if (cg && cg.type === 5 && itemAntiSlipCount > 0) {
+            itemAntiSlipCount--;
+            antiSlipActive = true;
+            antiSlipGroupRef = cg;
+            console.log("[ITEM] Anti-slip activated immediately on current ice");
+          }
+        }
       }
       updateItemUI();
     }
