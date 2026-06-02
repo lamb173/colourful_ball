@@ -1438,13 +1438,14 @@ function hidePluto() {
         x = ballX;
         z = group.landZ;
       } else {
-        // 方形轨道：生成在球当前颜色匹配的部分正上方（使用轨道块mesh的真实坐标）
+        // 方形轨道：用与createTriple/DoublePlatform完全相同的公式计算x，保证在方块正中心
         const ck = currentBallColorKey || 'blue';
         const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(ck) : -1;
-        const idx = matchIdx >= 0 ? matchIdx : 0;  // 找不到匹配就放第一个，保证能拿到
-        const partMesh = group.parts[idx].mesh;
-        x = partMesh.position.x;
-        z = partMesh.position.z;  // 明确使用轨道块的z坐标
+        const idx = matchIdx >= 0 ? matchIdx : 0;
+        const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
+        x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
+        z = group.landZ;
+        console.log('[ITEM] Square spawn: type=' + group.type + ' ck=' + ck + ' idx=' + idx + ' x=' + x.toFixed(2) + ' z=' + z.toFixed(2) + ' partColorKeys=' + group.partColorKeys);
       }
       const y = PLAT_Y + PLAT_H / 2 + 1.5;
       mesh.position.set(x, y, z);
