@@ -3513,44 +3513,6 @@ function hidePluto() {
       if (_currentStage && _currentStage.gapMul && _currentStage.gapMul !== 1.0) {
         group.totalZ = group.totalZ * _currentStage.gapMul;
       }
-
-      // 尝试生成道具（冰面前强制生成防滑外套）
-      // 若下一组是冰面，且玩家没有防滑外套，则强制在本组生成
-      if (nextType === 5 && itemAntiSlipCount <= 0) {
-        // 强制生成防滑外套（忽略概率）
-        const forceType = ITEM_TYPE.ANTI_SLIP;
-        const modelTemplate = itemModelCache[forceType];
-        if (modelTemplate) {
-          const mesh = modelTemplate.clone(true);
-          mesh.traverse(child => { if (child.isMesh && child.material) child.material = child.material.clone(); });
-          let x, z;
-          if (group.type === 1) { x = 0; z = group.landZ; }
-          else {
-            const keys = group.partColorKeys || ['r','g','b'];
-            const idx = Math.floor(Math.random() * keys.length);
-            const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
-            x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
-            z = group.landZ;
-          }
-          const y = PLAT_Y + PLAT_H / 2 + 1.5;
-          mesh.position.set(x, y, z);
-          const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
-          const glowMat = new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.3, side: THREE.BackSide });
-          const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-          glowMesh.position.copy(mesh.position);
-          scene.add(glowMesh);
-          mesh.userData.glow = glowMesh;
-          mesh.userData.floatPhase = Math.random() * Math.PI * 2;
-          mesh.userData.type = forceType;
-          scene.add(mesh);
-          const bbox = new THREE.Box3().setFromObject(mesh);
-          const bboxSize = new THREE.Vector3();
-          bbox.getSize(bboxSize);
-          items.push({ mesh, type: forceType, groupIdx: groups.length - 1, collected: false, bboxRadius: Math.max(bboxSize.length()/2, 0.8), floatPhase: mesh.userData.floatPhase, glowMesh });
-          console.log('[ITEM] 冰面前强制生成防滑外套 at x=' + x.toFixed(1));
-        }
-      }
-      trySpawnItem(group);
     }
 
     // ═══════════════════════════════════════════════════════
