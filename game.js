@@ -206,6 +206,8 @@
     let antiSlipActive   = false; // 当前冰面是否免疫
     let antiSlipGroupRef = null;  // 当前免疫的冰面 group 引用
     let itemModelCache   = {};   // GLB 模型缓存（克隆用）
+    let pickupBurstActive = false;
+    let pickupBurstTimer  = 0;
 
     // ─── 第1关 地球大气层粒子 ───
     let earthAtmosphere   = null;   // THREE.Group
@@ -1490,7 +1492,8 @@ function hidePluto() {
         if (dist < item.bboxRadius + BALL_RADIUS) {
           pickupItem(item.type);
           item.collected = true;
-          triggerBurst(item.mesh.position.clone(), 
+          // 拾取特效：只播放粒子，不隐藏球
+          triggerPickupBurst(item.mesh.position.clone(),
             item.type === ITEM_TYPE.REVIVE ? new THREE.Color(0x00ff88) : new THREE.Color(0x44aaff));
           scene.remove(item.mesh);
           if (item.glowMesh) scene.remove(item.glowMesh);
@@ -4795,6 +4798,46 @@ function hidePluto() {
       particleVels.push(new THREE.Vector3());
     }
 
+    // ── 道具拾取特效（不隐藏球，不触发 Game Over）──
+    function triggerPickupBurst(pos, color) {
+      pickupBurstActive = true;
+      pickupBurstTimer  = 0;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const m = particleMeshes[i];
+        m.position.copy(pos);
+        m.visible = true;
+        m.material.color.copy(color);
+        m.material.opacity = 1;
+        m.material.emissive = color.clone().multiplyScalar(0.4);
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const speed = 2 + Math.random() * 5;  // 比死亡爆发速度慢
+        particleVels[i].set(
+          Math.sin(phi) * Math.cos(theta) * speed,
+          Math.sin(phi) * Math.sin(theta) * speed * 0.8 + 2,
+          Math.cos(phi) * speed * 0.5
+        );
+        m.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, 0);
+      }
+    }
+
+    function updatePickupBurst(dt) {
+      if (!pickupBurstActive) return;
+      pickupBurstTimer += dt;
+      const progress = pickupBurstTimer / 0.8;  // 0.8秒结束
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const m = particleMeshes[i];
+        if (!m.visible) continue;
+        particleVels[i].y -= 12 * dt;
+        m.position.addScaledVector(particleVels[i], dt);
+        m.material.opacity = Math.max(0, 1 - progress * 1.2);
+        if (m.material.opacity <= 0) m.visible = false;
+      }
+      if (progress >= 1) {
+        pickupBurstActive = false;
+      }
+    }
+
     function triggerBurst(pos, color) {
       playShatterSound();
       burstActive = true;
@@ -6481,6 +6524,7 @@ function hidePluto() {
 
       // ── 粒子更新（始终运行，即使 gameOver）
       updateBurst(dt);
+      updatePickupBurst(dt);
       updateBoostScatter(dt);
       updateRipples(dt);
       updateMissFall(dt);
