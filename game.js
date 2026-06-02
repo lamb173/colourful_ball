@@ -1432,8 +1432,7 @@ function hidePluto() {
         const ck = currentBallColorKey || 'r';
         const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(ck) : -1;
         const idx = matchIdx >= 0 ? matchIdx : 0;  // 找不到匹配就放第一个，保证能拿到
-        const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
-        x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
+        x = group.parts[idx].mesh.position.x;
         z = group.landZ;
       }
       const y = PLAT_Y + PLAT_H / 2 + 1.5;
@@ -1570,71 +1569,13 @@ function hidePluto() {
       if (itemReviveCount <= 0) return false;
       itemReviveCount--;
       updateItemUI();
-      sphereMat.opacity = 1;
-      sphereMat.color.copy(lastDeathColor);
-      currentBallColorKey = lastDeathColorKey;
-      shield = SHIELD_MAX;
-      safeLandCount = 0;
-      isShieldBroken = false;
-      wasHitThisJump = false;
-      shieldBreakActive = false;
-      shieldBreakTimer = 0;
-      shieldWarningTimer = 0;
-      shieldRegenFlashTimer = 0;
-      shieldRingMat.opacity = 0;
-      shieldRing.visible = false;
-      let landed = findGroupAt(jumpToZ);
-      if (!landed) {
-        for (let i = 0; i < groups.length; i++) {
-          landed = { index: i, group: groups[i] };
-          break;
-        }
-      }
-      if (landed) {
-        const g = landed.group;
-        if (g.type === 5) {
-          ballX = 0;
-          ballZ = jumpToZ;
-          iceSliding = true;
-          iceGroupRef = g;
-          iceSlideAccelDir = 0;
-          iceAccelTimer = 0;
-          iceSlideVelX = 0;
-          jumpFromZ = jumpToZ;
-          currentGroupIdx = landed.index;
-        } else if (g.type === 1 || g.type === 4) {
-          ballX = 0;
-          ballZ = g.landZ;
-          jumpFromZ = g.landZ;
-          const next = pickNextGroup(landed.index);
-          jumpToZ = next.group.landZ;
-          currentGroupIdx = landed.index;
-        } else {
-          let matchPart = g.parts[0];
-          for (let pi = 0; pi < g.parts.length; pi++) {
-            if (g.partColorKeys[pi] === lastDeathColorKey) {
-              matchPart = g.parts[pi];
-              break;
-            }
-          }
-          ballX = matchPart.mesh.position.x;
-          ballZ = g.landZ;
-          jumpFromZ = g.landZ;
-          const next = pickNextGroup(landed.index);
-          jumpToZ = next.group.landZ;
-          currentGroupIdx = landed.index;
-        }
-      }
-      sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
-      sphere.visible = true;
-      sphereMat.opacity = 1;
-      gameOver = false;
       document.getElementById("gameover").classList.remove("show");
-      // 倒计时恢复：先暂停，倒计时结束后恢复
+      revivePlayer();
       isPaused = true;
-      jumpTimer = -0.5;
       startCountdown(() => {
         isPaused = false;
+        showGameUI();
+        gameStarted = true;
       });
       console.log("[ITEM] Used revive capsule, remaining=" + itemReviveCount);
       return true;
