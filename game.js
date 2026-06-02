@@ -1371,7 +1371,7 @@ function hidePluto() {
             (gltf) => {
               const model = gltf.scene;
               // 缩小模型到合适大小（轨道板子的 0.3-0.5 倍）
-              model.scale.set(0.35, 0.35, 0.35);
+              model.scale.set(0.75, 0.75, 0.75);
               model.traverse((child) => { 
                 if (child.isMesh) { 
                   child.castShadow = true; 
@@ -1392,9 +1392,26 @@ function hidePluto() {
     // 尝试在指定 group 上生成道具
     function trySpawnItem(group) {
       if (group.type === 4 || group.type === 5) return;
+      // 防滑外套：必须生成在球当前颜色匹配的轨道部分上
+      // 复活太空舱：随机位置即可
       const prob = group.type === 1 ? 0.08 : 0.12;
       if (Math.random() >= prob) return;
-      const type = Math.random() < 0.4 ? ITEM_TYPE.REVIVE : ITEM_TYPE.ANTI_SLIP;
+      // 决定生成哪种道具
+      let type;
+      if (group.type === 1) {
+        // 长直轨道：两种道具都行
+        type = Math.random() < 0.3 ? ITEM_TYPE.REVIVE : ITEM_TYPE.ANTI_SLIP;
+      } else {
+        // 方形轨道：检查是否有匹配球当前颜色的部分
+        const hasMatch = group.partColorKeys && group.partColorKeys.includes(currentBallColorKey);
+        if (hasMatch) {
+          // 有匹配颜色：优先生成防滑外套
+          type = Math.random() < 0.7 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
+        } else {
+          // 没有匹配颜色：只生成复活太空舱
+          type = ITEM_TYPE.REVIVE;
+        }
+      }
       const modelTemplate = itemModelCache[type];
       if (!modelTemplate) return;
       const mesh = modelTemplate.clone(true);
@@ -1405,11 +1422,13 @@ function hidePluto() {
       });
       let x, z;
       if (group.type === 1) {
+        // 长直轨道：放中间
         x = 0;
         z = group.landZ;
       } else {
-        const keys = group.partColorKeys || ["r", "g", "b"];
-        const idx = Math.floor(Math.random() * keys.length);
+        // 方形轨道：找到球当前颜色匹配的部分
+        const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(currentBallColorKey) : -1;
+        const idx = matchIdx >= 0 ? matchIdx : Math.floor(Math.random() * (group.partColorKeys || ["r","g","b"]).length);
         const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
         x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
         z = group.landZ;
@@ -1603,8 +1622,11 @@ function hidePluto() {
         }
       }
       sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
-      jumpTimer = 0;
+      jumpTimer = -0.5;  // 短暂延迟，让玩家有反应时间
       gameOver = false;
+      // 确保颜色状态正确
+      sphereMat.color.copy(lastDeathColor);
+      currentBallColorKey = lastDeathColorKey;
       document.getElementById("gameover").classList.remove("show");
       console.log("[ITEM] Used revive capsule, remaining=" + itemReviveCount);
       return true;
@@ -1628,6 +1650,16 @@ function hidePluto() {
         antiSlipActive = false;
         antiSlipGroupRef = null;
         console.log("[ITEM] Anti-slip shell deactivated");
+      }
+      // 修复：冰面结束后确保颜色状态同步
+      if (sphere && sphereMat) {
+        // 用当前球颜色反推 currentBallColorKey
+        const c = sphereMat.color;
+        const r = Math.round(c.r * 255), g = Math.round(c.g * 255), b = Math.round(c.b * 255);
+        if (r > 200 && b < 100)      currentBallColorKey = 'r';
+        else if (g > 200 && r < 100) currentBallColorKey = 'g';
+        else if (b > 200 && r < 100) currentBallColorKey = 'b';
+        else if (r > 200 && g > 200)  currentBallColorKey = 'y';
       }
     }
     
@@ -3482,7 +3514,42 @@ function hidePluto() {
         group.totalZ = group.totalZ * _currentStage.gapMul;
       }
 
-      // 尝试生成道具
+      // 尝试生成道具（冰面前强制生成防滑外套）
+      // 若下一组是冰面，且玩家没有防滑外套，则强制在本组生成
+      if (nextType === 5 && itemAntiSlipCount <= 0) {
+        // 强制生成防滑外套（忽略概率）
+        const forceType = ITEM_TYPE.ANTI_SLIP;
+        const modelTemplate = itemModelCache[forceType];
+        if (modelTemplate) {
+          const mesh = modelTemplate.clone(true);
+          mesh.traverse(child => { if (child.isMesh && child.material) child.material = child.material.clone(); });
+          let x, z;
+          if (group.type === 1) { x = 0; z = group.landZ; }
+          else {
+            const keys = group.partColorKeys || ['r','g','b'];
+            const idx = Math.floor(Math.random() * keys.length);
+            const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
+            x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
+            z = group.landZ;
+          }
+          const y = PLAT_Y + PLAT_H / 2 + 1.5;
+          mesh.position.set(x, y, z);
+          const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
+          const glowMat = new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.3, side: THREE.BackSide });
+          const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+          glowMesh.position.copy(mesh.position);
+          scene.add(glowMesh);
+          mesh.userData.glow = glowMesh;
+          mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+          mesh.userData.type = forceType;
+          scene.add(mesh);
+          const bbox = new THREE.Box3().setFromObject(mesh);
+          const bboxSize = new THREE.Vector3();
+          bbox.getSize(bboxSize);
+          items.push({ mesh, type: forceType, groupIdx: groups.length - 1, collected: false, bboxRadius: Math.max(bboxSize.length()/2, 0.8), floatPhase: mesh.userData.floatPhase, glowMesh });
+          console.log('[ITEM] 冰面前强制生成防滑外套 at x=' + x.toFixed(1));
+        }
+      }
       trySpawnItem(group);
     }
 
@@ -4966,7 +5033,11 @@ function hidePluto() {
         const dist = Math.abs(bx - p.mesh.position.x);
         if (dist < closestDist) { closestDist = dist; closestIdx = i; }
       });
-      return group.partColorKeys[closestIdx] === ballColorKey;
+      const match = group.partColorKeys[closestIdx] === ballColorKey;
+      if (!match) {
+        console.log('[COLOR] 颜色不匹配! 落点颜色=' + group.partColorKeys[closestIdx] + ' 球颜色=' + ballColorKey + ' ballX=' + bx.toFixed(2));
+      }
+      return match;
     }
 
     // ═══════════════════════════════════════════════════════
