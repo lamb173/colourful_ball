@@ -1396,7 +1396,7 @@ function hidePluto() {
       if (group.type === 4 || group.type === 5) return;
       // 防滑外套：必须生成在球当前颜色匹配的轨道部分上
       // 复活太空舱：随机位置即可
-      const prob = group.type === 1 ? 0.08 : 0.12;
+      const prob = group.type === 1 ? 0.03 : 0.05;
       if (Math.random() >= prob) return;
       // 决定生成哪种道具
       let type;
@@ -1428,9 +1428,10 @@ function hidePluto() {
         x = 0;
         z = group.landZ;
       } else {
-        // 方形轨道：找到球当前颜色匹配的部分
-        const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(currentBallColorKey) : -1;
-        const idx = matchIdx >= 0 ? matchIdx : Math.floor(Math.random() * (group.partColorKeys || ["r","g","b"]).length);
+        // 方形轨道：生成在球当前颜色匹配的部分上方（必经之路）
+        const ck = currentBallColorKey || 'r';
+        const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(ck) : -1;
+        const idx = matchIdx >= 0 ? matchIdx : 0;  // 找不到匹配就放第一个，保证能拿到
         const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
         x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
         z = group.landZ;
@@ -1625,6 +1626,8 @@ function hidePluto() {
         }
       }
       sphere.position.set(ballX, BOUNCE_FLOOR, ballZ);
+      sphere.visible = true;  // 复活后显示球
+      sphereMat.opacity = 1;
       jumpTimer = -0.5;  // 短暂延迟，让玩家有反应时间
       gameOver = false;
       // 确保颜色状态正确
