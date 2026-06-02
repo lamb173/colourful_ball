@@ -1434,8 +1434,8 @@ function hidePluto() {
       });
       let x, z;
       if (group.type === 1) {
-        // 长直轨道：放中间
-        x = 0;
+        // 长直轨道：放在球当前x坐标处（球必经之路）
+        x = ballX;
         z = group.landZ;
       } else {
         // 方形轨道：生成在球当前颜色匹配的部分正上方（使用轨道块mesh的真实坐标）
@@ -1484,6 +1484,19 @@ function hidePluto() {
       for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i];
         if (item.collected) {
+          items.splice(i, 1);
+          continue;
+        }
+        // 修复：清理远在球后方的道具（z < ballZ - 20），避免旧道具残留在场景中
+        if (item.mesh.position.z < ballZ - 20) {
+          scene.remove(item.mesh);
+          if (item.glowMesh) scene.remove(item.glowMesh);
+          item.mesh.traverse(child => {
+            if (child.isMesh) {
+              if (child.geometry) child.geometry.dispose();
+              if (child.material) child.material.dispose();
+            }
+          });
           items.splice(i, 1);
           continue;
         }
