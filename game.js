@@ -208,6 +208,7 @@
     let itemModelCache   = {};   // GLB 模型缓存（克隆用）
     let pickupBurstActive = false;
     let pickupBurstTimer  = 0;
+    let groupsSinceLastItem = 0; // 自上次生成道具以来的group数（保底机制）
 
     // ─── 第1关 地球大气层粒子 ───
     let earthAtmosphere   = null;   // THREE.Group
@@ -1393,16 +1394,25 @@ function hidePluto() {
     // ─── 道具系统函数 ───
     // 尝试在指定 group 上生成道具
     function trySpawnItem(group) {
-      if (group.type === 4 || group.type === 5) return;
-      // 防滑外套：必须生成在球当前颜色匹配的轨道部分上
-      // 复活太空舱：随机位置即可
-      const prob = group.type === 1 ? 0.05 : 0.08;
-      if (Math.random() >= prob) return;
+      // 加速/冰面轨道不生成道具，但计数器增加（保底机制）
+      if (group.type === 4 || group.type === 5) {
+        groupsSinceLastItem++;
+        return;
+      }
+      // 基础概率（v20.20版本：长直8%，方形12%）
+      const baseProb = group.type === 1 ? 0.08 : 0.12;
+      // 保底递增：每多过一个group没生成道具，概率增加1.5%，封顶50%
+      const prob = Math.min(baseProb + groupsSinceLastItem * 0.015, 0.5);
+      if (Math.random() >= prob) {
+        groupsSinceLastItem++;
+        return;
+      }
+      groupsSinceLastItem = 0; // 生成成功，重置计数器
       // 决定生成哪种道具
       let type;
       if (group.type === 1) {
         // 长直轨道：两种道具都行
-        type = Math.random() < 0.3 ? ITEM_TYPE.REVIVE : ITEM_TYPE.ANTI_SLIP;
+        type = Math.random() < 0.4 ? ITEM_TYPE.REVIVE : ITEM_TYPE.ANTI_SLIP;
       } else {
         // 方形轨道：检查是否有匹配球当前颜色的部分
         const hasMatch = group.partColorKeys && group.partColorKeys.includes(currentBallColorKey);
@@ -1428,18 +1438,16 @@ function hidePluto() {
         x = 0;
         z = group.landZ;
       } else {
-        // 方形轨道：生成在球当前颜色匹配的部分上方（必经之路）
+        // 方形轨道：生成在球当前颜色匹配的部分正上方（使用轨道块mesh的真实坐标）
         const ck = currentBallColorKey || 'blue';
         const matchIdx = group.partColorKeys ? group.partColorKeys.indexOf(ck) : -1;
         const idx = matchIdx >= 0 ? matchIdx : 0;  // 找不到匹配就放第一个，保证能拿到
-        x = group.parts[idx].mesh.position.x;
-        z = group.landZ;
-        // 调试输出
-        console.log('[ITEM] Spawn on square track: ck=' + ck + ' matchIdx=' + matchIdx + ' idx=' + idx + ' x=' + x.toFixed(2) + ' mesh.x=' + group.parts[idx].mesh.position.x.toFixed(2) + ' mesh.y=' + group.parts[idx].mesh.position.y.toFixed(2));
+        const partMesh = group.parts[idx].mesh;
+        x = partMesh.position.x;
+        z = partMesh.position.z;  // 明确使用轨道块的z坐标
       }
       const y = PLAT_Y + PLAT_H / 2 + 1.5;
       mesh.position.set(x, y, z);
-      console.log('[ITEM] Item spawned at: x=' + x.toFixed(2) + ' y=' + y.toFixed(2) + ' z=' + z.toFixed(2) + ' group.landZ=' + group.landZ.toFixed(2));
       const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
       const glowMat = new THREE.MeshBasicMaterial({
         color: type === ITEM_TYPE.REVIVE ? 0x00ff88 : 0x44aaff,
