@@ -1417,80 +1417,66 @@ function hidePluto() {
         return;
       }
       groupsSinceLastItem = 0; // 生成成功，重置计数器
+      
       // 决定生成哪种道具
       let type;
+      
       if (gameMode === 'stages' && _currentStage) {
         // 闯关模式：按关卡解锁不同道具
         const stageId = _currentStage.id;
         
-        if (group.type === 1) {
-          // 长直轨道：根据关卡解锁情况生成
-          if (stageId <= 2) {
-            // 前两关只出现复活太空舱
-            type = ITEM_TYPE.REVIVE;
-          } else if (stageId === 3) {
-            // 第三关可以开始出现飞行器
-            type = Math.random() < 0.5 ? ITEM_TYPE.FLIGHT_SUIT : ITEM_TYPE.REVIVE;
-          } else if (stageId === 4) {
-            // 第四关开始出现防滑外套
-            type = Math.random() < 0.5 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
-          } else if (stageId === 5) {
-            // 第五关开始出现防风外套（无防滑外套）
-            type = Math.random() < 0.5 ? ITEM_TYPE.WIND_PROOF : ITEM_TYPE.FLIGHT_SUIT;
-          } else if (stageId === 6) {
-            // 第六关无防风外套有防滑外套
-            type = Math.random() < 0.5 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
-          } else {
-            // 第七、八、九、十关四种道具均可出现
-            const rand = Math.random();
-            if (rand < 0.25) type = ITEM_TYPE.REVIVE;
-            else if (rand < 0.5) type = ITEM_TYPE.ANTI_SLIP;
-            else if (rand < 0.75) type = ITEM_TYPE.WIND_PROOF;
-            else type = ITEM_TYPE.FLIGHT_SUIT;
-          }
+        // 根据关卡确定可生成的道具类型
+        let allowedTypes = [];
+        
+        if (stageId <= 2) {
+          // 第1-2关：只出现【复活太空舱】
+          allowedTypes = [ITEM_TYPE.REVIVE];
+        } else if (stageId === 3) {
+          // 第3关：复活舱 + 飞行器
+          allowedTypes = [ITEM_TYPE.REVIVE, ITEM_TYPE.FLIGHT_SUIT];
+        } else if (stageId === 4) {
+          // 第4关：复活舱 + 防滑外套
+          allowedTypes = [ITEM_TYPE.REVIVE, ITEM_TYPE.ANTI_SLIP];
+        } else if (stageId === 5) {
+          // 第5关：复活舱 + 防风外套（无防滑外套）
+          allowedTypes = [ITEM_TYPE.REVIVE, ITEM_TYPE.WIND_PROOF];
+        } else if (stageId === 6) {
+          // 第6关：复活舱 + 防滑外套（无防风外套）
+          allowedTypes = [ITEM_TYPE.REVIVE, ITEM_TYPE.ANTI_SLIP];
         } else {
-          // 方形轨道：检查是否有匹配球当前颜色的部分
-          const hasMatch = group.partColorKeys && group.partColorKeys.includes(currentBallColorKey);
-          if (hasMatch) {
-            // 有匹配颜色：优先生成防滑外套或防风外套
-            const rand = Math.random();
-            if (stageId <= 2) {
-              type = ITEM_TYPE.REVIVE;
-            } else if (stageId === 3) {
-              type = rand < 0.7 ? ITEM_TYPE.FLIGHT_SUIT : ITEM_TYPE.REVIVE;
-            } else if (stageId === 4) {
-              type = rand < 0.7 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
-            } else if (stageId === 5) {
-              type = rand < 0.7 ? ITEM_TYPE.WIND_PROOF : ITEM_TYPE.FLIGHT_SUIT;
-            } else if (stageId === 6) {
-              type = rand < 0.7 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
-            } else {
-              // 七八九十关
-              const r2 = Math.random();
-              if (r2 < 0.4) type = ITEM_TYPE.ANTI_SLIP;
-              else if (r2 < 0.7) type = ITEM_TYPE.WIND_PROOF;
-              else if (r2 < 0.9) type = ITEM_TYPE.FLIGHT_SUIT;
-              else type = ITEM_TYPE.REVIVE;
-            }
-          } else {
-            // 没有匹配颜色：只生成复活太空舱
-            type = ITEM_TYPE.REVIVE;
+          // 第7-10关：四种道具均可出现
+          allowedTypes = [ITEM_TYPE.REVIVE, ITEM_TYPE.ANTI_SLIP, ITEM_TYPE.WIND_PROOF, ITEM_TYPE.FLIGHT_SUIT];
+        }
+        
+        // 检查飞行器是否已达到本关上限
+        if (allowedTypes.includes(ITEM_TYPE.FLIGHT_SUIT)) {
+          // 获取本关已生成的飞行器数量（使用全局变量）
+          if (!window.flightSpawnedThisStage) window.flightSpawnedThisStage = 0;
+          const flightLimit = stageId === 3 ? 1 : (stageId <= 7 ? 2 : 3);
+          
+          if (window.flightSpawnedThisStage >= flightLimit) {
+            // 已达到上限，移除飞行器
+            allowedTypes = allowedTypes.filter(t => t !== ITEM_TYPE.FLIGHT_SUIT);
           }
         }
         
-        // 检查飞行器是否已到达本关上限（在type确定后检查）
-        if (type === ITEM_TYPE.FLIGHT_SUIT) {
-          if (stageId >= 3 && stageId <= 5 && itemFlightCount >= 1) {
-            // 三四五关飞行器只允许出现一次
-            type = ITEM_TYPE.REVIVE; // 已生成过，改为复活太空舱
-          } else if (stageId >= 6 && stageId <= 7 && itemFlightCount >= 2) {
-            // 六七关飞行器可出现两次
-            type = ITEM_TYPE.REVIVE;
-          } else if (stageId >= 8 && stageId <= 10 && itemFlightCount >= 3) {
-            // 八九十三关飞行器可出现三次
-            type = ITEM_TYPE.REVIVE;
-          }
+        // 根据权重随机选择
+        if (allowedTypes.length === 1) {
+          type = allowedTypes[0];
+        } else {
+          // 均等概率随机选择
+          const rand = Math.random();
+          const idx = Math.floor(rand * allowedTypes.length);
+          type = allowedTypes[idx];
         }
+        
+        // 如果选择了飞行器，增加本关计数
+        if (type === ITEM_TYPE.FLIGHT_SUIT) {
+          if (!window.flightSpawnedThisStage) window.flightSpawnedThisStage = 0;
+          window.flightSpawnedThisStage++;
+          console.log('[ITEM] Flight suit spawned in stage ' + stageId + ', count=' + window.flightSpawnedThisStage);
+        }
+        
       } else {
         // 无尽模式：四种道具均可出现
         const rand = Math.random();
@@ -1499,14 +1485,17 @@ function hidePluto() {
         else if (rand < 0.75) type = ITEM_TYPE.WIND_PROOF;
         else type = ITEM_TYPE.FLIGHT_SUIT;
       }
+      
       const modelTemplate = itemModelCache[type];
       if (!modelTemplate) return;
+      
       const mesh = modelTemplate.clone(true);
       mesh.traverse(child => {
         if (child.isMesh && child.material) {
           child.material = child.material.clone();
         }
       });
+      
       let x, z;
       if (group.type === 1) {
         // 长直轨道：放在球当前x坐标处（球必经之路）
@@ -1520,55 +1509,24 @@ function hidePluto() {
         const totalW = group.type === 2 ? (SQ_W * 3 + SQ_GAP_X * 2) : (SQ_W * 2 + SQ_GAP_X);
         x = -totalW / 2 + SQ_W / 2 + idx * (SQ_W + SQ_GAP_X);
         z = group.landZ;
-        console.log('[ITEM] Square spawn: type=' + group.type + ' ck=' + ck + ' idx=' + idx + ' x=' + x.toFixed(2) + ' z=' + z.toFixed(2) + ' partColorKeys=' + group.partColorKeys);
       }
-      const y = PLAT_Y + PLAT_H / 2 + 1.5;
-      mesh.position.set(x, y, z);
-      // 为不同道具设置合适的缩放
+      
+      // 根据道具类型设置缩放
       if (type === ITEM_TYPE.FLIGHT_SUIT) {
-        mesh.scale.set(1.8, 1.8, 1.8); // 飞行器放大 1.8 倍
+        mesh.scale.set(1.8, 1.8, 1.8);
       } else if (type === ITEM_TYPE.WIND_PROOF) {
-        mesh.scale.set(1.5, 1.5, 1.5); // 防风外套放大 1.5 倍
+        mesh.scale.set(1.5, 1.5, 1.5);
       } else {
-        mesh.scale.set(1.2, 1.2, 1.2); // 其他道具默认 1.2 倍
+        mesh.scale.set(1.2, 1.2, 1.2);
       }
-      const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
-      // 为四种道具设置不同光晕颜色
-      const glowColor = type === ITEM_TYPE.REVIVE ? 0x00ff88 :
-                        type === ITEM_TYPE.ANTI_SLIP ? 0x44aaff :
-                        type === ITEM_TYPE.WIND_PROOF ? 0xffaa00 :
-                        0xcc44ff; // FLIGHT_SUIT
-      const glowMat = new THREE.MeshBasicMaterial({
-        color: glowColor,
-        transparent: true,
-        opacity: 0.3,
-        side: THREE.BackSide
-      });
-      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-      glowMesh.position.copy(mesh.position);
-      scene.add(glowMesh);
-      mesh.userData.glow = glowMesh;
-      mesh.userData.floatPhase = Math.random() * Math.PI * 2;
-      mesh.userData.type = type;
+      
+      mesh.position.set(x, PLAT_Y + PLAT_H / 2 + 1.2, z);
+      mesh.userData = { itemType: type };
       scene.add(mesh);
-      const bbox = new THREE.Box3().setFromObject(mesh);
-      const bboxSize = new THREE.Vector3();
-      bbox.getSize(bboxSize);
-      const bboxRadius = bboxSize.length() / 2;
-      items.push({
-        mesh,
-        type,
-        groupIdx: groups.length - 1,
-        collected: false,
-        bboxRadius: Math.max(bboxRadius, 0.8),
-        floatPhase: mesh.userData.floatPhase,
-        glowMesh
-      });
-      console.log("[ITEM] Spawned item type=" + type + " at x=" + x.toFixed(1) + " y=" + y.toFixed(1) + " z=" + z.toFixed(1));
-    }
-    
-    // 更新道具悬浮动画和碰撞检测
-    function updateItems(dt) {
+      items.push(mesh);
+      
+      console.log('[ITEM] Spawned type=' + type + ' at x=' + x.toFixed(2) + ' z=' + z.toFixed(2) + ' stage=' + (_currentStage ? _currentStage.id : 'endless'));
+    }    function updateItems(dt) {
       const t = clock.getElapsedTime();
       for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i];
@@ -5396,6 +5354,7 @@ function hidePluto() {
           card.addEventListener('click', () => {
             playUIClick();
             _currentStage = sc;
+            window.flightSpawnedThisStage = 0; // 重置本关飞行器生成计数
             enterStartScreen(sc);
           });
         }
