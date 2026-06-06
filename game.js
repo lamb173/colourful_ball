@@ -198,6 +198,13 @@
     let stage9BgInScene    = false;
     let stage10BgInScene   = false;
 
+    // ── 无尽模式循环背景（每900米切换）──
+    const ENDLESS_BG_COUNT = 5;
+    let endlessBgIndex    = 0;
+    let endlessBgGroup    = null;
+    let lastBgSwitchZ    = 0;
+    let endlessBgInScene  = false;
+
     // ─── 道具系统 ───
     let items             = [];   // { mesh, type, groupIdx, collected, bboxRadius, floatPhase }
     const ITEM_TYPE      = { REVIVE: 0, ANTI_SLIP: 1, WIND_PROOF: 2, FLIGHT_SUIT: 3 };
@@ -2558,6 +2565,348 @@ function hidePluto() {
 
       return group;
     }
+    // ═══════════════════════════════════════════════════
+    //  无尽模式循环背景（每900米切换，5个循环使用）
+    // ═══════════════════════════════════════════════════
+    function createEndlessBackground(idx) {
+      const group = new THREE.Group();
+      console.log('[BG] Creating endless background', idx);
+
+      if (idx === 0) {
+        // ── BG0: 星云（紫/粉/蓝色粒子云 + 发光球体）──
+        const sky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 32, 32),
+          new THREE.MeshBasicMaterial({ color: 0x080010, side: THREE.BackSide, fog: false })
+        );
+        group.add(sky);
+
+        // 星云粒子（500个，顶点着色）
+        const pCount = 500;
+        const pPos = new Float32Array(pCount * 3);
+        const pCol = new Float32Array(pCount * 3);
+        for (let i = 0; i < pCount; i++) {
+          pPos[i*3]   = (Math.random()-0.5) * 900;
+          pPos[i*3+1] = (Math.random()-0.5) * 900;
+          pPos[i*3+2] = (Math.random()-0.5) * 900;
+          const t = Math.random();
+          if (t < 0.33) { pCol[i*3]=0.8; pCol[i*3+1]=0.2; pCol[i*3+2]=0.9; }
+          else if (t < 0.66) { pCol[i*3]=0.9; pCol[i*3+1]=0.3; pCol[i*3+2]=0.6; }
+          else { pCol[i*3]=0.2; pCol[i*3+1]=0.4; pCol[i*3+2]=1.0; }
+        }
+        const pGeo = new THREE.BufferGeometry();
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol, 3));
+        const pMat = new THREE.PointsMaterial({
+          size: 3.5, vertexColors: true, transparent: true, opacity: 0.7,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: true,
+        });
+        const nebula = new THREE.Points(pGeo, pMat);
+        nebula.userData.isEndlessBg = true;
+        group.add(nebula);
+
+        // 发光球体（3个，不同颜色）
+        const glowColors = [0xff44ff, 0x4488ff, 0xff6644];
+        for (let i = 0; i < 3; i++) {
+          const s = new THREE.Mesh(
+            new THREE.SphereGeometry(8 + Math.random()*12, 16, 16),
+            new THREE.MeshBasicMaterial({ color: glowColors[i], transparent: true, opacity: 0.25, fog: false })
+          );
+          s.position.set((Math.random()-0.5)*600, (Math.random()-0.5)*400+80, (Math.random()-0.5)*600);
+          s.userData.isEndlessBg = true;
+          group.add(s);
+        }
+
+      } else if (idx === 1) {
+        // ── BG1: 小行星带（随机岩石 + 碎石粒子）──
+        const sky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 32, 32),
+          new THREE.MeshBasicMaterial({ color: 0x050510, side: THREE.BackSide, fog: false })
+        );
+        group.add(sky);
+
+        // 岩石（60个，十二面体低面）
+        const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+        const rockMats = [
+          new THREE.MeshPhongMaterial({ color: 0x666666 }),
+          new THREE.MeshPhongMaterial({ color: 0x888888 }),
+          new THREE.MeshPhongMaterial({ color: 0x555555 }),
+        ];
+        const rockData = [];
+        for (let i = 0; i < 60; i++) {
+          const s = 1 + Math.random()*3.5;
+          const m = rockMats[Math.floor(Math.random()*3)];
+          const mesh = new THREE.Mesh(rockGeo, m);
+          mesh.position.set((Math.random()-0.5)*1200, 30 + Math.random()*500, (Math.random()-0.5)*1200);
+          mesh.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
+          mesh.scale.setScalar(s);
+          mesh.userData.rotSpeed = (Math.random()-0.5)*0.3;
+          mesh.userData.isEndlessBg = true;
+          group.add(mesh);
+          rockData.push(mesh);
+        }
+        group.userData.rocks = rockData;
+
+        // 碎石粒子（200个，暗色）
+        const dCount = 200;
+        const dPos = new Float32Array(dCount * 3);
+        for (let i = 0; i < dCount; i++) {
+          dPos[i*3]   = (Math.random()-0.5) * 1500;
+          dPos[i*3+1] = 20 + Math.random() * 600;
+          dPos[i*3+2] = (Math.random()-0.5) * 1500;
+        }
+        const dGeo = new THREE.BufferGeometry();
+        dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+        const dMat = new THREE.PointsMaterial({
+          size: 1.8, color: 0x888888, transparent: true, opacity: 0.5,
+          fog: false, depthWrite: false, sizeAttenuation: true,
+        });
+        const debris = new THREE.Points(dGeo, dMat);
+        debris.userData.isEndlessBg = true;
+        group.add(debris);
+
+      } else if (idx === 2) {
+        // ── BG2: 彗星尾迹（发光彗星头 + 粒子拖尾）──
+        const sky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 32, 32),
+          new THREE.MeshBasicMaterial({ color: 0x030308, side: THREE.BackSide, fog: false })
+        );
+        group.add(sky);
+
+        // 彗星头（发光球体）
+        const comet = new THREE.Mesh(
+          new THREE.SphereGeometry(5, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, fog: false })
+        );
+        comet.position.set(-300, 120, -200);
+        comet.userData.isEndlessBg = true;
+        comet.userData.basePos = comet.position.clone();
+        group.add(comet);
+        group.userData.comet = comet;
+
+        // 粒子拖尾（300个）
+        const tCount = 300;
+        const tPos = new Float32Array(tCount * 3);
+        const tCol = new Float32Array(tCount * 3);
+        for (let i = 0; i < tCount; i++) {
+          const prog = i / tCount;
+          const dist = prog * 180;
+          const angle = Math.random()*Math.PI*2;
+          const spread = (1-prog) * 12;
+          tPos[i*3]   = comet.position.x + Math.cos(angle)*spread - dist * 0.3;
+          tPos[i*3+1] = comet.position.y + (Math.random()-0.5)*spread*0.5;
+          tPos[i*3+2] = comet.position.z + Math.sin(angle)*spread + dist;
+          tCol[i*3]   = 1.0 - prog*0.3;
+          tCol[i*3+1] = 1.0 - prog*0.5;
+          tCol[i*3+2] = 1.0 - prog*0.1;
+        }
+        const tGeo = new THREE.BufferGeometry();
+        tGeo.setAttribute('position', new THREE.BufferAttribute(tPos, 3));
+        tGeo.setAttribute('color',    new THREE.BufferAttribute(tCol, 3));
+        const tMat = new THREE.PointsMaterial({
+          size: 2.2, vertexColors: true, transparent: true, opacity: 0.8,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: true,
+        });
+        const trail = new THREE.Points(tGeo, tMat);
+        trail.userData.isEndlessBg = true;
+        group.add(trail);
+        group.userData.cometTrail = trail;
+        group.userData.trailPos = tPos;
+
+      } else if (idx === 3) {
+        // ── BG3: 太空站（几何结构 + 发光细节）──
+        const sky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 32, 32),
+          new THREE.MeshBasicMaterial({ color: 0x040410, side: THREE.BackSide, fog: false })
+        );
+        group.add(sky);
+
+        // 主舱（箱体）
+        const mainMod = new THREE.Mesh(
+          new THREE.BoxGeometry(18, 10, 24),
+          new THREE.MeshPhongMaterial({ color: 0x888899 })
+        );
+        mainMod.position.set(0, 100, -300);
+        mainMod.userData.isEndlessBg = true;
+        group.add(mainMod);
+
+        // 太阳能板（两侧平板）
+        for (let side of [-1, 1]) {
+          const panel = new THREE.Mesh(
+            new THREE.BoxGeometry(40, 1.2, 16),
+            new THREE.MeshPhongMaterial({ color: 0x2244aa })
+          );
+          panel.position.set(side * 32, 100, -300);
+          panel.userData.isEndlessBg = true;
+          group.add(panel);
+        }
+
+        // 天线（细柱 + 小球）
+        const antenna = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.3, 0.3, 16, 8),
+          new THREE.MeshPhongMaterial({ color: 0xaaaaaa })
+        );
+        antenna.position.set(0, 108, -300);
+        antenna.userData.isEndlessBg = true;
+        group.add(antenna);
+        const antennaTip = new THREE.Mesh(
+          new THREE.SphereGeometry(1.2, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.9, fog: false })
+        );
+        antennaTip.position.set(0, 116, -300);
+        antennaTip.userData.isEndlessBg = true;
+        group.add(antennaTip);
+
+        // 发光细节（窗灯）
+        for (let i = 0; i < 6; i++) {
+          const light = new THREE.Mesh(
+            new THREE.SphereGeometry(0.8, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffee88, fog: false })
+          );
+          light.position.set((i-2.5)*3, 100.5, -288 + (i%2)*6);
+          light.userData.isEndlessBg = true;
+          group.add(light);
+        }
+
+      } else if (idx === 4) {
+        // ── BG4: 虫洞（扭曲光环 + 中心吸力效果）──
+        const sky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 32, 32),
+          new THREE.MeshBasicMaterial({ color: 0x0a000a, side: THREE.BackSide, fog: false })
+        );
+        group.add(sky);
+
+        // 虫洞光环（Torus，发光）
+        const ringGeo = new THREE.TorusGeometry(40, 3.5, 16, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0x8822ff, transparent: true, opacity: 0.7, fog: false, depthWrite: false,
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.set(0, 80, -400);
+        ring.rotation.x = Math.PI/2 + 0.3;
+        ring.userData.isEndlessBg = true;
+        ring.userData.baseOpacity = 0.7;
+        group.add(ring);
+        group.userData.wormholeRing = ring;
+
+        // 第二层光环（稍小，不同颜色）
+        const ring2Geo = new THREE.TorusGeometry(32, 2.0, 12, 48);
+        const ring2Mat = new THREE.MeshBasicMaterial({
+          color: 0x22aaff, transparent: true, opacity: 0.5, fog: false, depthWrite: false,
+        });
+        const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+        ring2.position.copy(ring.position);
+        ring2.rotation.x = Math.PI/2 - 0.2;
+        ring2.userData.isEndlessBg = true;
+        group.add(ring2);
+
+        // 中心发光球体（虫洞核心）
+        const core = new THREE.Mesh(
+          new THREE.SphereGeometry(12, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, fog: false })
+        );
+        core.position.copy(ring.position);
+        core.userData.isEndlessBg = true;
+        group.add(core);
+        group.userData.wormholeCore = core;
+
+        // 螺旋粒子（向中心旋转）
+        const sCount = 400;
+        const sPos = new Float32Array(sCount * 3);
+        for (let i = 0; i < sCount; i++) {
+          const angle = (i / sCount) * Math.PI * 6;
+          const r = 15 + (i / sCount) * 50;
+          sPos[i*3]   = Math.cos(angle) * r;
+          sPos[i*3+1] = (Math.random()-0.5) * 6;
+          sPos[i*3+2] = Math.sin(angle) * r;
+        }
+        const sGeo = new THREE.BufferGeometry();
+        sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+        const sMat = new THREE.PointsMaterial({
+          size: 1.6, color: 0xaa66ff, transparent: true, opacity: 0.6,
+          blending: THREE.AdditiveBlending, fog: false, depthWrite: false, sizeAttenuation: true,
+        });
+        const spiral = new THREE.Points(sGeo, sMat);
+        spiral.position.copy(ring.position);
+        spiral.userData.isEndlessBg = true;
+        group.add(spiral);
+        group.userData.wormholeSpiral = spiral;
+        group.userData.spiralPos = sPos;
+      }
+
+      return group;
+    }
+
+    // ═════════════════════════════════════════════════════
+    //  无尽模式背景动画更新
+    // ═════════════════════════════════════════════════════
+    function updateEndlessBg(t, dt) {
+      if (!endlessBgGroup) return;
+      const idx = endlessBgIndex;
+      // BG0: 星云 ── 发光球体缓动缩放
+      if (idx === 0) {
+        endlessBgGroup.children.forEach(obj => {
+          if (obj.userData && obj.userData.isEndlessBg && obj.material && obj.material.opacity !== undefined) {
+            // 发光球体脉冲
+            obj.scale.setScalar(1 + Math.sin(t * 0.8 + obj.id) * 0.06);
+          }
+        });
+      }
+      // BG1: 小行星带 ── 岩石自转
+      else if (idx === 1) {
+        if (endlessBgGroup.userData.rocks) {
+          endlessBgGroup.userData.rocks.forEach(r => {
+            r.rotation.y += (r.userData.rotSpeed || 0.1) * dt;
+          });
+        }
+      }
+      // BG2: 彗星尾迹 ── 粒子拖尾摆动
+      else if (idx === 2) {
+        const comet = endlessBgGroup.userData.comet;
+        if (comet) {
+          // 彗星缓慢移动
+          comet.position.x = comet.userData.basePos.x + Math.sin(t * 0.05) * 40;
+          comet.position.y = comet.userData.basePos.y + Math.cos(t * 0.07) * 15;
+        }
+        // 更新拖尾粒子位置（随彗星移动）
+        const trail = endlessBgGroup.userData.cometTrail;
+        const tPos = endlessBgGroup.userData.trailPos;
+        if (trail && tPos) {
+          const count = tPos.length / 3;
+          for (let i = 0; i < count; i++) {
+            const prog = i / count;
+            const dist = prog * 180;
+            const angle = (i / count) * Math.PI * 6 + t * 0.3;
+            tPos[i*3]   = comet.position.x + Math.cos(angle) * (1-prog) * 12 - dist * 0.3;
+            tPos[i*3+1] = comet.position.y + (Math.random()-0.5) * (1-prog) * 6;
+            tPos[i*3+2] = comet.position.z + Math.sin(angle) * (1-prog) * 12 + dist;
+          }
+          trail.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+      // BG3: 太空站 ── 天线缓慢旋转
+      else if (idx === 3) {
+        endlessBgGroup.children.forEach(obj => {
+          if (obj.geometry && obj.geometry.type === "CylinderGeometry") {
+            obj.rotation.y += dt * 0.3;
+          }
+        });
+      }
+      // BG4: 虫洞 ── 光环脉动 + 粒子螺旋旋转
+      else if (idx === 4) {
+        const ring = endlessBgGroup.userData.wormholeRing;
+        if (ring) {
+          ring.rotation.z = t * 0.15;
+          ring.material.opacity = ring.userData.baseOpacity + Math.sin(t * 1.2) * 0.15;
+        }
+        // 螺旋粒子旋转
+        const spiral = endlessBgGroup.userData.wormholeSpiral;
+        if (spiral) {
+          spiral.rotation.y = t * 0.2;
+        }
+      }
+    }
+
+
 
     function createEarthAtmosphere() {
       console.log('[EARTH-ATM] creating atmosphere...');
@@ -5388,6 +5737,15 @@ function hidePluto() {
 
     // ── 游戏内 UI 显隐控制 ──
     function showGameUI() {
+    // 无尽模式：初始化第一个循环背景
+    if (gameMode === 'endless' && !endlessBgGroup) {
+      endlessBgIndex = 0;
+      lastBgSwitchZ = 0;
+      endlessBgGroup = createEndlessBackground(0);
+      scene.add(endlessBgGroup);
+      endlessBgInScene = true;
+      console.log('[BG] Initialized first endless bg');
+    }
       document.getElementById('info').classList.add('visible');
       document.getElementById('score-board').classList.add('visible');
       document.getElementById('distance-board').classList.add('visible');
@@ -6646,6 +7004,37 @@ function hidePluto() {
       updateVictoryAnim(dt);
       updateShieldBreak(dt);
       // ── 道具更新（悬浮动画 + 碰撞检测）
+
+      // ── 无尽模式背景切换（每900米）──
+      if (gameMode === 'endless' && !gameOver) {
+        if (ballZ >= lastBgSwitchZ + 900) {
+          // 移除旧背景
+          if (endlessBgGroup && endlessBgInScene) {
+            scene.remove(endlessBgGroup);
+            endlessBgGroup.traverse(obj => {
+              if (obj.geometry) obj.geometry.dispose();
+              if (obj.material) {
+                if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                else obj.material.dispose();
+              }
+            });
+            endlessBgInScene = false;
+            console.log('[BG] Disposed endless bg', endlessBgIndex);
+          }
+          // 下一个背景
+          endlessBgIndex = (endlessBgIndex + 1) % ENDLESS_BG_COUNT;
+          lastBgSwitchZ = Math.floor(ballZ / 900) * 900;
+          endlessBgGroup = createEndlessBackground(endlessBgIndex);
+          scene.add(endlessBgGroup);
+          endlessBgInScene = true;
+          console.log('[BG] Switched to endless bg', endlessBgIndex, 'at z=', lastBgSwitchZ);
+        }
+        // 更新当前背景动画
+        if (endlessBgGroup && endlessBgInScene) {
+          updateEndlessBg(t, dt);
+        }
+      }
+
       if (!gameOver) updateItems(dt);
 
       // 关卡3D模型旋转动画 + 跟随球体
