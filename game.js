@@ -2985,15 +2985,15 @@ function hidePluto() {
     // ── 闯关模式：10 关星际穿越配置 ──
     const STAGE_CONFIGS = [
       { id:1,  name:'Earth Orbit',        nameCN:'地球轨道',     targetDist:213,  hasBoost:false, boostFreq:0,    hasIce:false, iceFreq:0,    hasWind:false, windFreq:0,     gapMul:1.0 },
-      { id:2,  name:'Lunar Transit',      nameCN:'月球中转站',   targetDist:356,  hasBoost:true,  boostFreq:0.12, hasIce:false, iceFreq:0,    hasWind:false, gapMul:1.0 },
-      { id:3,  name:'Mars Canyon',        nameCN:'火星峡谷',     targetDist:478,  hasBoost:true,  boostFreq:0.20, hasIce:false, iceFreq:0,    hasWind:false, gapMul:0.90 },
-      { id:4,  name:'Jupiter Ice Ring',   nameCN:'木星冰环',     targetDist:591,  hasBoost:true,  boostFreq:0.08, hasIce:true,  iceFreq:0.18, hasWind:false, gapMul:1.0 },
-      { id:5,  name:'Saturn Storm',       nameCN:'土星风暴',     targetDist:722,  hasBoost:true,  boostFreq:0.12, hasIce:false, iceFreq:0,    hasWind:true,  gapMul:1.0 },
-      { id:6,  name:'Uranus Polar',       nameCN:'天王星极地',   targetDist:845,  hasBoost:true,  boostFreq:0.15, hasIce:true,  iceFreq:0.35, hasWind:false, windFreq:0,    gapMul:0.90 },
-      { id:7,  name:'Neptune Abyss',      nameCN:'海王星深渊',   targetDist:983,  hasBoost:true,  boostFreq:0.18, hasIce:true,  iceFreq:0.15, hasWind:true,  gapMul:0.90 },
-      { id:8,  name:'Pluto Dark Zone',    nameCN:'冥王星暗域',   targetDist:1134, hasBoost:true,  boostFreq:0.22, hasIce:true,  iceFreq:0.18, hasWind:true,  gapMul:0.85 },
-      { id:9,  name:'Black Hole Horizon', nameCN:'黑洞视界',     targetDist:1283, hasBoost:true,  boostFreq:0.25, hasIce:true,  iceFreq:0.20, hasWind:true,  gapMul:0.85 },
-      { id:10, name:'Beyond Singularity', nameCN:'奇点彼岸',     targetDist:1506, hasBoost:true,  boostFreq:0.28, hasIce:true,  iceFreq:0.22, hasWind:true,  gapMul:0.80 },
+      { id:2,  name:'Lunar Transit',      nameCN:'月球中转站',   targetDist:356,  hasBoost:true,  boostFreq:0.12, hasIce:false, iceFreq:0,    hasWind:false, windFreq:0,     gapMul:1.0 },
+      { id:3,  name:'Mars Canyon',        nameCN:'火星峡谷',     targetDist:478,  hasBoost:true,  boostFreq:0.20, hasIce:false, iceFreq:0,    hasWind:false, windFreq:0,     gapMul:0.90 },
+      { id:4,  name:'Jupiter Ice Ring',   nameCN:'木星冰环',     targetDist:591,  hasBoost:true,  boostFreq:0.08, hasIce:true,  iceFreq:0.18, hasWind:false, windFreq:0,     gapMul:1.0 },
+      { id:5,  name:'Saturn Storm',       nameCN:'土星风暴',     targetDist:722,  hasBoost:true,  boostFreq:0.12, hasIce:false, iceFreq:0,    hasWind:true,  windFreq:0.10, gapMul:1.0 },
+      { id:6,  name:'Uranus Polar',       nameCN:'天王星极地',   targetDist:845,  hasBoost:true,  boostFreq:0.15, hasIce:true,  iceFreq:0.35, hasWind:false, windFreq:0,     gapMul:0.90 },
+      { id:7,  name:'Neptune Abyss',      nameCN:'海王星深渊',   targetDist:983,  hasBoost:true,  boostFreq:0.18, hasIce:true,  iceFreq:0.10, hasWind:true,  windFreq:0.12, gapMul:0.90 },
+      { id:8,  name:'Pluto Dark Zone',    nameCN:'冥王星暗域',   targetDist:1134, hasBoost:true,  boostFreq:0.22, hasIce:true,  iceFreq:0.12, hasWind:true,  windFreq:0.15, gapMul:0.85 },
+      { id:9,  name:'Black Hole Horizon', nameCN:'黑洞视界',     targetDist:1283, hasBoost:true,  boostFreq:0.25, hasIce:true,  iceFreq:0.15, hasWind:true,  windFreq:0.18, gapMul:0.85 },
+      { id:10, name:'Beyond Singularity', nameCN:'奇点彼岸',     targetDist:1506, hasBoost:true,  boostFreq:0.28, hasIce:true,  iceFreq:0.18, hasWind:true,  windFreq:0.20, gapMul:0.80 },
     ];
 
     // ── 闯关模式进度管理 ──
@@ -3376,6 +3376,7 @@ function hidePluto() {
     const groups = [];
     let windZones = [];
     let windNextZoneAt = WIND_FIRST_ZONE_AT;
+    let iceZones = []; // 跟踪冰面段位置，用于避免与侧风段太接近
 
     let activeColorKey = 'blue'; // 段安全色，由 appendGroup 内部更新
 
@@ -3553,14 +3554,23 @@ function hidePluto() {
         const rBoost = Math.random();
         const rIce = Math.random();
         const rWind = Math.random();
+        // 检查是否靠近侧风段（禁止侧风段和冰面一起出现）
+        let nearWind = false;
+        for (const wz of windZones) {
+          if (z >= wz.startZ - 100 && z <= wz.endZ + 100) {
+            nearWind = true;
+            break;
+          }
+        }
         const canBoost = boostProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && rBoost < boostProb;
-        const canIce = !canBoost && iceProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && rIce < iceProb;
+        const canIce = !canBoost && !nearWind && iceProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && rIce < iceProb;
         if (canBoost) {
           console.log('[STAGES] Boost platform at z=' + Math.round(z));
           group = createBoostPlatform(z);
         } else if (canIce) {
           console.log('[STAGES] Ice platform CREATED at z=' + Math.round(z));
           group = createIcePlatform(z);
+          iceZones.push({startZ: z, endZ: z + ICE_D});
         } else if (r < 0.33) {
           group = createLongPlatform(z);
           activeColorKey = group.colorKey;
@@ -3611,6 +3621,7 @@ function hidePluto() {
           group = createIcePlatform(z);
           phaseIceCount++;
           lastIceEndZ = z + ICE_D;
+          iceZones.push({startZ: z, endZ: z + ICE_D});
         } else {
           // 普通轨道：路径风格影响比例（0=宽广多长直, 1=均衡, 2=精炼多方块）
           // 三档差异非常明显：左路 ~75% 长直，右路几乎无长直
@@ -3681,6 +3692,18 @@ function hidePluto() {
     }
 
     function generateWindZone(atZ) {
+      // 检查是否与冰面段太接近（间距小于100米）
+      if (iceZones.length > 0) {
+        for (const iceZone of iceZones) {
+          // 如果 atZ 在冰面段的前后100米范围内，则延迟生成
+          if (atZ >= iceZone.startZ - 100 && atZ <= iceZone.endZ + 100) {
+            console.log('[WIND GEN] REJECTED: too close to ice zone at startZ=' + Math.round(iceZone.startZ));
+            windNextZoneAt = iceZone.endZ + 100;
+            return;
+          }
+        }
+      }
+
       console.log('[WIND GEN] called at atZ=', Math.round(atZ), 'gameMode=', gameMode);
       // ── 无尽模式：阶段规则阀门（P0 禁止、上限检查、缓冲区检查）──
       if (gameMode === 'endless') {
@@ -3770,6 +3793,15 @@ function hidePluto() {
           grp.crystalMat.dispose();
         }
         removedCount++;
+        // 从 iceZones 中移除已删除的冰面组
+        if (grp.type === 5) {
+          for (let i = iceZones.length - 1; i >= 0; i--) {
+            if (iceZones[i].startZ === grp.startZ) {
+              iceZones.splice(i, 1);
+              break;
+            }
+          }
+        }
       }
       // shift 导致数组索引前移，同步 currentGroupIdx
       if (removedCount > 0) {
