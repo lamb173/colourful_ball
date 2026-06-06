@@ -211,6 +211,7 @@
     let itemFlightCount    = 0;    // 飞行器持有数
     let flightActive       = false; // 飞行器是否激活
     let flightDistance     = 0;    // 飞行器已飞行距离
+    let skipIceSliding    = false; // 飞行器落地后跳过冰面滑行（免疫冰面）
     const FLIGHT_DIST = 150;   // 飞行器飞行距离（米）
     let itemModelCache   = {};   // GLB 模型缓存（克隆用）
     let pickupBurstActive = false;
@@ -5118,6 +5119,10 @@ function hidePluto() {
     //  F键激活飞行器
     // ════════════════════════════════════════════════════
     document.addEventListener('keydown', (e) => {
+      // 调试日志：检查所有条件
+      if (e.code === 'KeyF') {
+        console.log('[ITEM DEBUG] F key pressed! itemFlightCount=' + itemFlightCount + ', flightActive=' + flightActive + ', gameOver=' + gameOver + ', gameStarted=' + gameStarted + ', iceSliding=' + iceSliding);
+      }
       if (e.code === 'KeyF' && itemFlightCount > 0 && !flightActive && !gameOver && gameStarted) {
         itemFlightCount--;
         flightActive = true;
@@ -6534,6 +6539,17 @@ function hidePluto() {
       iceSlideAccelDir = 0;
       iceAccelTimer = 0;
       iceSlideVelX = 0;
+      skipIceSliding = false; // 重置飞行器冰面免疫标志
+
+      // 重置道具状态
+      itemReviveCount = 0;
+      itemAntiSlipCount = 0;
+      itemWindproofCount = 0;
+      windproofActive = false;
+      windproofZoneRef = null;
+      itemFlightCount = 0;
+      flightActive = false;
+      flightDistance = 0;
 
       // 重置侧风段状态
       windZones.forEach(z => {
@@ -7232,9 +7248,15 @@ function hidePluto() {
       // 侧风：先施加风力，再降低鼠标操控强度
       let windForce = getWindForceAt(ballZ);
       console.log("[WIND_DEBUG] ballZ=" + ballZ.toFixed(2) + ", windForce=" + windForce + ", windproofActive=" + windproofActive + ", itemWindproofCount=" + itemWindproofCount);
-      
+
+      // 飞行器免疫侧风：直接忽略风力，并跳过防风外套逻辑
+      if (flightActive) {
+        windForce = 0;
+      }
+
       // 检查是否进入侧风段，如果是且玩家有防风外套，则自动激活
-      if (!windproofActive && itemWindproofCount > 0) {
+      // 飞行器免疫侧风，跳过防风外套自动激活
+      if (!flightActive && !windproofActive && itemWindproofCount > 0) {
         // 使用与 getWindForceAt() 相同的逻辑：检查 ballZ 是否在侧风区域内
         let inWindZone = false;
         let currentWindZone = null;
@@ -7258,7 +7280,8 @@ function hidePluto() {
       }
       
       // 防风外套检查：如果已激活，检查是否还在侧风区域内
-      if (windproofActive && windproofZoneRef) {
+      // 飞行器免疫侧风，跳过防风外套状态检查
+      if (!flightActive && windproofActive && windproofZoneRef) {
         // 检查 ballZ 是否还在激活时的侧风区域内
         if (ballZ >= windproofZoneRef.startZ && ballZ <= windproofZoneRef.endZ) {
           // 还在侧风区域内，忽略风力
@@ -7329,6 +7352,13 @@ function hidePluto() {
           jumpFromZ = ballZ;
           const landed = findGroupAt(ballZ);
           if (landed) currentGroupIdx = landed.index;
+          
+          // 检查是否落在冰面上：如果是，跳过冰面滑行（免疫冰面）
+          if (landed && landed.group.type === 5) {
+            skipIceSliding = true;
+            console.log("[ITEM] Flight landed on ice, skip ice sliding");
+          }
+          
           const next = pickNextGroup(currentGroupIdx);
           jumpToZ = next.group.landZ;
           currentGroupIdx = next.index;
@@ -7444,7 +7474,8 @@ function hidePluto() {
           }
 
           // ── type5 冰霜段：进入滑行模式 ──
-          if (g.type === 5) {
+          // 飞行器免疫冰面：如果 flightActive 刚结束，跳过冰面滑行
+          if (g.type === 5 && !flightActive && !skipIceSliding) {
             iceSliding = true;
             iceSlideZ = ballZ;
             iceSlideX = ballX;
@@ -7458,6 +7489,12 @@ function hidePluto() {
             // 冰霜段不变色不计分，只触发一个冰面涟漪
             triggerRipple(0, g.landZ, ICE_COLOR.clone(), ICE_W, ICE_D);
             return;
+          }
+          
+          // 飞行器落地在冰面上：跳过冰面滑行，重置标志位
+          if (skipIceSliding) {
+            skipIceSliding = false;
+            console.log("[ITEM] Skip ice sliding after flight");
           }
 
           // ── type4 加速轨道处理（白色涟漪，触发加速，不变色不计分）──
