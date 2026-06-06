@@ -1645,6 +1645,7 @@ function hidePluto() {
             // 当前在侧风段，立即激活对当前侧风段免疫
             windproofActive = true;
             windproofZoneRef = cg;
+            itemWindproofCount--; // 立即消耗
             console.log("[ITEM] Windproof activated for current wind zone");
           } else {
             // 不在侧风段，标记待激活（下次进入侧风段时激活）
@@ -7072,6 +7073,18 @@ function hidePluto() {
         // ── 三分路检查点（仅无尽模式）──
         checkPathCheckpoint(distVal);
 
+        // 冰面滑行中遇到黑洞：立即吸入（完善：不需要滑完冰面）
+        if (blackholeActive && blackhole && blackhole.group && !victoryAnimActive && !gameOver) {
+          const bhZ = blackhole.group.position.z;
+          if (bhZ > ballZ && bhZ - ballZ < 5) {
+            iceSliding = false;
+            iceGroupRef = null;
+            triggerVictoryAnim();
+            console.log("[BLACKHOLE] Ice sliding: sucked into black hole!");
+            return;
+          }
+        }
+        
         // 检查是否滑出冰面
         if (iceGroupRef) {
           const iceEndZ = iceGroupRef.startZ + ICE_D;
@@ -7232,7 +7245,7 @@ function hidePluto() {
           if (bhZ > ballZ && bhZ - ballZ < 5) {
             flightActive = false;
             flightDistance = 0;
-            triggerBlackholeSuck();
+            triggerVictoryAnim(); // 使用正确的函数名
             console.log("[ITEM] Flight suit sucked into black hole!");
           }
         }
@@ -7308,10 +7321,17 @@ function hidePluto() {
           const strength = Math.max(0, 1 - bhDistZ / 20) * 0.3;
           ballX += (bhPos.x - ballX) * strength * dt * 2;
         }
+        
+        // 完善：球在黑洞前方5米内就被吸入（解决冰面中心生成黑洞需等滑行结束的问题）
+        if (bhDistZ > 0 && bhDistZ < 5 && !victoryAnimActive && !gameOver) {
+          console.log("[BLACKHOLE] Suck trigger at dist:", bhDistZ.toFixed(2));
+          triggerVictoryAnim();
+        }
       }
 
       // ── 落地判定
-      if (localPhase >= 1) {
+      // 飞行器模式下跳过所有落地判定（无敌效果）
+      if (!flightActive && localPhase >= 1) {
         jumpTimer = 0;
         jumpFromZ = jumpToZ;
 
