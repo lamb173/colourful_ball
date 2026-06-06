@@ -6168,7 +6168,8 @@ function hidePluto() {
         document.getElementById('exit-endless-btn').style.background = 'linear-gradient(135deg, #ff6ab0, #ffe066, #5599ff)';
         document.getElementById('exit-endless-btn').style.color = '#0a0a1a';
         document.getElementById('exit-endless-btn').style.boxShadow = '0 0 30px rgba(255,106,176,0.6), 0 0 60px rgba(85,153,255,0.3)';
-        document.getElementById('ad-revive-btn').style.display = 'none';
+        document.getElementById('ad-revive-btn').style.display = '';
+        document.getElementById('ad-revive-btn').textContent = '观看广告复活';
         document.getElementById('star-revive-btn').style.display = '';
         document.getElementById('star-revive-btn').textContent = '退出本关';
         document.getElementById('star-revive-btn').classList.remove('star-btn');
