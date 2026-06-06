@@ -71,7 +71,7 @@
     //  基础场景
     // ═══════════════════════════════════════════════════════
     const scene  = new THREE.Scene();
-    scene.fog    = new THREE.FogExp2(0x181830, 0.004);
+    scene.fog    = null;
 
     const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600);
     camera.position.set(0, 4, -10);
@@ -2841,6 +2841,8 @@ function hidePluto() {
     // ═════════════════════════════════════════════════════
     function updateEndlessBg(t, dt) {
       if (!endlessBgGroup) return;
+      // 背景跟随球：让背景中心始终在球附近，确保视野内始终有背景
+      endlessBgGroup.position.z = -Math.floor(ballZ / 900) * 900;
       const idx = endlessBgIndex;
       // BG0: 星云 ── 发光球体缓动缩放
       if (idx === 0) {
