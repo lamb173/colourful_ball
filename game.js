@@ -7163,7 +7163,19 @@ function hidePluto() {
       const targetX = mouseNX * MOUSE_SENSITIVITY * innerWidth * 0.5;
 
       // 侧风：先施加风力，再降低鼠标操控强度
-      const windForce = getWindForceAt(ballZ);
+      let windForce = getWindForceAt(ballZ);
+      // 防风外套检查
+      if (windproofActive && windproofZoneRef) {
+        const cg = groups[currentGroupIdx];
+        if (cg && cg === windproofZoneRef && cg.windDir) {
+          // 在防风区域内，忽略风力
+          windForce = 0;
+        } else {
+          // 离开了防风区域，取消防风状态
+          windproofActive = false;
+          windproofZoneRef = null;
+        }
+      }
       const windActive = windForce !== 0;
       if (windActive) {
         ballX += windForce * dt;
