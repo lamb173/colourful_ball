@@ -3560,11 +3560,6 @@ function hidePluto() {
         } else if (canIce) {
           console.log('[STAGES] Ice platform CREATED at z=' + Math.round(z));
           group = createIcePlatform(z);
-        } else if (canWind) {
-          // 侧风段：标记该组有侧风，由后续逻辑在 consumeWindZone 中处理
-          group = createLongPlatform(z); // 侧风段用长直轨道，附加风区属性
-          group.hasWind = true;
-          group.windDir = Math.random() < 0.5 ? -1 : 1;
         } else if (r < 0.33) {
           group = createLongPlatform(z);
           activeColorKey = group.colorKey;
