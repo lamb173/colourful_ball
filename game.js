@@ -73,7 +73,7 @@
     const scene  = new THREE.Scene();
     scene.fog    = null;
 
-    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600);
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 2000);
     camera.position.set(0, 4, -10);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -2597,8 +2597,8 @@ function hidePluto() {
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
         pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol, 3));
         const pMat = new THREE.PointsMaterial({
-          size: 3.5, vertexColors: true, transparent: true, opacity: 0.7,
-          blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: true,
+          size: 8, vertexColors: true, transparent: true, opacity: 0.7,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: false,
         });
         const nebula = new THREE.Points(pGeo, pMat);
         nebula.userData.isEndlessBg = true;
@@ -2657,8 +2657,8 @@ function hidePluto() {
         const dGeo = new THREE.BufferGeometry();
         dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
         const dMat = new THREE.PointsMaterial({
-          size: 1.8, color: 0x888888, transparent: true, opacity: 0.5,
-          fog: false, depthWrite: false, sizeAttenuation: true,
+          size: 5, color: 0x888888, transparent: true, opacity: 0.5,
+          fog: false, depthWrite: false, sizeAttenuation: false,
         });
         const debris = new THREE.Points(dGeo, dMat);
         debris.userData.isEndlessBg = true;
@@ -2703,8 +2703,8 @@ function hidePluto() {
         tGeo.setAttribute('position', new THREE.BufferAttribute(tPos, 3));
         tGeo.setAttribute('color',    new THREE.BufferAttribute(tCol, 3));
         const tMat = new THREE.PointsMaterial({
-          size: 2.2, vertexColors: true, transparent: true, opacity: 0.8,
-          blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: true,
+          size: 6, vertexColors: true, transparent: true, opacity: 0.8,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: false,
         });
         const trail = new THREE.Points(tGeo, tMat);
         trail.userData.isEndlessBg = true;
@@ -2822,8 +2822,8 @@ function hidePluto() {
         const sGeo = new THREE.BufferGeometry();
         sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
         const sMat = new THREE.PointsMaterial({
-          size: 1.6, color: 0xaa66ff, transparent: true, opacity: 0.6,
-          blending: THREE.AdditiveBlending, fog: false, depthWrite: false, sizeAttenuation: true,
+          size: 5, color: 0xaa66ff, transparent: true, opacity: 0.6,
+          blending: THREE.AdditiveBlending, fog: false, depthWrite: false, sizeAttenuation: false,
         });
         const spiral = new THREE.Points(sGeo, sMat);
         spiral.position.copy(ring.position);
@@ -2842,7 +2842,7 @@ function hidePluto() {
     function updateEndlessBg(t, dt) {
       if (!endlessBgGroup) return;
       // 背景跟随球：让背景中心始终在球附近，确保视野内始终有背景
-      endlessBgGroup.position.z = -Math.floor(ballZ / 900) * 900;
+      endlessBgGroup.position.z = ballZ;
       const idx = endlessBgIndex;
       // BG0: 星云 ── 发光球体缓动缩放
       if (idx === 0) {
