@@ -71,7 +71,7 @@
     //  基础场景
     // ═══════════════════════════════════════════════════════
     const scene  = new THREE.Scene();
-    scene.fog    = new THREE.FogExp2(0x0a0a1a, 0.014);
+    scene.fog    = new THREE.FogExp2(0x181830, 0.008);
 
     const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600);
     camera.position.set(0, 4, -10);
