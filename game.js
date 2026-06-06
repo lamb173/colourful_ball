@@ -71,7 +71,7 @@
     //  基础场景
     // ═══════════════════════════════════════════════════════
     const scene  = new THREE.Scene();
-    scene.fog    = new THREE.FogExp2(0x181830, 0.008);
+    scene.fog    = new THREE.FogExp2(0x181830, 0.004);
 
     const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600);
     camera.position.set(0, 4, -10);
@@ -5737,15 +5737,6 @@ function hidePluto() {
 
     // ── 游戏内 UI 显隐控制 ──
     function showGameUI() {
-    // 无尽模式：初始化第一个循环背景
-    if (gameMode === 'endless' && !endlessBgGroup) {
-      endlessBgIndex = 0;
-      lastBgSwitchZ = 0;
-      endlessBgGroup = createEndlessBackground(0);
-      scene.add(endlessBgGroup);
-      endlessBgInScene = true;
-      console.log('[BG] Initialized first endless bg');
-    }
       document.getElementById('info').classList.add('visible');
       document.getElementById('score-board').classList.add('visible');
       document.getElementById('distance-board').classList.add('visible');
@@ -6969,6 +6960,28 @@ function hidePluto() {
         if (typeof hidePluto === 'function') hidePluto();
         if (typeof hideStage9 === 'function') hideStage9();
         if (typeof hideStage10 === 'function') hideStage10();
+      }
+
+      // 无尽模式：初始化第一个循环背景（在 restartGame 中初始化，确保开局就有背景）
+      if (gameMode === 'endless') {
+        // 清理旧背景
+        if (endlessBgGroup && endlessBgInScene) {
+          scene.remove(endlessBgGroup);
+          endlessBgGroup.traverse(obj => {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+              if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+              else obj.material.dispose();
+            }
+          });
+          endlessBgInScene = false;
+        }
+        endlessBgIndex = 0;
+        lastBgSwitchZ = 0;
+        endlessBgGroup = createEndlessBackground(0);
+        scene.add(endlessBgGroup);
+        endlessBgInScene = true;
+        console.log('[BG] restartGame: initialized first endless bg');
       }
     }
 
