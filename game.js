@@ -1523,10 +1523,26 @@ function hidePluto() {
       mesh.position.set(x, PLAT_Y + PLAT_H / 2 + 1.2, z);
       mesh.userData = { itemType: type };
       scene.add(mesh);
-      items.push(mesh);
+      
+      // 计算碰撞半径
+      const bbox = new THREE.Box3().setFromObject(mesh);
+      const bboxSize = new THREE.Vector3();
+      bbox.getSize(bboxSize);
+      const bboxRadius = bboxSize.length() / 2;
+      
+      items.push({
+        mesh: mesh,
+        type: type,
+        collected: false,
+        bboxRadius: Math.max(bboxRadius, 0.8),
+        floatPhase: Math.random() * Math.PI * 2,
+        glowMesh: null
+      });
       
       console.log('[ITEM] Spawned type=' + type + ' at x=' + x.toFixed(2) + ' z=' + z.toFixed(2) + ' stage=' + (_currentStage ? _currentStage.id : 'endless'));
-    }    function updateItems(dt) {
+    }
+    
+    function updateItems(dt) {
       const t = clock.getElapsedTime();
       for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i];
