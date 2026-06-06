@@ -2055,16 +2055,59 @@ function hidePluto() {
         ground.receiveShadow = true;
         group.add(ground);
 
-        // 3. Lake (blue plane)
-        const lakeGeo = new THREE.PlaneGeometry(250, 180, 8, 8);
+        // 3. Lake (blue plane with smooth sloping edges)
+        const lakeW = 250, lakeH = 180;
+        const lakeGeo = new THREE.PlaneGeometry(lakeW, lakeH, 48, 48);
+        const lPos = lakeGeo.attributes.position;
+        const shoreW = 18;  // 岸边缓坡宽度
+        const lakeDepth = 2.8; // 湖中心深度
+        for (let i = 0; i < lPos.count; i++) {
+          const x = lPos.getX(i);
+          const y = lPos.getY(i);
+          const halfW = lakeW/2, halfH = lakeH/2;
+          const distToEdge = Math.min(halfW - Math.abs(x), halfH - Math.abs(y));
+          let z = 0;
+          if (distToEdge < shoreW) {
+            const t = distToEdge / shoreW;
+            // 二次函数平滑缓坡，边缘z=0，向中心逐渐下降
+            z = -lakeDepth * (1 - t * t);
+          } else {
+            z = -lakeDepth;
+          }
+          lPos.setZ(i, z);
+        }
+        lPos.needsUpdate = true;
+        lakeGeo.computeVertexNormals();
         const lakeMat = new THREE.MeshPhongMaterial({
-          color: 0x2288cc, transparent: true, opacity: 0.7, fog: false,
-          shininess: 80, side: THREE.DoubleSide,
+          color: 0x2288cc, transparent: true, opacity: 0.75,
+          shininess: 90, side: THREE.DoubleSide,
+          fog: false,
         });
         const lake = new THREE.Mesh(lakeGeo, lakeMat);
         lake.rotation.x = -Math.PI/2;
-        lake.position.set(100, -45, 60);
+        // 湖泊边缘与地面齐平（y=-50），中心下沉
+        lake.position.set(100, -50, 60);
         group.add(lake);
+
+        // 3b. Lake bed (opaque, blocks grass from showing through water)
+        // 使用相同段数，使每个顶点精确对应湖面顶点
+        const bedGeo = new THREE.PlaneGeometry(lakeW, lakeH, 48, 48);
+        const bPos = bedGeo.attributes.position;
+        const lPos = lakeGeo.attributes.position;
+        for (let i = 0; i < bPos.count; i++) {
+          bPos.setX(i, lPos.getX(i));
+          bPos.setY(i, lPos.getY(i));
+          bPos.setZ(i, lPos.getZ(i) - 0.4); // 略低于水面
+        }
+        bPos.needsUpdate = true;
+        bedGeo.computeVertexNormals();
+        const bedMat = new THREE.MeshPhongMaterial({
+          color: 0x115588, side: THREE.DoubleSide, fog: false
+        });
+        const bed = new THREE.Mesh(bedGeo, bedMat);
+        bed.rotation.x = -Math.PI/2;
+        bed.position.copy(lake.position);
+        group.add(bed);
 
         // 4. Clouds (AdditiveBlending, bright on blue sky)
         const cloudTex = createCircleTexture(64);
