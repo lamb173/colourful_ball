@@ -2983,12 +2983,12 @@ function hidePluto() {
 
     // ── 闯关模式：10 关星际穿越配置 ──
     const STAGE_CONFIGS = [
-      { id:1,  name:'Earth Orbit',        nameCN:'地球轨道',     targetDist:213,  hasBoost:false, boostFreq:0,    hasIce:false, iceFreq:0,    hasWind:false, gapMul:1.0 },
+      { id:1,  name:'Earth Orbit',        nameCN:'地球轨道',     targetDist:213,  hasBoost:false, boostFreq:0,    hasIce:false, iceFreq:0,    hasWind:false, windFreq:0,     gapMul:1.0 },
       { id:2,  name:'Lunar Transit',      nameCN:'月球中转站',   targetDist:356,  hasBoost:true,  boostFreq:0.12, hasIce:false, iceFreq:0,    hasWind:false, gapMul:1.0 },
       { id:3,  name:'Mars Canyon',        nameCN:'火星峡谷',     targetDist:478,  hasBoost:true,  boostFreq:0.20, hasIce:false, iceFreq:0,    hasWind:false, gapMul:0.90 },
       { id:4,  name:'Jupiter Ice Ring',   nameCN:'木星冰环',     targetDist:591,  hasBoost:true,  boostFreq:0.08, hasIce:true,  iceFreq:0.18, hasWind:false, gapMul:1.0 },
       { id:5,  name:'Saturn Storm',       nameCN:'土星风暴',     targetDist:722,  hasBoost:true,  boostFreq:0.12, hasIce:false, iceFreq:0,    hasWind:true,  gapMul:1.0 },
-      { id:6,  name:'Uranus Polar',       nameCN:'天王星极地',   targetDist:845,  hasBoost:true,  boostFreq:0.15, hasIce:true,  iceFreq:0.12, hasWind:false, gapMul:0.90 },
+      { id:6,  name:'Uranus Polar',       nameCN:'天王星极地',   targetDist:845,  hasBoost:true,  boostFreq:0.15, hasIce:true,  iceFreq:0.35, hasWind:false, windFreq:0,    gapMul:0.90 },
       { id:7,  name:'Neptune Abyss',      nameCN:'海王星深渊',   targetDist:983,  hasBoost:true,  boostFreq:0.18, hasIce:true,  iceFreq:0.15, hasWind:true,  gapMul:0.90 },
       { id:8,  name:'Pluto Dark Zone',    nameCN:'冥王星暗域',   targetDist:1134, hasBoost:true,  boostFreq:0.22, hasIce:true,  iceFreq:0.18, hasWind:true,  gapMul:0.85 },
       { id:9,  name:'Black Hole Horizon', nameCN:'黑洞视界',     targetDist:1283, hasBoost:true,  boostFreq:0.25, hasIce:true,  iceFreq:0.20, hasWind:true,  gapMul:0.85 },
@@ -3434,60 +3434,98 @@ function hidePluto() {
     function planSegmentSpecials(segmentStartZ) {
       plannedIcePositions = [];
       plannedWindPositions = [];
-      if (gameMode !== 'endless') return;
-      const segmentEndZ = segmentStartZ + 900;
-
-      // 收集段内的相位边界（600, 1200, 1800...）
-      const boundaries = [];
-      for (let b = 600; b <= segmentEndZ; b += 600) {
-        if (b > segmentStartZ && b < segmentEndZ) boundaries.push(b);
+      
+      let segmentEndZ = segmentStartZ + 900;
+      // 闯关模式：不超过本关目标距离
+      if (gameMode === 'stages' && _currentStage) {
+        segmentEndZ = Math.min(segmentEndZ, _currentStage.targetDist);
       }
+      if (segmentEndZ <= segmentStartZ) return; // 已到达终点，无需规划
 
-      // 按子区间分别规划（每个子区间内相位一致，配额按长度比例分配）
-      let subStart = segmentStartZ;
-      const subEnds = [...boundaries, segmentEndZ];
-      for (const subEnd of subEnds) {
-        const subRules = getPhaseRules(getCurrentPhase(subStart + 1));
-        const subLen = subEnd - subStart;
-
-        // 规划冰霜段（配额按子区间长度 / 900 比例）
-        if (subRules.allowIce && subRules.maxIce > 0) {
-          const subCount = Math.max(1, Math.round(subRules.maxIce * subLen / 900));
-          const availStart = Math.max(subStart + Math.max(subRules.iceBuf, 40), segmentStartZ + 40);
-          const availEnd = Math.min(subEnd - ICE_D - 10, segmentEndZ - ICE_D - 10);
-          if (availEnd > availStart && subCount > 0) {
-            const range = availEnd - availStart;
-            for (let i = 0; i < subCount; i++) {
-              const baseZ = availStart + (range * (i + 0.5) / subCount);
-              const jitter = (range / subCount) * 0.25;
-              const z = baseZ + (Math.random() - 0.5) * jitter * 2;
-              plannedIcePositions.push(Math.max(availStart, Math.min(availEnd, z)));
-            }
+      if (gameMode === 'stages' && _currentStage) {
+        // ── 闯关模式：直接使用关卡配置，完全绕过相位规则 ──
+        const stage = _currentStage;
+        
+        // 规划冰霜段
+        if (stage.hasIce) {
+          const iceCount = 1; // 每900m段生成1个冰面段
+          const availStart = segmentStartZ + 100;
+          const availEnd = segmentEndZ - ICE_D - 10;
+          if (availEnd > availStart) {
+            // 在可用区域内随机放置冰面段
+            const z = availStart + Math.random() * (availEnd - availStart);
+            plannedIcePositions.push(z);
           }
         }
-
+        
         // 规划侧风段
-        if (subRules.allowWind && subRules.maxWind > 0) {
-          const subCount = Math.max(1, Math.round(subRules.maxWind * subLen / 900));
-          const availStart = Math.max(subStart + Math.max(subRules.windBuf, 40), segmentStartZ + 40);
-          const availEnd = Math.min(subEnd - 50, segmentEndZ - 50);
-          if (availEnd > availStart && subCount > 0) {
-            const range = availEnd - availStart;
-            for (let i = 0; i < subCount; i++) {
-              const baseZ = availStart + (range * (i + 0.5) / subCount);
-              const jitter = (range / subCount) * 0.25;
-              const z = baseZ + (Math.random() - 0.5) * jitter * 2;
-              plannedWindPositions.push(Math.max(availStart, Math.min(availEnd, z)));
-            }
+        if (stage.hasWind) {
+          const windCount = 1; // 每900m段生成1个侧风段
+          const availStart = segmentStartZ + 100;
+          const availEnd = segmentEndZ - 50;
+          if (availEnd > availStart) {
+            const z = availStart + Math.random() * (availEnd - availStart);
+            plannedWindPositions.push(z);
           }
         }
+        
+      } else {
+        // ── 无尽模式：使用相位规则 ──
+        // 收集段内的相位边界（600, 1200, 1800...）
+        const boundaries = [];
+        for (let b = 600; b <= segmentEndZ; b += 600) {
+          if (b > segmentStartZ && b < segmentEndZ) boundaries.push(b);
+        }
 
-        subStart = subEnd;
+        // 按子区间分别规划（每个子区间内相位一致，配额按长度比例分配）
+        let subStart = segmentStartZ;
+        const subEnds = [...boundaries, segmentEndZ];
+        for (const subEnd of subEnds) {
+          const subRules = getPhaseRules(getCurrentPhase(subStart + 1));
+          const subLen = subEnd - subStart;
+
+          // 规划冰霜段（配额按子区间长度 / 900 比例）
+          if (subRules.allowIce && subRules.maxIce > 0) {
+            const subCount = Math.max(1, Math.round(subRules.maxIce * subLen / 900));
+            const availStart = Math.max(subStart + Math.max(subRules.iceBuf, 40), segmentStartZ + 40);
+            const availEnd = Math.min(subEnd - ICE_D - 10, segmentEndZ - ICE_D - 10);
+            if (availEnd > availStart && subCount > 0) {
+              const range = availEnd - availStart;
+              for (let i = 0; i < subCount; i++) {
+                const baseZ = availStart + (range * (i + 0.5) / subCount);
+                const jitter = (range / subCount) * 0.25;
+                const z = baseZ + (Math.random() - 0.5) * jitter * 2;
+                plannedIcePositions.push(Math.max(availStart, Math.min(availEnd, z)));
+              }
+            }
+          }
+
+          // 规划侧风段
+          if (subRules.allowWind && subRules.maxWind > 0) {
+            const subCount = Math.max(1, Math.round(subRules.maxWind * subLen / 900));
+            const availStart = Math.max(subStart + Math.max(subRules.windBuf, 40), segmentStartZ + 40);
+            const availEnd = Math.min(subEnd - 50, segmentEndZ - 50);
+            if (availEnd > availStart && subCount > 0) {
+              const range = availEnd - availStart;
+              for (let i = 0; i < subCount; i++) {
+                const baseZ = availStart + (range * (i + 0.5) / subCount);
+                const jitter = (range / subCount) * 0.25;
+                const z = baseZ + (Math.random() - 0.5) * jitter * 2;
+                plannedWindPositions.push(Math.max(availStart, Math.min(availEnd, z)));
+              }
+            }
+          }
+
+          subStart = subEnd;
+        }
       }
 
       plannedIcePositions.sort((a, b) => a - b);
       plannedWindPositions.sort((a, b) => a - b);
       // [DEBUG] 日志：规划结果
+      if (plannedIcePositions.length > 0) {
+        console.log('[ICE PLAN] segment', segmentStartZ, '→', segmentEndZ, 'ice at', plannedIcePositions.join(','));
+      }
       if (plannedWindPositions.length > 0) {
         console.log('[WIND PLAN] segment', segmentStartZ, '→', segmentEndZ, 'wind at', plannedWindPositions.join(','));
       }
@@ -3509,12 +3547,24 @@ function hidePluto() {
         const sc = _currentStage || {};
         const boostProb = sc.hasBoost ? sc.boostFreq : 0;
         const iceProb = sc.hasIce ? sc.iceFreq : 0;
-        const canBoost = boostProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && r < boostProb;
-        const canIce = !canBoost && iceProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && r < iceProb;
+        const windProb = sc.hasWind ? sc.windFreq || 0.10 : 0;
+        // 使用独立随机数，避免概率区间互相覆盖
+        const rBoost = Math.random();
+        const rIce = Math.random();
+        const rWind = Math.random();
+        const canBoost = boostProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && rBoost < boostProb;
+        const canIce = !canBoost && iceProb > 0 && lg && lg.type !== 4 && lg.type !== 5 && rIce < iceProb;
         if (canBoost) {
+          console.log('[STAGES] Boost platform at z=' + Math.round(z));
           group = createBoostPlatform(z);
         } else if (canIce) {
+          console.log('[STAGES] Ice platform CREATED at z=' + Math.round(z));
           group = createIcePlatform(z);
+        } else if (canWind) {
+          // 侧风段：标记该组有侧风，由后续逻辑在 consumeWindZone 中处理
+          group = createLongPlatform(z); // 侧风段用长直轨道，附加风区属性
+          group.hasWind = true;
+          group.windDir = Math.random() < 0.5 ? -1 : 1;
         } else if (r < 0.33) {
           group = createLongPlatform(z);
           activeColorKey = group.colorKey;
