@@ -7164,6 +7164,20 @@ function hidePluto() {
 
       // 侧风：先施加风力，再降低鼠标操控强度
       let windForce = getWindForceAt(ballZ);
+      
+      // 检查是否进入侧风段，如果是且玩家有防风外套，则自动激活
+      if (!windproofActive && itemWindproofCount > 0 && currentGroupIdx >= 0) {
+        const cg = groups[currentGroupIdx];
+        if (cg && cg.windDir) {
+          // 进入侧风段，激活防风外套
+          windproofActive = true;
+          windproofZoneRef = cg;
+          itemWindproofCount--; // 消耗一个防风外套
+          showItemNotification("🧥 防风外套激活！免疫侧风");
+          console.log("[ITEM] Windproof auto-activated for wind zone");
+        }
+      }
+      
       // 防风外套检查
       if (windproofActive && windproofZoneRef) {
         const cg = groups[currentGroupIdx];
@@ -7212,9 +7226,10 @@ function hidePluto() {
         sphere.position.z = ballZ;
         sphere.position.x = ballX;
         
-        // 检查是否遇到黑洞（黑洞z - ballZ < 5米）
-        if (typeof blackholeZ !== 'undefined' && blackholeZ > 0) {
-          if (Math.abs(blackholeZ - ballZ) < 5) {
+        // 检查是否遇到黑洞（黑洞在球前方5米内就会被吸入）
+        if (blackhole && blackhole.group && blackholeActive) {
+          const bhZ = blackhole.group.position.z;
+          if (bhZ > ballZ && bhZ - ballZ < 5) {
             flightActive = false;
             flightDistance = 0;
             triggerBlackholeSuck();
