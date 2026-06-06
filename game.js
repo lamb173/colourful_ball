@@ -2093,7 +2093,7 @@ function hidePluto() {
         // 使用相同段数，使每个顶点精确对应湖面顶点
         const bedGeo = new THREE.PlaneGeometry(lakeW, lakeH, 48, 48);
         const bPos = bedGeo.attributes.position;
-        const lPos = lakeGeo.attributes.position;
+        // 复用已声明的 lPos (lakeGeo.attributes.position)
         for (let i = 0; i < bPos.count; i++) {
           bPos.setX(i, lPos.getX(i));
           bPos.setY(i, lPos.getY(i));
