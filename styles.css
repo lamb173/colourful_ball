@@ -786,65 +786,6 @@
       margin-bottom: 1.2em;
       animation: pop-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
-    /* ── 护盾条 ── */
-    #shield-bar {
-      position: absolute;
-      top: 20px;
-      left: 24px;
-      display: flex;
-      z-index: 10;
-      gap: 4px;
-      pointer-events: none;
-      user-select: none;
-      opacity: 0;
-      transition: opacity 0.5s;
-    }
-    #shield-bar.visible { opacity: 1; }
-    .shield-cell {
-      width: 48px;
-      height: 12px;
-      border-radius: 3px;
-      background: rgba(80, 160, 255, 0.12);
-      border: 1px solid rgba(80, 160, 255, 0.25);
-      overflow: hidden;
-      position: relative;
-    }
-    .shield-cell-fill {
-      position: absolute;
-      top: 1px;
-      bottom: 1px;
-      left: 1px;
-      width: calc(100% - 2px);
-      border-radius: 2px;
-      background: linear-gradient(135deg, #50a0ff, #80c0ff);
-      transition: width 0.3s ease, opacity 0.3s ease, background 0.3s ease;
-    }
-    .shield-cell.low .shield-cell-fill {
-      background: linear-gradient(135deg, #ff4444, #ff6644);
-    }
-    .shield-cell.empty .shield-cell-fill {
-      width: 0 !important;
-      opacity: 0;
-    }
-    .shield-cell.regen-flash .shield-cell-fill {
-      animation: shield-flash 0.4s ease-out;
-    }
-    @keyframes shield-flash {
-      0% { filter: brightness(3); }
-      100% { filter: brightness(1); }
-    }
-    /* 护盾伤害闪烁 */
-    @keyframes shield-hit-shake {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-3px); }
-      40% { transform: translateX(3px); }
-      60% { transform: translateX(-2px); }
-      80% { transform: translateX(2px); }
-    }
-    #shield-bar.hit {
-      animation: shield-hit-shake 0.25s ease-out;
-    }
-
     /* ── 开始界面按钮包裹/退出按钮 ── */
     .start-buttons {
       display: flex;

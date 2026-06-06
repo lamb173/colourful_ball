@@ -4004,18 +4004,7 @@ function hidePluto() {
     ring.rotation.x = Math.PI / 2;
     scene.add(ring);
 
-    // ── 护盾光环 ──
-    const shieldRingGeo = new THREE.TorusGeometry(1.55, 0.035, 16, 64);
-    const shieldRingMat = new THREE.MeshBasicMaterial({
-      color: 0x50a0ff,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    });
-    const shieldRing = new THREE.Mesh(shieldRingGeo, shieldRingMat);
-    shieldRing.rotation.x = Math.PI / 2;
-    shieldRing.renderOrder = 999;
-    scene.add(shieldRing);
+    // 护盾光环已移除（仅保留逻辑）
 
     const shadowCircle = new THREE.Mesh(
       new THREE.CircleGeometry(1, 32),
@@ -5403,8 +5392,6 @@ function hidePluto() {
       document.getElementById('score-board').classList.add('visible');
       document.getElementById('distance-board').classList.add('visible');
       document.getElementById('items-bar').classList.add('visible');
-      showShieldBar();
-      updateShieldUI();
       // 无尽模式隐藏目标距离，显示星级；闯关模式反之
       if (gameMode === 'endless') {
         document.getElementById('dist-target-row').style.display = 'none';
@@ -5419,7 +5406,6 @@ function hidePluto() {
       document.getElementById('score-board').classList.remove('visible');
       document.getElementById('distance-board').classList.remove('visible');
       document.getElementById('items-bar').classList.remove('visible');
-      hideShieldBar();
     }
 
     // ── 页面切换管理（统一用 switchPage，取消未完成的过渡）──
@@ -6019,53 +6005,13 @@ function hidePluto() {
     //  护盾系统核心逻辑
     // ═══════════════════════════════════════════════════════
 
-    function updateShieldUI() {
-      // 3格分段：0-33 / 34-66 / 67-100
-      const cells = [
-        document.getElementById('shield-cell-2'), // 右（高段）
-        document.getElementById('shield-cell-1'), // 中
-        document.getElementById('shield-cell-0'), // 左（低段，最后消失）
-      ];
-      const thresholds = [67, 34, 1]; // 每格对应的最低 shield 值
-      const maxPerCell = 33; // 每格最大值
 
-      cells.forEach((cell, i) => {
-        const lo = thresholds[i];
-        const hi = i === 0 ? 100 : lo + 32;
-        const fill = cell.querySelector('.shield-cell-fill');
-
-        cell.classList.remove('low', 'empty', 'regen-flash');
-
-        if (shield < lo) {
-          // 该格为空
-          cell.classList.add('empty');
-        } else {
-          // 计算该格填充百分比
-          const cellShield = Math.min(shield, hi) - lo + 1;
-          const pct = Math.min(100, (cellShield / maxPerCell) * 100);
-          fill.style.width = pct + '%';
-
-          // 低护盾警告（最后一格不满时）
-          if (shield < 34) {
-            cell.classList.add('low');
-          }
-        }
-      });
-    }
-
-    function showShieldBar() {
-      document.getElementById('shield-bar').classList.add('visible');
-    }
-    function hideShieldBar() {
-      document.getElementById('shield-bar').classList.remove('visible');
-    }
 
     function shieldTakeDamage(amount) {
       if (isShieldBroken || shieldBreakActive) return;
 
       shield = Math.max(0, shield - amount);
       playShieldHitSound();
-      updateShieldUI();
 
       // 护盾条震动
       const bar = document.getElementById('shield-bar');
@@ -6088,18 +6034,8 @@ function hidePluto() {
 
       shield = Math.min(SHIELD_MAX, shield + SHIELD_REGEN_AMOUNT);
       playShieldRegenSound();
-      updateShieldUI();
 
-      // 回充闪光
-      const cells = document.querySelectorAll('.shield-cell');
-      cells.forEach(c => {
-        c.classList.remove('regen-flash');
-        c.offsetHeight;
-        c.classList.add('regen-flash');
-      });
-
-      // 光环短暂亮起
-      shieldRegenFlashTimer = 0.4;
+      // 护盾回充（UI已移除）
     }
 
     function triggerShieldBreak() {
@@ -6130,62 +6066,11 @@ function hidePluto() {
         triggerBurst(sphere.position.clone(), new THREE.Color(0x50a0ff));
         saveBallDeathColor();
         gameOver = true;
-        hideShieldBar();
         hideCombo();
       }
     }
 
-    function updateShieldRingVisual(t) {
-      if (isShieldBroken || shieldBreakActive) {
-        shieldRing.visible = false;
-        return;
-      }
 
-      shieldRing.visible = true;
-      shieldRing.position.copy(sphere.position);
-      shieldRing.rotation.z = -t * 0.3;
-      shieldRing.rotation.y = Math.sin(t * 0.4) * 0.2;
-
-      if (shieldRegenFlashTimer > 0) {
-        // 回充闪光中 - 白色光环（不覆盖，用 else if 确保互斥）
-        shieldRingMat.color.setHex(0xffffff);
-        shieldRingMat.opacity = 0.9;
-      } else if (shield < 34) {
-        // 低护盾：红色脉冲
-        const pulse = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(t * 6));
-        shieldRingMat.color.setHex(0xff3333);
-        shieldRingMat.opacity = pulse;
-      } else if (shield < 67) {
-        // 中等：暗蓝
-        shieldRingMat.color.setHex(0x3388cc);
-        shieldRingMat.opacity = 0.4;
-      } else {
-        // 满盾：明亮蓝白
-        shieldRingMat.color.setHex(0x66bbff);
-        shieldRingMat.opacity = 0.6;
-      }
-    }
-
-    function updateShieldEffects(dt) {
-      // 回充闪光衰减
-      if (shieldRegenFlashTimer > 0) {
-        shieldRegenFlashTimer -= dt;
-        if (shieldRegenFlashTimer <= 0) {
-          shieldRegenFlashTimer = 0;
-        }
-      }
-
-      // 低护盾警告音（每2秒）
-      if (shield > 0 && shield < 34 && !isShieldBroken && !shieldBreakActive) {
-        shieldWarningTimer += dt;
-        if (shieldWarningTimer >= 2.0) {
-          shieldWarningTimer = 0;
-          playShieldWarningSound();
-        }
-      } else {
-        shieldWarningTimer = 0;
-      }
-    }
 
     // ═══════════════════════════════════════════════════════
     //  Game Over / Victory 处理
@@ -7179,8 +7064,6 @@ function hidePluto() {
         ring.rotation.y = Math.sin(t * 0.5) * 0.3;
 
         // 护盾视觉
-        updateShieldRingVisual(t);
-        updateShieldEffects(dt);
 
         // 阴影
         shadowCircle.position.set(0, PLAT_Y + 0.01, ballZ);
@@ -7473,10 +7356,6 @@ function hidePluto() {
       ring.position.copy(sphere.position);
       ring.rotation.z = t * 0.4;
       ring.rotation.y = Math.sin(t * 0.5) * 0.3;
-
-      // 护盾光环视觉
-      updateShieldRingVisual(t);
-      updateShieldEffects(dt);
 
       // 每次跳跃开始时重置受击标记
       if (jumpTimer < dt * 2) {
