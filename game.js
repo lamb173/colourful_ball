@@ -1647,23 +1647,31 @@ function hidePluto() {
         playPickupSound();
         showItemNotification("获得防风外套！");
         updateItemUI(); // 更新UI显示拾取
-        // 检查当前是否在侧风段
-        if (currentGroupIdx >= 0 && groups[currentGroupIdx]) {
-          const cg = groups[currentGroupIdx];
-          if (cg.windDir) {
-            // 当前在侧风段，立即激活对当前侧风段免疫
-            windproofActive = true;
-            windproofZoneRef = cg;
-            itemWindproofCount--; // 立即消耗
-            updateItemUI(); // 更新UI显示消耗
-            showItemNotification("🧥 防风外套激活！免疫当前侧风段");
-            console.log("[ITEM] Windproof activated for current wind zone");
-          } else {
-            // 不在侧风段，标记待激活（下次进入侧风段时激活）
-            windproofActive = false;
-            windproofZoneRef = null;
-            console.log("[ITEM] Windproof saved for next wind zone");
+        
+        // 检查当前是否在侧风段（使用 windZones 判断）
+        let inWindZone = false;
+        let currentWindZone = null;
+        for (const zone of windZones) {
+          if (ballZ >= zone.startZ && ballZ <= zone.endZ) {
+            inWindZone = true;
+            currentWindZone = zone;
+            break;
           }
+        }
+        
+        if (inWindZone && currentWindZone) {
+          // 当前在侧风段，立即激活对当前侧风段免疫
+          windproofActive = true;
+          windproofZoneRef = currentWindZone;
+          itemWindproofCount--; // 立即消耗
+          updateItemUI(); // 更新UI显示消耗
+          showItemNotification("🧥 防风外套激活！免疫当前侧风段");
+          console.log("[ITEM] Windproof activated for current wind zone at ballZ=" + ballZ.toFixed(2));
+        } else {
+          // 不在侧风段，标记待激活（下次进入侧风段时激活）
+          windproofActive = false;
+          windproofZoneRef = null;
+          console.log("[ITEM] Windproof saved for next wind zone");
         }
       } else if (type === ITEM_TYPE.FLIGHT_SUIT) {
         // 飞行器：获取后加入备用库存，玩家按F键或点击UI按钮使用
@@ -7205,29 +7213,40 @@ function hidePluto() {
       let windForce = getWindForceAt(ballZ);
       
       // 检查是否进入侧风段，如果是且玩家有防风外套，则自动激活
-      if (!windproofActive && itemWindproofCount > 0 && currentGroupIdx >= 0) {
-        const cg = groups[currentGroupIdx];
-        if (cg && cg.windDir) {
+      if (!windproofActive && itemWindproofCount > 0) {
+        // 使用与 getWindForceAt() 相同的逻辑：检查 ballZ 是否在侧风区域内
+        let inWindZone = false;
+        let currentWindZone = null;
+        for (const zone of windZones) {
+          if (ballZ >= zone.startZ && ballZ <= zone.endZ) {
+            inWindZone = true;
+            currentWindZone = zone;
+            break;
+          }
+        }
+        
+        if (inWindZone && currentWindZone) {
           // 进入侧风段，激活防风外套
           windproofActive = true;
-          windproofZoneRef = cg;
+          windproofZoneRef = currentWindZone;
           itemWindproofCount--; // 消耗一个防风外套
           updateItemUI(); // 更新UI显示
           showItemNotification("🧥 防风外套激活！免疫侧风");
-          console.log("[ITEM] Windproof auto-activated for wind zone");
+          console.log("[ITEM] Windproof auto-activated for wind zone at ballZ=" + ballZ.toFixed(2));
         }
       }
       
-      // 防风外套检查
+      // 防风外套检查：如果已激活，检查是否还在侧风区域内
       if (windproofActive && windproofZoneRef) {
-        const cg = groups[currentGroupIdx];
-        if (cg && cg === windproofZoneRef && cg.windDir) {
-          // 在防风区域内，忽略风力
+        // 检查 ballZ 是否还在激活时的侧风区域内
+        if (ballZ >= windproofZoneRef.startZ && ballZ <= windproofZoneRef.endZ) {
+          // 还在侧风区域内，忽略风力
           windForce = 0;
         } else {
-          // 离开了防风区域，取消防风状态
+          // 离开了侧风区域，取消防风状态
           windproofActive = false;
           windproofZoneRef = null;
+          console.log("[ITEM] Windproof deactivated, left wind zone");
         }
       }
       const windActive = windForce !== 0;
