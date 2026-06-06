@@ -1646,6 +1646,7 @@ function hidePluto() {
         itemWindproofCount++;
         playPickupSound();
         showItemNotification("获得防风外套！");
+        updateItemUI(); // 更新UI显示拾取
         // 检查当前是否在侧风段
         if (currentGroupIdx >= 0 && groups[currentGroupIdx]) {
           const cg = groups[currentGroupIdx];
@@ -1654,6 +1655,8 @@ function hidePluto() {
             windproofActive = true;
             windproofZoneRef = cg;
             itemWindproofCount--; // 立即消耗
+            updateItemUI(); // 更新UI显示消耗
+            showItemNotification("🧥 防风外套激活！免疫当前侧风段");
             console.log("[ITEM] Windproof activated for current wind zone");
           } else {
             // 不在侧风段，标记待激活（下次进入侧风段时激活）
@@ -7209,6 +7212,7 @@ function hidePluto() {
           windproofActive = true;
           windproofZoneRef = cg;
           itemWindproofCount--; // 消耗一个防风外套
+          updateItemUI(); // 更新UI显示
           showItemNotification("🧥 防风外套激活！免疫侧风");
           console.log("[ITEM] Windproof auto-activated for wind zone");
         }
