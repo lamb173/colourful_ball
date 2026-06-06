@@ -1524,6 +1524,14 @@ function hidePluto() {
       }
       const y = PLAT_Y + PLAT_H / 2 + 1.5;
       mesh.position.set(x, y, z);
+      // 为不同道具设置合适的缩放
+      if (type === ITEM_TYPE.FLIGHT_SUIT) {
+        mesh.scale.set(1.8, 1.8, 1.8); // 飞行器放大 1.8 倍
+      } else if (type === ITEM_TYPE.WIND_PROOF) {
+        mesh.scale.set(1.5, 1.5, 1.5); // 防风外套放大 1.5 倍
+      } else {
+        mesh.scale.set(1.2, 1.2, 1.2); // 其他道具默认 1.2 倍
+      }
       const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
       // 为四种道具设置不同光晕颜色
       const glowColor = type === ITEM_TYPE.REVIVE ? 0x00ff88 :
@@ -1655,15 +1663,11 @@ function hidePluto() {
           }
         }
       } else if (type === ITEM_TYPE.FLIGHT_SUIT) {
-        // 飞行器：获取后激活飞行模式
+        // 飞行器：获取后加入备用库存，玩家按F键或点击UI按钮使用
         itemFlightCount++;
         playPickupSound();
-        showItemNotification("获得飞行器！飞行150米！");
-        // 激活飞行模式
-        flightActive = true;
-        flightDistance = 0;
-        flightStartZ = ballZ;
-        console.log("[ITEM] Flight suit activated, flying 150m");
+        showItemNotification("获得飞行器！按F键使用（飞行150米）");
+        console.log("[ITEM] Flight suit obtained, count=" + itemFlightCount);
       }
       updateItemUI();
     }
@@ -5080,6 +5084,22 @@ function hidePluto() {
       mouseNX = -(e.touches[0].clientX / innerWidth - 0.5) * 2;
     }, { passive: true });
 
+    // ════════════════════════════════════════════════════
+    //  F键激活飞行器
+    // ════════════════════════════════════════════════════
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyF' && itemFlightCount > 0 && !flightActive && !gameOver && gameStarted) {
+        itemFlightCount--;
+        flightActive = true;
+        flightDistance = 0;
+        flightStartZ = ballZ;
+        updateItemUI();
+        showItemNotification('飞行器激活！飞行150米！');
+        console.log('[ITEM] Flight suit activated via F key, count=' + itemFlightCount);
+      }
+    });
+
+
     // ═══════════════════════════════════════════════════════
     //  动画辅助
     // ═══════════════════════════════════════════════════════
@@ -7171,7 +7191,10 @@ function hidePluto() {
       jumpTimer += dt;
       const localPhase = Math.min(jumpTimer / curJumpDur, 1);
 
-      ballZ = jumpFromZ + (jumpToZ - jumpFromZ) * localPhase;
+      // 飞行器模式下不更新 ballZ（由飞行器逻辑更新）
+      if (!flightActive) {
+        ballZ = jumpFromZ + (jumpToZ - jumpFromZ) * localPhase;
+      }
 
       const targetX = mouseNX * MOUSE_SENSITIVITY * innerWidth * 0.5;
 
@@ -7230,6 +7253,10 @@ function hidePluto() {
       
       // 飞行器逻辑
       if (flightActive && !gameOver) {
+        // 确保前方有轨道组
+        ensureGroupsAhead();
+        removeOldGroups();
+        
         const flightSpeed = 30; // 米/秒
         ballZ += flightSpeed * dt;
         flightDistance += flightSpeed * dt;
@@ -7254,6 +7281,14 @@ function hidePluto() {
         if (flightDistance >= FLIGHT_DIST) {
           flightActive = false;
           flightDistance = 0;
+          // 飞行结束，正确更新跳跃参数
+          jumpFromZ = ballZ;
+          const landed = findGroupAt(ballZ);
+          if (landed) currentGroupIdx = landed.index;
+          const next = pickNextGroup(currentGroupIdx);
+          jumpToZ = next.group.landZ;
+          currentGroupIdx = next.index;
+          jumpTimer = 0;
           console.log("[ITEM] Flight suit deactivated, landed after 150m");
         }
       } else {
