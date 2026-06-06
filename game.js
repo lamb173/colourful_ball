@@ -7211,6 +7211,7 @@ function hidePluto() {
 
       // 侧风：先施加风力，再降低鼠标操控强度
       let windForce = getWindForceAt(ballZ);
+      console.log("[WIND_DEBUG] ballZ=" + ballZ.toFixed(2) + ", windForce=" + windForce + ", windproofActive=" + windproofActive + ", itemWindproofCount=" + itemWindproofCount);
       
       // 检查是否进入侧风段，如果是且玩家有防风外套，则自动激活
       if (!windproofActive && itemWindproofCount > 0) {
