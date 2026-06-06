@@ -5524,8 +5524,8 @@ function hidePluto() {
       shield = SHIELD_MAX;
       isShieldBroken = false;
       shieldBreakActive = false;
-      shieldRing.visible = false;
-      shieldRingMat.opacity = 0;
+      // shield UI removed
+      // shield UI removed
 
       // 直接显示关卡选择页（不走 switchPage，因为 start-screen 不一定可见）
       var sp = document.getElementById('stage-select-page');
@@ -6020,8 +6020,8 @@ function hidePluto() {
       bar.classList.add('hit');
 
       // 光环闪红
-      shieldRingMat.color.setHex(0xff3333);
-      shieldRingMat.opacity = 0.9;
+      // shield UI removed
+      // shield UI removed
       shieldRegenFlashTimer = 0.15; // 短暂闪红后恢复
 
       if (shield <= 0) {
@@ -6044,7 +6044,7 @@ function hidePluto() {
       shieldBreakTimer = 0;
       ring.visible = false;
       shadowCircle.visible = false;
-      shieldRing.visible = false;
+      // shield UI removed
       document.getElementById('gameover-msg').textContent = '护盾碎裂，游戏结束！';
       playShieldHitSound();
     }
@@ -6171,8 +6171,8 @@ function hidePluto() {
       shieldBreakTimer = 0;
       shieldWarningTimer = 0;
       shieldRegenFlashTimer = 0;
-      shieldRingMat.opacity = 0;
-      shieldRing.visible = false;
+      // shield UI removed
+      // shield UI removed
 
       // 把球放回安全位置（在哪跌倒在哪复活）
       let landed = findGroupAt(jumpToZ);
@@ -6436,8 +6436,8 @@ function hidePluto() {
       shieldBreakTimer = 0;
       shieldWarningTimer = 0;
       shieldRegenFlashTimer = 0;
-      shieldRingMat.opacity = 0;
-      shieldRing.visible = false;
+      // shield UI removed
+      // shield UI removed
 
       // 重置黑洞
       removeBlackhole();
