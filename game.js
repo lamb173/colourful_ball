@@ -200,11 +200,18 @@
 
     // ─── 道具系统 ───
     let items             = [];   // { mesh, type, groupIdx, collected, bboxRadius, floatPhase }
-    const ITEM_TYPE      = { REVIVE: 0, ANTI_SLIP: 1 };
+    const ITEM_TYPE      = { REVIVE: 0, ANTI_SLIP: 1, WIND_PROOF: 2, FLIGHT_SUIT: 3 };
     let itemReviveCount  = 0;    // 复活太空舱持有数
     let itemAntiSlipCount = 0;    // 防滑外套持有数
     let antiSlipActive   = false; // 当前冰面是否免疫
     let antiSlipGroupRef = null;  // 当前免疫的冰面 group 引用
+    let itemWindproofCount = 0;    // 防风外套持有数
+    let windproofActive   = false; // 当前侧风段是否免疫
+    let windproofZoneRef  = null;  // 当前免疫的侧风区引用
+    let itemFlightCount    = 0;    // 飞行器持有数
+    let flightActive       = false; // 飞行器是否激活
+    let flightDistance     = 0;    // 飞行器已飞行距离
+    const FLIGHT_DIST = 150;   // 飞行器飞行距离（米）
     let itemModelCache   = {};   // GLB 模型缓存（克隆用）
     let pickupBurstActive = false;
     let pickupBurstTimer  = 0;
@@ -1359,7 +1366,9 @@ function hidePluto() {
       console.log('[PRELOAD] 开始预加载道具模型...');
       const itemUrls = {
         [ITEM_TYPE.REVIVE]: 'assets/models/item_revive_capsule.glb',
-        [ITEM_TYPE.ANTI_SLIP]: 'assets/models/item_anti_slip_shell.glb'
+        [ITEM_TYPE.ANTI_SLIP]: 'assets/models/item_anti_slip_shell.glb',
+        [ITEM_TYPE.WIND_PROOF]: 'assets/windproof_jacket.glb',
+        [ITEM_TYPE.FLIGHT_SUIT]: 'assets/flight_suit.glb'
       };
       
       Object.keys(itemUrls).forEach(typeKey => {
@@ -1410,19 +1419,85 @@ function hidePluto() {
       groupsSinceLastItem = 0; // 生成成功，重置计数器
       // 决定生成哪种道具
       let type;
-      if (group.type === 1) {
-        // 长直轨道：两种道具都行
-        type = Math.random() < 0.4 ? ITEM_TYPE.REVIVE : ITEM_TYPE.ANTI_SLIP;
-      } else {
-        // 方形轨道：检查是否有匹配球当前颜色的部分
-        const hasMatch = group.partColorKeys && group.partColorKeys.includes(currentBallColorKey);
-        if (hasMatch) {
-          // 有匹配颜色：优先生成防滑外套
-          type = Math.random() < 0.7 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
+      if (gameMode === 'stages' && _currentStage) {
+        // 闯关模式：按关卡解锁不同道具
+        const stageId = _currentStage.id;
+        
+        if (group.type === 1) {
+          // 长直轨道：根据关卡解锁情况生成
+          if (stageId <= 2) {
+            // 前两关只出现复活太空舱
+            type = ITEM_TYPE.REVIVE;
+          } else if (stageId === 3) {
+            // 第三关可以开始出现飞行器
+            type = Math.random() < 0.5 ? ITEM_TYPE.FLIGHT_SUIT : ITEM_TYPE.REVIVE;
+          } else if (stageId === 4) {
+            // 第四关开始出现防滑外套
+            type = Math.random() < 0.5 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
+          } else if (stageId === 5) {
+            // 第五关开始出现防风外套（无防滑外套）
+            type = Math.random() < 0.5 ? ITEM_TYPE.WIND_PROOF : ITEM_TYPE.FLIGHT_SUIT;
+          } else if (stageId === 6) {
+            // 第六关无防风外套有防滑外套
+            type = Math.random() < 0.5 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
+          } else {
+            // 第七、八、九、十关四种道具均可出现
+            const rand = Math.random();
+            if (rand < 0.25) type = ITEM_TYPE.REVIVE;
+            else if (rand < 0.5) type = ITEM_TYPE.ANTI_SLIP;
+            else if (rand < 0.75) type = ITEM_TYPE.WIND_PROOF;
+            else type = ITEM_TYPE.FLIGHT_SUIT;
+          }
         } else {
-          // 没有匹配颜色：只生成复活太空舱
-          type = ITEM_TYPE.REVIVE;
+          // 方形轨道：检查是否有匹配球当前颜色的部分
+          const hasMatch = group.partColorKeys && group.partColorKeys.includes(currentBallColorKey);
+          if (hasMatch) {
+            // 有匹配颜色：优先生成防滑外套或防风外套
+            const rand = Math.random();
+            if (stageId <= 2) {
+              type = ITEM_TYPE.REVIVE;
+            } else if (stageId === 3) {
+              type = rand < 0.7 ? ITEM_TYPE.FLIGHT_SUIT : ITEM_TYPE.REVIVE;
+            } else if (stageId === 4) {
+              type = rand < 0.7 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
+            } else if (stageId === 5) {
+              type = rand < 0.7 ? ITEM_TYPE.WIND_PROOF : ITEM_TYPE.FLIGHT_SUIT;
+            } else if (stageId === 6) {
+              type = rand < 0.7 ? ITEM_TYPE.ANTI_SLIP : ITEM_TYPE.REVIVE;
+            } else {
+              // 七八九十关
+              const r2 = Math.random();
+              if (r2 < 0.4) type = ITEM_TYPE.ANTI_SLIP;
+              else if (r2 < 0.7) type = ITEM_TYPE.WIND_PROOF;
+              else if (r2 < 0.9) type = ITEM_TYPE.FLIGHT_SUIT;
+              else type = ITEM_TYPE.REVIVE;
+            }
+          } else {
+            // 没有匹配颜色：只生成复活太空舱
+            type = ITEM_TYPE.REVIVE;
+          }
         }
+        
+        // 检查飞行器是否已到达本关上限（在type确定后检查）
+        if (type === ITEM_TYPE.FLIGHT_SUIT) {
+          if (stageId >= 3 && stageId <= 5 && itemFlightCount >= 1) {
+            // 三四五关飞行器只允许出现一次
+            type = ITEM_TYPE.REVIVE; // 已生成过，改为复活太空舱
+          } else if (stageId >= 6 && stageId <= 7 && itemFlightCount >= 2) {
+            // 六七关飞行器可出现两次
+            type = ITEM_TYPE.REVIVE;
+          } else if (stageId >= 8 && stageId <= 10 && itemFlightCount >= 3) {
+            // 八九十三关飞行器可出现三次
+            type = ITEM_TYPE.REVIVE;
+          }
+        }
+      } else {
+        // 无尽模式：四种道具均可出现
+        const rand = Math.random();
+        if (rand < 0.25) type = ITEM_TYPE.REVIVE;
+        else if (rand < 0.5) type = ITEM_TYPE.ANTI_SLIP;
+        else if (rand < 0.75) type = ITEM_TYPE.WIND_PROOF;
+        else type = ITEM_TYPE.FLIGHT_SUIT;
       }
       const modelTemplate = itemModelCache[type];
       if (!modelTemplate) return;
@@ -1450,8 +1525,13 @@ function hidePluto() {
       const y = PLAT_Y + PLAT_H / 2 + 1.5;
       mesh.position.set(x, y, z);
       const glowGeo = new THREE.SphereGeometry(0.8, 16, 16);
+      // 为四种道具设置不同光晕颜色
+      const glowColor = type === ITEM_TYPE.REVIVE ? 0x00ff88 :
+                        type === ITEM_TYPE.ANTI_SLIP ? 0x44aaff :
+                        type === ITEM_TYPE.WIND_PROOF ? 0xffaa00 :
+                        0xcc44ff; // FLIGHT_SUIT
       const glowMat = new THREE.MeshBasicMaterial({
-        color: type === ITEM_TYPE.REVIVE ? 0x00ff88 : 0x44aaff,
+        color: glowColor,
         transparent: true,
         opacity: 0.3,
         side: THREE.BackSide
@@ -1553,6 +1633,36 @@ function hidePluto() {
             console.log("[ITEM] Anti-slip activated immediately on current ice");
           }
         }
+      } else if (type === ITEM_TYPE.WIND_PROOF) {
+        // 防风外套：若在侧风段，对当前侧风段免疫；否则对下一个侧风段免疫
+        itemWindproofCount++;
+        playPickupSound();
+        showItemNotification("获得防风外套！");
+        // 检查当前是否在侧风段
+        if (currentGroupIdx >= 0 && groups[currentGroupIdx]) {
+          const cg = groups[currentGroupIdx];
+          if (cg.windDir) {
+            // 当前在侧风段，立即激活对当前侧风段免疫
+            windproofActive = true;
+            windproofZoneRef = cg;
+            console.log("[ITEM] Windproof activated for current wind zone");
+          } else {
+            // 不在侧风段，标记待激活（下次进入侧风段时激活）
+            windproofActive = false;
+            windproofZoneRef = null;
+            console.log("[ITEM] Windproof saved for next wind zone");
+          }
+        }
+      } else if (type === ITEM_TYPE.FLIGHT_SUIT) {
+        // 飞行器：获取后激活飞行模式
+        itemFlightCount++;
+        playPickupSound();
+        showItemNotification("获得飞行器！飞行150米！");
+        // 激活飞行模式
+        flightActive = true;
+        flightDistance = 0;
+        flightStartZ = ballZ;
+        console.log("[ITEM] Flight suit activated, flying 150m");
       }
       updateItemUI();
     }
@@ -1561,10 +1671,14 @@ function hidePluto() {
     function updateItemUI() {
       const reviveEl = document.getElementById("item-revive-count");
       const antiSlipEl = document.getElementById("item-anti-slip-count");
+      const windproofEl = document.getElementById("item-windproof-count");
+      const flightEl = document.getElementById("item-flight-count");
       const reviveBtn = document.getElementById("item-revive-btn");
       const reviveCountEl = document.getElementById("revive-capsule-count");
       if (reviveEl) reviveEl.textContent = itemReviveCount;
       if (antiSlipEl) antiSlipEl.textContent = itemAntiSlipCount;
+      if (windproofEl) windproofEl.textContent = itemWindproofCount;
+      if (flightEl) flightEl.textContent = itemFlightCount;
       if (reviveCountEl) reviveCountEl.textContent = itemReviveCount;
       if (reviveBtn) {
         reviveBtn.style.display = itemReviveCount > 0 ? "block" : "none";
@@ -7074,7 +7188,37 @@ function hidePluto() {
       }
 
       const ballY = ballY_base + landOffsetY;
-      sphere.position.set(ballX, ballY, ballZ);
+      
+      // 飞行器逻辑
+      if (flightActive && !gameOver) {
+        const flightSpeed = 30; // 米/秒
+        ballZ += flightSpeed * dt;
+        flightDistance += flightSpeed * dt;
+        
+        // 球体升空
+        sphere.position.y = PLAT_Y + PLAT_H / 2 + 5;
+        sphere.position.z = ballZ;
+        sphere.position.x = ballX;
+        
+        // 检查是否遇到黑洞（黑洞z - ballZ < 5米）
+        if (typeof blackholeZ !== 'undefined' && blackholeZ > 0) {
+          if (Math.abs(blackholeZ - ballZ) < 5) {
+            flightActive = false;
+            flightDistance = 0;
+            triggerBlackholeSuck();
+            console.log("[ITEM] Flight suit sucked into black hole!");
+          }
+        }
+        
+        // 检查飞行距离
+        if (flightDistance >= FLIGHT_DIST) {
+          flightActive = false;
+          flightDistance = 0;
+          console.log("[ITEM] Flight suit deactivated, landed after 150m");
+        }
+      } else {
+        sphere.position.set(ballX, ballY, ballZ);
+      }
 
       // ── 更新行进距离 ──
       const distEl = document.getElementById('dist-current');
