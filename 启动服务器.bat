@@ -8,16 +8,14 @@ cd /d "%~dp0"
 
 :loop
 echo =============================================
-echo  [%date% %time%] 启动服务器...
+echo [%date% %time%] 启动服务器...
 echo =============================================
 
-REM 先清理占用 9090 端口的残留进程
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":9090" ^| findstr "LISTENING"') do (
-    echo 清理残留进程 PID=%%a ...
-    taskkill /F /PID %%a >nul 2>&1
-)
+REM 清理 9090 端口（直接杀 python 进程，简单可靠）
+taskkill /F /IM python.exe >nul 2>&1
 timeout /t 2 >nul
 
+REM 启动服务器
 python _serve.py
 
 echo.
