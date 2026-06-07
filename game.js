@@ -66,11 +66,15 @@
       });
       console.log('[GAME] Welcome timeout + click registered');
     })();
-    // 绑定商城事件（DOM已加载）
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bindShopEvents);
-    } else {
+    // 绑定商城与帮助事件（DOM已加载）
+    function bindAllMenuEvents() {
       bindShopEvents();
+      bindHelpEvents();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindAllMenuEvents);
+    } else {
+      bindAllMenuEvents();
     }
 
     // ─── 商城页面事件绑定 ───
@@ -109,6 +113,29 @@
       // 生成商城卡片
       buildShopCards();
       console.log('[SHOP] Events bound');
+    }
+
+    function openHelpPage() {
+      var mp = document.getElementById('mode-page');
+      var hp = document.getElementById('help-page');
+      if (mp) { mp.classList.remove('active'); mp.style.display = 'none'; }
+      if (hp) { hp.style.display = 'flex'; hp.classList.add('active'); }
+      console.log('[HELP] Opened help page');
+    }
+    function closeHelpPage() {
+      var hp = document.getElementById('help-page');
+      var mp = document.getElementById('mode-page');
+      if (hp) { hp.classList.remove('active'); hp.style.display = 'none'; }
+      if (mp) { mp.style.display = 'flex'; mp.classList.add('active'); }
+      updateModeStarsUI();
+      console.log('[HELP] Closed help page');
+    }
+    function bindHelpEvents() {
+      var modeHelpBtn = document.getElementById('mode-help');
+      var helpBackBtn = document.getElementById('help-back');
+      if (modeHelpBtn) modeHelpBtn.addEventListener('click', openHelpPage);
+      if (helpBackBtn) helpBackBtn.addEventListener('click', closeHelpPage);
+      console.log('[HELP] Events bound');
     }
 
     function buildShopCards() {
@@ -172,25 +199,32 @@
       }
       try {
         var scene2 = new THREE.Scene();
-        scene2.background = new THREE.Color(0x0a0a1a);
+        scene2.background = new THREE.Color(0x181830);
         var aspect = container.clientWidth / container.clientHeight;
         var cam = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
-        cam.position.set(0, 0, 3);
+        cam.position.set(0, 0.3, 3);
         cam.lookAt(0, 0, 0);
         var rend = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         rend.setSize(container.clientWidth, container.clientHeight);
         rend.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.innerHTML = '';
         container.appendChild(rend.domElement);
-        // 灯光
-        scene2.add(new THREE.AmbientLight(0xffffff, 0.6));
-        var dl = new THREE.DirectionalLight(0xffffff, 0.8);
-        dl.position.set(3, 4, 5);
+        // 灯光 — 多灯组合确保模型全方位受光
+        scene2.add(new THREE.AmbientLight(0xffffff, 1.0));
+        scene2.add(new THREE.HemisphereLight(0xffffff, 0x4444ff, 0.5));
+        var dl = new THREE.DirectionalLight(0xffffff, 1.2);
+        dl.position.set(3, 5, 4);
         scene2.add(dl);
-        // 再加一个背光让轮廓清晰
-        var backLight = new THREE.DirectionalLight(0xffffff, 0.4);
-        backLight.position.set(-3, 2, -5);
+        var dl2 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dl2.position.set(-4, 3, -3);
+        scene2.add(dl2);
+        var backLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        backLight.position.set(-2, 1, -5);
         scene2.add(backLight);
+        // 彩色点光源 — 让模型染上道具主题色，肉眼可见
+        var pointLight = new THREE.PointLight(new THREE.Color(color), 1.5, 10);
+        pointLight.position.set(2, 2, 2);
+        scene2.add(pointLight);
 
         var glbPath = SHOP_MODEL_PATHS[id];
         var mesh = null;
@@ -217,8 +251,16 @@
               // 居中：避免原地修改向量导致意外
               var center = box.getCenter(new THREE.Vector3());
               model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+              // 给模型加微弱自发光，确保在暗背景下肉眼可见
+              var emissiveColor = new THREE.Color(color);
+              model.traverse(function(child) {
+                if (child.isMesh && child.material) {
+                  child.material.emissive = emissiveColor;
+                  child.material.emissiveIntensity = 0.35;
+                }
+              });
               scene2.add(model);
-              console.log('[SHOP] GLB loaded for ' + id + ' scale=' + scale.toFixed(4));
+              console.log('[SHOP] GLB loaded for ' + id + ' scale=' + scale.toFixed(4) + ' pos=(' + model.position.x.toFixed(2) + ',' + model.position.y.toFixed(2) + ',' + model.position.z.toFixed(2) + ')');
             },
             function(xhr) {
               // 进度回调
