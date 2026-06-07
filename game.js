@@ -420,10 +420,10 @@
 
     // ─── 商城配置 ───
     const SHOP_ITEMS = [
-      { id: "revive",    name: "复活太空舱",   desc: "球掉落时自动触发，消耗1个太空舱在掉落点复活（无尽模式专用）", price: 5,  icon: "🛸", color: "#00ff88" },
-      { id: "antiSlip",  name: "防滑外套",     desc: "经过冰面时自动触发，免疫一次冰面滑行，正常弹跳",     price: 4,  icon: "🧤", color: "#44aaff" },
+      { id: "revive",    name: "复活太空舱",   desc: "球掉落时自动触发，消耗1个太空舱在掉落点复活", price: 5,  icon: "🛸", color: "#00ff88" },
+      { id: "antiSlip",  name: "防滑外套",     desc: "经过冰面时自动触发，免疫一次冰面滑行",     price: 4,  icon: "🧤", color: "#44aaff" },
       { id: "windproof", name: "防风外套",     desc: "经过侧风区时自动触发，免疫一次侧风偏移，直线前进",     price: 4,  icon: "🧥", color: "#ffaa44" },
-      { id: "flight",    name: "飞行器",       desc: "点击空格键激活，向前飞行150m，无视所有地形（冷却30s）", price: 8,  icon: "🚀", color: "#ff6644" }
+      { id: "flight",    name: "飞行器",       desc: "按F键激活，向前飞行150m，无视所有地形", price: 8,  icon: "🚀", color: "#ff6644" }
     ];
     const FLIGHT_DIST = 150;   // 飞行器飞行距离（米）
     let itemModelCache   = {};   // GLB 模型缓存（克隆用）
