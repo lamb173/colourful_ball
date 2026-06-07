@@ -260,6 +260,10 @@
               var size = box.getSize(new THREE.Vector3());
               var maxDim = Math.max(size.x, size.y, size.z);
               console.log('[SHOP] ' + id + ' raw bbox size:', size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3), 'maxDim:', maxDim.toFixed(3));
+              // 打印模型节点名，确认加载的是正确的文件
+              var nodeNames = [];
+              model.traverse(function(child) { if (child.name) nodeNames.push(child.name); });
+              console.log('[SHOP] ' + id + ' nodeNames:', nodeNames.length > 0 ? nodeNames.join(', ') : '(all unnamed)');
               if (maxDim <= 0 || !isFinite(maxDim)) {
                 console.warn('[SHOP] ' + id + ' invalid bbox, using fallback');
                 scene2.add(createProceduralShopModel(id, color));
