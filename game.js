@@ -282,12 +282,6 @@
         function animateShopModel() {
           if (!container.parentNode) { rend.dispose(); return; }
           requestAnimationFrame(animateShopModel);
-          // 旋转场景中的所有mesh
-          scene2.traverse(function(child) {
-            if (child.isMesh) {
-              child.rotation.y += 0.02;
-            }
-          });
           rend.render(scene2, cam);
         }
         animateShopModel();
@@ -487,7 +481,7 @@
 
     // ─── 商城配置 ───
     const SHOP_ITEMS = [
-      { id: "revive",    name: "复活太空舱",   desc: "球掉落时自动触发，消耗1个太空舱在掉落点复活", price: 5,  icon: "🛸", color: "#00ff88" },
+      { id: "revive",    name: "复活太空舱",   desc: "球死亡时可选择使用，消耗1个太空舱可使球在死亡点复活", price: 5,  icon: "🛸", color: "#00ff88" },
       { id: "antiSlip",  name: "防滑外套",     desc: "经过冰面时自动触发，免疫一次冰面滑行",     price: 4,  icon: "🧤", color: "#44aaff" },
       { id: "windproof", name: "防风外套",     desc: "经过侧风区时自动触发，免疫一次侧风偏移，直线前进",     price: 4,  icon: "🧥", color: "#ffaa44" },
       { id: "flight",    name: "飞行器",       desc: "按F键激活，向前飞行150m，无视所有地形", price: 8,  icon: "🚀", color: "#ff6644" }

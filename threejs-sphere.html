@@ -51,14 +51,13 @@
       </div>
       <div class="help-section">
         <h3>🎯 游戏目标</h3>
-        <div class="help-item">跳上与小球<span class="help-highlight">当前颜色相同</span>的轨道段</div>
-        <div class="help-item">跳得越远，分数越高；失误会扣血，血条归零则游戏结束</div>
+        <div class="help-item">操纵小球避免因未落在轨道上、跳上错误颜色轨道、从冰面滑落、被侧风吹落而死亡</div>
       </div>
       <div class="help-section">
         <h3>♾️ 无尽模式</h3>
-        <div class="help-item">每前进一段距离后，会出现<span class="help-highlight">三条路径</span>供选择</div>
-        <div class="help-item">每 <span class="help-highlight">900 米</span> 切换一次太空背景，共 5 种主题循环</div>
-        <div class="help-item">深空星云 → 虫洞漩涡 → 冰冻彗星带 → 超新星残骸 → 行星环</div>
+        <div class="help-item">操纵小球前进，每累计前进 300m 获得一颗星星</div>
+        <div class="help-item">每 900m 进行一次路径选择，选择后继续前进</div>
+        <div class="help-item">死亡后可选择太空舱道具、观看广告、使用当局累积星星复活</div>
       </div>
       <div class="help-section">
         <h3>★ 闯关模式</h3>
@@ -68,13 +67,8 @@
         <div class="help-item">通关后自动解锁下一关，收集星星可在道具商城购买道具</div>
       </div>
       <div class="help-section">
-        <h3>❤️ 血条与护盾</h3>
-        <div class="help-item">血条显示在屏幕上方，<span class="help-highlight">完美弹跳</span>可回复少量血量</div>
-        <div class="help-item"><span class="help-highlight">护盾</span>可抵挡一次致命伤害：冰面越界、落地脱轨、颜色不匹配</div>
-      </div>
-      <div class="help-section">
         <h3>🛒 道具系统</h3>
-        <div class="help-item"><span class="help-icon">🛸</span><b>复活太空舱</b> — 球掉落时自动消耗1个，在掉落点复活</div>
+        <div class="help-item"><span class="help-icon">🛸</span><b>复活太空舱</b> — 球死亡时可选消耗1个，在掉落点复活</div>
         <div class="help-item"><span class="help-icon">🧤</span><b>防滑外套</b> — 经过冰面时自动触发，免疫一次冰面滑行</div>
         <div class="help-item"><span class="help-icon">🧥</span><b>防风外套</b> — 经过侧风区时自动触发，免疫一次侧风偏移</div>
         <div class="help-item"><span class="help-icon">🚀</span><b>飞行器</b> — 按 F 键激活，向前飞行 150 米，无视所有地形</div>
@@ -248,7 +242,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="game.js?v=20.34"></script>
+  <script src="game.js?v=20.35"></script>
   <!-- 调试：错误显示 -->
 </body>
 </html>
