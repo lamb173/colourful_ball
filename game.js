@@ -164,11 +164,19 @@
     function loadShopModel(id, color) {
       var container = document.getElementById('shop-model-' + id);
       if (!container) return;
+      // 如果容器还没布局好，延迟重试
+      if (container.clientWidth === 0 || container.clientHeight === 0) {
+        console.log('[SHOP] container size zero for ' + id + ', retrying...');
+        setTimeout(function() { loadShopModel(id, color); }, 100);
+        return;
+      }
       try {
         var scene2 = new THREE.Scene();
         scene2.background = new THREE.Color(0x0a0a1a);
-        var cam = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+        var aspect = container.clientWidth / container.clientHeight;
+        var cam = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
         cam.position.set(0, 0, 3);
+        cam.lookAt(0, 0, 0);
         var rend = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         rend.setSize(container.clientWidth, container.clientHeight);
         rend.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -179,6 +187,10 @@
         var dl = new THREE.DirectionalLight(0xffffff, 0.8);
         dl.position.set(3, 4, 5);
         scene2.add(dl);
+        // 再加一个背光让轮廓清晰
+        var backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        backLight.position.set(-3, 2, -5);
+        scene2.add(backLight);
 
         var glbPath = SHOP_MODEL_PATHS[id];
         var mesh = null;
@@ -194,13 +206,19 @@
               var box = new THREE.Box3().setFromObject(model);
               var size = box.getSize(new THREE.Vector3());
               var maxDim = Math.max(size.x, size.y, size.z);
+              console.log('[SHOP] ' + id + ' raw bbox size:', size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3), 'maxDim:', maxDim.toFixed(3));
+              if (maxDim <= 0 || !isFinite(maxDim)) {
+                console.warn('[SHOP] ' + id + ' invalid bbox, using fallback');
+                scene2.add(createProceduralShopModel(id, color));
+                return;
+              }
               var scale = 2.0 / maxDim;
               model.scale.set(scale, scale, scale);
-              // 居中
+              // 居中：避免原地修改向量导致意外
               var center = box.getCenter(new THREE.Vector3());
-              model.position.sub(center.multiplyScalar(scale));
+              model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
               scene2.add(model);
-              console.log('[SHOP] GLB loaded for ' + id);
+              console.log('[SHOP] GLB loaded for ' + id + ' scale=' + scale.toFixed(4));
             },
             function(xhr) {
               // 进度回调
