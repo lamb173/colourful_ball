@@ -2929,59 +2929,75 @@ function hidePluto() {
       const group = new THREE.Group();
       group.visible = false;
 
-      // 冰晶粒子
+      // 第1层：大尺寸冰蓝粒子（模仿 BG0 的 nebula 层）
       const iceGeo = new THREE.BufferGeometry();
-      const iceCount = 2500;
+      const iceCount = 600;
       const ipos = new Float32Array(iceCount*3);
       const icolors = new Float32Array(iceCount*3);
-      const isizes = new Float32Array(iceCount);
       for (let i = 0; i < iceCount; i++) {
-        ipos[i*3]   = (Math.random()-0.5)*700;
-        ipos[i*3+1] = (Math.random()-0.5)*700;
-        ipos[i*3+2] = -100 - Math.random()*900;  // 只在球后方100~1000单位，避开相机视野
-        const b = 0.7+Math.random()*0.3;
-        icolors[i*3]   = b*0.7;
-        icolors[i*3+1] = b*0.85;
-        icolors[i*3+2] = b;
-        isizes[i] = 0.2 + Math.random()*0.6;
+        ipos[i*3]   = (Math.random()-0.5)*600;
+        ipos[i*3+1] = (Math.random()-0.5)*600;
+        ipos[i*3+2] = (Math.random()-0.5)*800;  // 双向分布：-400~+400
+        // 冰蓝色调
+        const c = new THREE.Color().setHSL(0.55+Math.random()*0.15, 0.6, 0.08+Math.random()*0.07);
+        icolors[i*3]   = c.r;
+        icolors[i*3+1] = c.g;
+        icolors[i*3+2] = c.b;
       }
       iceGeo.setAttribute('position', new THREE.BufferAttribute(ipos, 3));
       iceGeo.setAttribute('color',    new THREE.BufferAttribute(icolors, 3));
-      iceGeo.setAttribute('size',      new THREE.BufferAttribute(isizes, 1));
-      const iceMat = new THREE.PointsMaterial({ size: 0.5, vertexColors: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false });
+      const iceMat = new THREE.PointsMaterial({ size: 8, vertexColors: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
       const ice = new THREE.Points(iceGeo, iceMat);
       group.add(ice);
 
-      // 彗星轨迹
-      const trailGeo = new THREE.BufferGeometry();
-      const tCount = 5;
-      const tpos = new Float32Array(tCount*3);
-      for (let i = 0; i < tCount; i++) {
-        const angle = Math.random()*Math.PI*2;
-        const dist = 100+Math.random()*200;
-        tpos[i*3]   = Math.cos(angle)*dist;
-        tpos[i*3+1] = (Math.random()-0.5)*200;
-        tpos[i*3+2] = -200 - Math.random()*300;  // 只在球后方200~500单位，避开相机视野
+      // 第2层：密集小粒子（模仿 BG0 的 stars2 层）
+      const snowGeo = new THREE.BufferGeometry();
+      const snowCount = 3000;
+      const spos2 = new Float32Array(snowCount*3);
+      const scolors2 = new Float32Array(snowCount*3);
+      for (let i = 0; i < snowCount; i++) {
+        spos2[i*3]   = (Math.random()-0.5)*1200;
+        spos2[i*3+1] = (Math.random()-0.5)*1200;
+        spos2[i*3+2] = (Math.random()-0.5)*1400;  // 双向分布：-700~+700
+        const brightness = 0.3+Math.random()*0.7;
+        scolors2[i*3]   = brightness;
+        scolors2[i*3+1] = brightness;
+        scolors2[i*3+2] = brightness;
       }
-      trailGeo.setAttribute('position', new THREE.BufferAttribute(tpos, 3));
-      const trailMat = new THREE.PointsMaterial({ color: 0xaaddff, size: 1.5, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false });
-      const trails = new THREE.Points(trailGeo, trailMat);
-      group.add(trails);
+      snowGeo.setAttribute('position', new THREE.BufferAttribute(spos2, 3));
+      snowGeo.setAttribute('color',    new THREE.BufferAttribute(scolors2, 3));
+      const snowMat = new THREE.PointsMaterial({ size: 1.2, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false });
+      const snow = new THREE.Points(snowGeo, snowMat);
+      group.add(snow);
 
-      // 冰盘（暂注释，排查是否导致 BG2 一圈光挡视线）
-      // const diskZ = -600;
-      // const diskGeo = new THREE.RingGeometry(80, 200, 64);
-      // const diskMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.05, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
-      // const disk = new THREE.Mesh(diskGeo, diskMat);
-      // disk.position.set(0, 0, diskZ);
-      // disk.rotation.x = Math.PI/2;
-      // group.add(disk);
+      // 第3层：中大尺寸亮粒子（模仿 BG0 的 bStars 层）
+      const brightGeo = new THREE.BufferGeometry();
+      const bCount = 80;
+      const bpos = new Float32Array(bCount*3);
+      const bcolors = new Float32Array(bCount*3);
+      const bsizes = new Float32Array(bCount);
+      for (let i = 0; i < bCount; i++) {
+        bpos[i*3]   = (Math.random()-0.5)*800;
+        bpos[i*3+1] = (Math.random()-0.5)*800;
+        bpos[i*3+2] = (Math.random()-0.5)*600;  // 双向分布：-300~+300
+        const c = new THREE.Color().setHSL(0.5+Math.random()*0.2, 0.6, 0.7);
+        bcolors[i*3]   = c.r;
+        bcolors[i*3+1] = c.g;
+        bcolors[i*3+2] = c.b;
+        bsizes[i] = 2 + Math.random()*4;
+      }
+      brightGeo.setAttribute('position', new THREE.BufferAttribute(bpos, 3));
+      brightGeo.setAttribute('color',    new THREE.BufferAttribute(bcolors, 3));
+      brightGeo.setAttribute('size',      new THREE.BufferAttribute(bsizes, 1));
+      const brightMat = new THREE.PointsMaterial({ size: 3, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+      const bright = new THREE.Points(brightGeo, brightMat);
+      group.add(bright);
 
-      group.userData = { ice, trails, type: 'bg2', time: 0 };
+      group.userData = { ice, snow, bright, type: 'bg2', time: 0 };
       endlessBgObjects[2] = group.userData;
       scene.add(group);
       endlessBgGroups[2] = group;
-      console.log('[BG2] Frozen Comet Belt created');
+      console.log('[BG2] Frozen Comet Belt created (3 layers, bidirectional)');
       return group;
     }
 
