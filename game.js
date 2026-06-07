@@ -176,6 +176,7 @@
         var mesh = null;
 
         // 尝试加载GLB模型
+        console.log('[SHOP] loadShopModel id=' + id + ' path=' + SHOP_MODEL_PATHS[id] + ' THREE.GLTFLoader=' + typeof THREE.GLTFLoader);
         if (typeof THREE.GLTFLoader !== 'undefined') {
           var loader = new THREE.GLTFLoader();
           loader.load(glbPath,
@@ -193,10 +194,13 @@
               scene2.add(model);
               console.log('[SHOP] GLB loaded for ' + id);
             },
-            undefined,
-            function() {
-              // GLB加载失败，使用程序化几何体兜底
-              console.log('[SHOP] GLB not found for ' + id + ', using procedural geometry');
+            function(xhr) {
+              // 进度回调
+              if (xhr.total) console.log('[SHOP] ' + id + ' ' + (xhr.loaded/xhr.total*100).toFixed(0) + '%');
+            },
+            function(error) {
+              // 错误回调：打印具体错误
+              console.error('[SHOP] GLB load FAILED for ' + id + ' path=' + glbPath, error);
               var fallbackMesh = createProceduralShopModel(id, color);
               scene2.add(fallbackMesh);
             }
