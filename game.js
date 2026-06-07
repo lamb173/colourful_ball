@@ -1381,8 +1381,8 @@ function hidePluto() {
                 stage9Model.visible = true;
                 stage9Model.position.x = 5;
                 stage9Model.position.y = -6;
-                if (sphere) stage9Model.position.z = sphere.position.z + 50;
-                console.log('[STAGE9] model added to scene after async load');
+                if (sphere) stage9Model.position.z = sphere.position.z + 200;
+                console.log('[STAGE9] model added to scene after async load, z offset=200');
               }
             },
             (xhr) => { if (xhr.total > 0) console.log('[STAGE9] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
@@ -1394,8 +1394,8 @@ function hidePluto() {
           stage9Model.visible = true;
           stage9Model.position.x = 5;
           stage9Model.position.y = -6;
-          if (sphere) stage9Model.position.z = sphere.position.z + 50;
-          console.log('[STAGE9] model shown (visible=true)');
+          if (sphere) stage9Model.position.z = sphere.position.z + 200;
+          console.log('[STAGE9] model shown (visible=true), z offset=200');
         }
         if (!stage9BgGroup) stage9BgGroup = createStageBackground(9);
         if (stage9BgGroup && !stage9BgInScene) { scene.add(stage9BgGroup); stage9BgInScene = true; }
@@ -1432,8 +1432,8 @@ function hidePluto() {
                 stage10Model.visible = true;
                 stage10Model.position.x = 5;
                 stage10Model.position.y = -6;
-                if (sphere) stage10Model.position.z = sphere.position.z + 55;
-                console.log('[STAGE10] model added to scene after async load');
+                if (sphere)                 stage10Model.position.z = sphere.position.z + 200;
+                console.log('[STAGE10] model added to scene after async load, z=', (sphere.position.z + 200).toFixed(1));
               }
             },
             (xhr) => { if (xhr.total > 0) console.log('[STAGE10] loading: ' + Math.floor(xhr.loaded/xhr.total*100) + '%'); },
@@ -1445,8 +1445,8 @@ function hidePluto() {
           stage10Model.visible = true;
           stage10Model.position.x = 5;
           stage10Model.position.y = -6;
-          if (sphere) stage10Model.position.z = sphere.position.z + 55;
-          console.log('[STAGE10] model shown (visible=true)');
+          if (sphere) stage10Model.position.z = sphere.position.z + 200;
+          console.log('[STAGE10] model shown (visible=true), z offset=200');
         }
         if (!stage10BgGroup) stage10BgGroup = createStageBackground(10);
         if (stage10BgGroup && !stage10BgInScene) { scene.add(stage10BgGroup); stage10BgInScene = true; }
@@ -2719,7 +2719,7 @@ function hidePluto() {
         // 1. Sky dome (deep black with subtle purple tint)
         const skyGeo9 = new THREE.SphereGeometry(500, 32, 32);
         const skyMat9 = new THREE.MeshBasicMaterial({
-          color: 0x05000a,
+          color: 0x0a0020,
           side: THREE.BackSide,
           fog: false,
         });
@@ -2734,7 +2734,7 @@ function hidePluto() {
         }
         gPos9.needsUpdate = true;
         groundGeo9.computeVertexNormals();
-        const groundMat9 = new THREE.MeshPhongMaterial({ color: 0x05000a, fog: false });
+        const groundMat9 = new THREE.MeshPhongMaterial({ color: 0x0a0020, fog: false });
         const ground9 = new THREE.Mesh(groundGeo9, groundMat9);
         ground9.rotation.x = -Math.PI/2;
         ground9.position.y = -50;
@@ -2776,7 +2776,7 @@ function hidePluto() {
         // 1. Sky dome (twisted spacetime - deep violet)
         const skyGeo10 = new THREE.SphereGeometry(500, 32, 32);
         const skyMat10 = new THREE.MeshBasicMaterial({
-          color: 0x0a001a,
+          color: 0x150030,
           side: THREE.BackSide,
           fog: false,
         });
@@ -2792,7 +2792,7 @@ function hidePluto() {
         }
         gPos10.needsUpdate = true;
         groundGeo10.computeVertexNormals();
-        const groundMat10 = new THREE.MeshPhongMaterial({ color: 0x0a001a, fog: false });
+        const groundMat10 = new THREE.MeshPhongMaterial({ color: 0x150030, fog: false });
         const ground10 = new THREE.Mesh(groundGeo10, groundMat10);
         ground10.rotation.x = -Math.PI/2;
         ground10.position.y = -50;
@@ -7505,7 +7505,7 @@ function hidePluto() {
       // 第10关 奇点彼岸
       if (stage10InScene && stage10Model) {
         stage10Model.rotation.y += 0.006;
-        if (sphere) { stage10Model.position.x = 5; stage10Model.position.y = -6; stage10Model.position.z = sphere.position.z + 55; }
+        if (sphere) { stage10Model.position.x = 5; stage10Model.position.y = -6; stage10Model.position.z = sphere.position.z + 200; }
       }
       // 星空缓慢旋转（第5关）
       if (starfieldInScene && saturnStarfield) {
