@@ -236,24 +236,7 @@
           loader.load(glbPath,
             function(gltf) {
               var model = gltf.scene;
-
-              // 保留 GLB 原始材质，只给暗色材质加一点微弱自发光辅助可见
-              model.traverse(function(child) {
-                if (child.isMesh && child.material) {
-                  var mats = Array.isArray(child.material) ? child.material : [child.material];
-                  for (var mi = 0; mi < mats.length; mi++) {
-                    var m = mats[mi];
-                    if (m.emissive) {
-                      m.emissive.set(new THREE.Color(color));
-                      m.emissiveIntensity = Math.max(m.emissiveIntensity || 0, 0.25);
-                    } else if (m.color) {
-                      m.emissive = new THREE.Color(color);
-                      m.emissiveIntensity = 0.25;
-                    }
-                    m.side = THREE.DoubleSide;
-                  }
-                }
-              });
+              // 完全保留 GLB 原始材质和颜色，不做任何修改
 
               // 缩放到适合卡片的大小
               var box = new THREE.Box3().setFromObject(model);
