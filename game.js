@@ -3824,8 +3824,8 @@ function hidePluto() {
     // ═══════════════════════════════════════════════════════
     const WIND_ZONE_LEN_MIN = 50;     // 风区最小长度 (m)
     const WIND_ZONE_LEN_MAX = 80;     // 风区最大长度 (m)
-    const WIND_ZONE_GAP_MIN = 200;    // 风区间最小间隔
-    const WIND_ZONE_GAP_MAX = 400;    // 风区间最大间隔
+    const WIND_ZONE_GAP_MIN = 60;     // 风区间最小间隔（原200，调低使侧风与冰面频率均衡）
+    const WIND_ZONE_GAP_MAX = 120;    // 风区间最大间隔（原400）
     const WIND_FIRST_ZONE_AT = 120;   // 首个风区出现距离 (m)
     const WIND_ACCEL = 12.0;          // 基础风力加速度 (m/s²)
     const WIND_STRENGTH_MIN = 0.4;    // 最小风力系数
@@ -8194,8 +8194,8 @@ function hidePluto() {
           ballX += (bhPos.x - ballX) * strength * dt * 2;
         }
         
-        // 完善：球在黑洞前方5米内就被吸入（解决冰面中心生成黑洞需等滑行结束的问题）
-        if (bhDistZ > 0 && bhDistZ < 5 && !victoryAnimActive && !gameOver) {
+        // 完善：球在黑洞前方10米内或刚过黑洞5米内就被吸入
+        if (!victoryAnimActive && !gameOver && bhDistZ < 10 && bhDistZ > -5) {
           console.log("[BLACKHOLE] Suck trigger at dist:", bhDistZ.toFixed(2));
           triggerVictoryAnim();
         }
