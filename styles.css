@@ -1240,7 +1240,7 @@
       height: 20px;
       border-radius: 10px;
       background: #00ff88;
-      color: #000;
+      color: #fff;
       font-size: 0.75rem;
       font-weight: 800;
       display: flex;
@@ -1270,3 +1270,172 @@
       background: linear-gradient(135deg, rgba(0,255,136,0.4), rgba(0,200,100,0.25));
       box-shadow: 0 0 20px rgba(0,255,136,0.3);
     }
+
+  /* ═══════════════════════════════════════
+     🛒 道具商城页样式
+     ═══════════════════════════════════════ */
+  #shop-page {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 18px;
+    padding: 30px 5vw 40px;
+    overflow-y: auto;
+  }
+  #shop-page.active { display: flex; }
+
+  .shop-title {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: 800;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 20px rgba(255, 200, 80, 0.4);
+    margin-top: 50px;
+  }
+
+  .shop-stars-display {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #ffcc44;
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 12px rgba(255, 200, 60, 0.5);
+    background: rgba(255, 200, 60, 0.1);
+    border: 1px solid rgba(255, 200, 60, 0.3);
+    border-radius: 20px;
+    padding: 6px 22px;
+    margin-bottom: 6px;
+  }
+
+  .shop-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 22px;
+    width: 100%;
+    max-width: 1100px;
+    margin-top: 8px;
+  }
+
+  /* ── 道具卡片 ── */
+  .shop-card {
+    background: rgba(20, 20, 50, 0.65);
+    border: 1px solid rgba(130, 180, 255, 0.18);
+    border-radius: 18px;
+    padding: 22px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    cursor: default;
+  }
+  .shop-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(130, 180, 255, 0.08), transparent 70%);
+    pointer-events: none;
+  }
+  .shop-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(130, 180, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(80, 120, 255, 0.18);
+  }
+
+  .shop-card-model {
+    width: 100%;
+    height: 140px;
+    border-radius: 12px;
+    background: rgba(10, 10, 30, 0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .shop-card-model canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .shop-card-name {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.04em;
+  }
+
+  .shop-card-desc {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.88);
+    text-align: center;
+    line-height: 1.5;
+    min-height: 38px;
+  }
+
+  .shop-card-price {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #ffcc44;
+    letter-spacing: 0.04em;
+  }
+
+  .shop-card-owned {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(130, 220, 255, 0.95);
+  }
+
+  .shop-buy-btn {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #4466cc, #6644bb);
+    border: none;
+    border-radius: 12px;
+    padding: 10px 28px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .shop-buy-btn:hover {
+    background: linear-gradient(135deg, #5577dd, #7755cc);
+    box-shadow: 0 0 18px rgba(100, 100, 255, 0.35);
+    transform: scale(1.04);
+  }
+  .shop-buy-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ── 模式选择页商城按钮 ── */
+  .mode-btn.shop {
+    background: linear-gradient(135deg, rgba(255,180,60,0.18), rgba(255,120,30,0.12));
+    border: 1px solid rgba(255,180,60,0.35);
+    color: #ffcc66;
+  }
+  .mode-btn.shop:hover {
+    background: linear-gradient(135deg, rgba(255,180,60,0.3), rgba(255,120,30,0.2));
+    box-shadow: 0 0 20px rgba(255,180,60,0.2);
+  }
+
+  /* ── 响应式 ── */
+  @media (max-width: 700px) {
+    .shop-cards-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .shop-card-model { height: 110px; }
+    .shop-title { margin-top: 60px; }
+  }
+  @media (max-width: 460px) {
+    .shop-cards-grid {
+      grid-template-columns: 1fr;
+    }
+  }
