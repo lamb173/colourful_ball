@@ -182,10 +182,10 @@
 
     // 道具GLB模型路径配置（放在 assets/models/ 目录下）
     var SHOP_MODEL_PATHS = {
-      revive:   'assets/models/shop_revive.glb',
-      antiSlip: 'assets/models/shop_antislip.glb',
-      windproof:'assets/models/shop_windproof.glb',
-      flight:   'assets/models/shop_flight.glb',
+      revive:   'assets/models/item_revive_capsule.glb',
+      antiSlip: 'assets/models/item_anti_slip_shell.glb',
+      windproof:'assets/windproof_jacket.glb',
+      flight:   'assets/flight_suit.glb',
     };
 
     function loadShopModel(id, color) {
