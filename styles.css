@@ -1362,17 +1362,25 @@
     font-family: 'Segoe UI', 'PingFang SC', sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
-    color: rgba(255,255,255,0.9);
+    color: rgba(255,255,255,0.95);
     letter-spacing: 0.04em;
+    background: rgba(0,0,0,0.45);
+    padding: 2px 10px;
+    border-radius: 8px;
+    display: inline-block;
   }
 
   .shop-card-desc {
     font-family: 'Segoe UI', 'PingFang SC', sans-serif;
     font-size: 0.82rem;
-    color: rgba(255,255,255,0.88);
+    color: rgba(255,255,255,0.92);
     text-align: center;
     line-height: 1.5;
     min-height: 38px;
+    background: rgba(0,0,0,0.35);
+    padding: 4px 8px;
+    border-radius: 8px;
+    display: inline-block;
   }
 
   .shop-card-price {
@@ -1381,12 +1389,20 @@
     font-weight: 700;
     color: #ffcc44;
     letter-spacing: 0.04em;
+    background: rgba(0,0,0,0.4);
+    padding: 2px 10px;
+    border-radius: 8px;
+    display: inline-block;
   }
 
   .shop-card-owned {
     font-family: 'Segoe UI', 'PingFang SC', sans-serif;
     font-size: 0.85rem;
     color: rgba(130, 220, 255, 0.95);
+    background: rgba(0,0,0,0.35);
+    padding: 2px 8px;
+    border-radius: 8px;
+    display: inline-block;
   }
 
   .shop-buy-btn {

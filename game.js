@@ -2795,7 +2795,7 @@ function hidePluto() {
       for (let i = 0; i < nebulaCount; i++) {
         npos[i*3] = (Math.random()-0.5)*600;
         npos[i*3+1] = (Math.random()-0.5)*600;
-        npos[i*3+2] = -200 - Math.random()*400;
+        npos[i*3+2] = (Math.random()-0.5)*800;  // 双向分布：-400~+400
         // 深紫/深蓝/深红
         const c = new THREE.Color().setHSL(0.7+Math.random()*0.3, 0.5, 0.08+Math.random()*0.07);
         ncolors[i*3]   = c.r;
@@ -2816,7 +2816,7 @@ function hidePluto() {
       for (let i = 0; i < starCount2; i++) {
         spos2[i*3] = (Math.random()-0.5)*1200;
         spos2[i*3+1] = (Math.random()-0.5)*1200;
-        spos2[i*3+2] = -300 - Math.random()*500;
+        spos2[i*3+2] = (Math.random()-0.5)*1400;  // 双向分布：-700~+700
         const brightness = 0.3+Math.random()*0.7;
         scolors2[i*3]   = brightness;
         scolors2[i*3+1] = brightness;
@@ -2837,7 +2837,7 @@ function hidePluto() {
       for (let i = 0; i < bCount; i++) {
         bpos[i*3] = (Math.random()-0.5)*800;
         bpos[i*3+1] = (Math.random()-0.5)*800;
-        bpos[i*3+2] = -250 - Math.random()*300;
+        bpos[i*3+2] = (Math.random()-0.5)*600;  // 双向分布：-300~+300
         const hue = Math.random();
         const c = new THREE.Color().setHSL(hue, 0.6, 0.7);
         bcolors[i*3]   = c.r;
@@ -2876,7 +2876,7 @@ function hidePluto() {
         const radius = 20 + (i/ringCount)*250;
         rpos[i*3]   = Math.cos(angle)*radius;
         rpos[i*3+1] = Math.sin(angle*0.3)*30;
-        rpos[i*3+2] = Math.sin(angle)*radius - 200;
+        rpos[i*3+2] = Math.sin(angle)*radius;  // 环绕中心，双向分布
         const c = new THREE.Color().setHSL((i/ringCount)*0.4, 0.9, 0.5);
         rcolors[i*3]   = c.r;
         rcolors[i*3+1] = c.g;
@@ -2892,7 +2892,7 @@ function hidePluto() {
       const beamGeo = new THREE.CylinderGeometry(5, 25, 500, 32, 1, true);
       const beamMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.15, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
       const beam = new THREE.Mesh(beamGeo, beamMat);
-      beam.position.set(0, 0, -300);
+      beam.position.set(0, 0, 0);  // 跟随球，不需偏移
       group.add(beam);
 
       // 散射粒子
@@ -2903,7 +2903,7 @@ function hidePluto() {
       for (let i = 0; i < scatCount; i++) {
         scatPos[i*3]   = (Math.random()-0.5)*300;
         scatPos[i*3+1] = (Math.random()-0.5)*300;
-        scatPos[i*3+2] = -100 - Math.random()*400;
+        scatPos[i*3+2] = (Math.random()-0.5)*600;  // 双向分布：-300~+300
         const c = new THREE.Color().setHSL(0.55, 0.8, 0.6);
         scatCol[i*3]   = c.r;
         scatCol[i*3+1] = c.g;
@@ -2938,7 +2938,7 @@ function hidePluto() {
       for (let i = 0; i < iceCount; i++) {
         ipos[i*3]   = (Math.random()-0.5)*700;
         ipos[i*3+1] = (Math.random()-0.5)*700;
-        ipos[i*3+2] = -150 - Math.random()*500;
+        ipos[i*3+2] = (Math.random()-0.5)*1000;  // 双向分布：-500~+500
         const b = 0.7+Math.random()*0.3;
         icolors[i*3]   = b*0.7;
         icolors[i*3+1] = b*0.85;
@@ -2961,7 +2961,7 @@ function hidePluto() {
         const dist = 100+Math.random()*200;
         tpos[i*3]   = Math.cos(angle)*dist;
         tpos[i*3+1] = (Math.random()-0.5)*200;
-        tpos[i*3+2] = -200 - Math.random()*300;
+        tpos[i*3+2] = (Math.random()-0.5)*500;  // 双向分布：-250~+250
       }
       trailGeo.setAttribute('position', new THREE.BufferAttribute(tpos, 3));
       const trailMat = new THREE.PointsMaterial({ color: 0xaaddff, size: 6, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -2972,7 +2972,7 @@ function hidePluto() {
       const diskGeo = new THREE.RingGeometry(80, 200, 64);
       const diskMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
       const disk = new THREE.Mesh(diskGeo, diskMat);
-      disk.position.set(0, 0, -350);
+      disk.position.set(0, 0, 0);  // 跟随球，不需偏移
       disk.rotation.x = Math.PI/2;
       group.add(disk);
 
@@ -3002,7 +3002,7 @@ function hidePluto() {
         const r     = 50 + Math.random()*300;
         fpos[i*3]   = Math.sin(phi)*Math.cos(theta)*r;
         fpos[i*3+1] = Math.sin(phi)*Math.sin(theta)*r;
-        fpos[i*3+2] = Math.cos(phi)*r - 250;
+        fpos[i*3+2] = Math.cos(phi)*r;  // 球坐标，双向分布
         const c = new THREE.Color().setHSL(0.05+Math.random()*0.15, 1.0, 0.4+Math.random()*0.4);
         fcolors[i*3]   = c.r;
         fcolors[i*3+1] = c.g;
@@ -3020,14 +3020,14 @@ function hidePluto() {
       const shellGeo = new THREE.SphereGeometry(150, 64, 64);
       const shellMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.06, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, wireframe: false });
       const shell = new THREE.Mesh(shellGeo, shellMat);
-      shell.position.set(0, 0, -250);
+      shell.position.set(0, 0, 0);  // 跟随球，不需偏移
       group.add(shell);
 
       // 中心白矮星
       const coreGeo = new THREE.SphereGeometry(8, 32, 32);
       const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
       const core = new THREE.Mesh(coreGeo, coreMat);
-      core.position.set(0, 0, -250);
+      core.position.set(0, 0, 0);  // 跟随球，不需偏移
       group.add(core);
 
       // 放射线条
@@ -3038,7 +3038,7 @@ function hidePluto() {
         const dir = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
         raypos[i*3]   = dir.x * (5 + Math.random()*20);
         raypos[i*3+1] = dir.y * (5 + Math.random()*20);
-        raypos[i*3+2] = dir.z * (5 + Math.random()*20) - 250;
+        raypos[i*3+2] = dir.z * (5 + Math.random()*20);  // 双向分布
       }
       rayGeo.setAttribute('position', new THREE.BufferAttribute(raypos, 3));
       const rayMat = new THREE.PointsMaterial({ color: 0xffaa44, size: 3, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -3067,7 +3067,7 @@ function hidePluto() {
         const hue = 0.1 + ri*0.15;
         const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(hue, 0.5, 0.4), transparent: true, opacity: 0.18 - ri*0.04, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.set(0, 0, -300);
+        ringMesh.position.set(0, 0, 0);  // 跟随球，不需偏移
         ringMesh.rotation.x = Math.PI/2 + (ri-1)*0.15;
         ringMesh.rotation.z = ri * 0.3;
         ringMesh.userData = { baseRotationZ: ri*0.3, rotationSpeed: 0.001 + ri*0.0005 };
@@ -3086,7 +3086,7 @@ function hidePluto() {
         const r = 65 + Math.random()*120;
         dpos[i*3]   = Math.cos(angle)*r;
         dpos[i*3+1] = (Math.random()-0.5)*8;
-        dpos[i*3+2] = Math.sin(angle)*r - 300;
+        dpos[i*3+2] = Math.sin(angle)*r;  // 双向分布：-r~+r
         const c = new THREE.Color().setHSL(0.08, 0.3, 0.5+Math.random()*0.3);
         dcolors[i*3]   = c.r;
         dcolors[i*3+1] = c.g;
@@ -3102,7 +3102,7 @@ function hidePluto() {
       const planetGeo = new THREE.SphereGeometry(40, 32, 32);
       const planetMat = new THREE.MeshBasicMaterial({ color: 0xcc6633, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false });
       const planet = new THREE.Mesh(planetGeo, planetMat);
-      planet.position.set(200, 80, -500);
+      planet.position.set(200, 80, -800);  // 远景行星，在球后方
       group.add(planet);
 
       group.userData = { debris, planet, rings: group.userData.rings || [], type: 'bg4', time: 0 };
@@ -3148,6 +3148,9 @@ function hidePluto() {
       if (!obj) return;
       const bgGroup = endlessBgGroups[idx];
       if (!bgGroup || !bgGroup.visible) return;
+
+      // 背景跟随球：让粒子始终围绕球，不会走远就消失
+      bgGroup.position.z = ballZ;
 
       obj.time += dt;
 
