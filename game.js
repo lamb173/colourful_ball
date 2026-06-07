@@ -2977,7 +2977,7 @@ function hidePluto() {
       // disk.rotation.x = Math.PI/2;
       // group.add(disk);
 
-      group.userData = { ice, trails, disk, type: 'bg2', time: 0 };
+      group.userData = { ice, trails, type: 'bg2', time: 0 };
       endlessBgObjects[2] = group.userData;
       scene.add(group);
       endlessBgGroups[2] = group;
