@@ -7520,6 +7520,8 @@ function hidePluto() {
         if (uranusBgInScene && uranusBgGroup) uranusBgGroup.position.z = sphere.position.z;
         if (neptuneBgInScene && neptuneBgGroup) neptuneBgGroup.position.z = sphere.position.z;
         if (plutoBgInScene && plutoBgGroup) plutoBgGroup.position.z = sphere.position.z;
+        if (stage9BgInScene && stage9BgGroup) stage9BgGroup.position.z = sphere.position.z;
+        if (stage10BgInScene && stage10BgGroup) stage10BgGroup.position.z = sphere.position.z;
       }
       // 云朵缓慢漂移（地球关卡）
       if (earthBgInScene && earthBgGroup && earthBgGroup.userData && earthBgGroup.userData.clouds) {
