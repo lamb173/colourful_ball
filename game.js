@@ -79,6 +79,15 @@
       var sp = document.getElementById('shop-page');
       if (mp) { mp.classList.remove('active'); mp.style.display = 'none'; }
       if (sp) { sp.style.display = 'flex'; sp.classList.add('active'); }
+      // 页面显示后再加载3D模型预览（避免隐藏状态下clientWidth为0）
+      setTimeout(function() {
+        SHOP_ITEMS.forEach(function(item) {
+          var container = document.getElementById('shop-model-' + item.id);
+          if (container && container.innerHTML === '') {
+            loadShopModel(item.id, item.color);
+          }
+        });
+      }, 50);
       updateShopUI();
       console.log('[SHOP] Opened shop page');
     }
@@ -123,8 +132,7 @@
           var btn = document.getElementById('shop-buy-' + it.id);
           if (btn) btn.addEventListener('click', function() { buyItem(it.id); });
         })(item);
-        // 加载道具3D模型预览
-        loadShopModel(item.id, item.color);
+        // 3D模型预览在 openShopPage 时加载（避免隐藏状态下clientWidth为0）
       });
       updateShopUI();
     }
