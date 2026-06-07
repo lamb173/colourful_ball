@@ -2938,17 +2938,17 @@ function hidePluto() {
       for (let i = 0; i < iceCount; i++) {
         ipos[i*3]   = (Math.random()-0.5)*700;
         ipos[i*3+1] = (Math.random()-0.5)*700;
-        ipos[i*3+2] = (Math.random()-0.5)*1000;  // 双向分布：-500~+500
+        ipos[i*3+2] = -Math.random()*1000;  // 只生成在球后方，不挡视线
         const b = 0.7+Math.random()*0.3;
         icolors[i*3]   = b*0.7;
         icolors[i*3+1] = b*0.85;
         icolors[i*3+2] = b;
-        isizes[i] = 0.5 + Math.random()*2;
+        isizes[i] = 0.2 + Math.random()*0.6;
       }
       iceGeo.setAttribute('position', new THREE.BufferAttribute(ipos, 3));
       iceGeo.setAttribute('color',    new THREE.BufferAttribute(icolors, 3));
       iceGeo.setAttribute('size',      new THREE.BufferAttribute(isizes, 1));
-      const iceMat = new THREE.PointsMaterial({ size: 1.5, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+      const iceMat = new THREE.PointsMaterial({ size: 0.5, vertexColors: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false });
       const ice = new THREE.Points(iceGeo, iceMat);
       group.add(ice);
 
@@ -2961,18 +2961,19 @@ function hidePluto() {
         const dist = 100+Math.random()*200;
         tpos[i*3]   = Math.cos(angle)*dist;
         tpos[i*3+1] = (Math.random()-0.5)*200;
-        tpos[i*3+2] = (Math.random()-0.5)*500;  // 双向分布：-250~+250
+        tpos[i*3+2] = -Math.random()*500;  // 只生成在球后方，不挡视线
       }
       trailGeo.setAttribute('position', new THREE.BufferAttribute(tpos, 3));
-      const trailMat = new THREE.PointsMaterial({ color: 0xaaddff, size: 6, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
+      const trailMat = new THREE.PointsMaterial({ color: 0xaaddff, size: 1.5, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false });
       const trails = new THREE.Points(trailGeo, trailMat);
       group.add(trails);
 
-      // 冰盘（扁平环状）
+      // 冰盘（扁平环状，固定在球后方远处，不挡视线）
+      const diskZ = -600;  // 固定在球后方 600 单位，不跟随球
       const diskGeo = new THREE.RingGeometry(80, 200, 64);
-      const diskMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+      const diskMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.05, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
       const disk = new THREE.Mesh(diskGeo, diskMat);
-      disk.position.set(0, 0, 0);  // 跟随球，不需偏移
+      disk.position.set(0, 0, diskZ);
       disk.rotation.x = Math.PI/2;
       group.add(disk);
 
