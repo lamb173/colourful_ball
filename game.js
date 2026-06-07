@@ -3007,130 +3007,150 @@ function hidePluto() {
       const group = new THREE.Group();
       group.visible = false;
 
-      // 爆炸碎片粒子
+      // 第1层：大尺寸超新星粒子（模仿 BG0 的 nebula 层）
       const fragGeo = new THREE.BufferGeometry();
-      const fCount = 3000;
-      const fpos = new Float32Array(fCount*3);
-      const fcolors = new Float32Array(fCount*3);
-      const fsizes = new Float32Array(fCount);
-      for (let i = 0; i < fCount; i++) {
-        const theta = Math.random()*Math.PI*2;
-        const phi   = Math.random()*Math.PI;
-        const r     = 50 + Math.random()*300;
-        fpos[i*3]   = Math.sin(phi)*Math.cos(theta)*r;
-        fpos[i*3+1] = Math.sin(phi)*Math.sin(theta)*r;
-        fpos[i*3+2] = Math.cos(phi)*r;  // 球坐标，双向分布
-        const c = new THREE.Color().setHSL(0.05+Math.random()*0.15, 1.0, 0.4+Math.random()*0.4);
+      const fragCount = 600;
+      const fpos = new Float32Array(fragCount*3);
+      const fcolors = new Float32Array(fragCount*3);
+      for (let i = 0; i < fragCount; i++) {
+        fpos[i*3]   = (Math.random()-0.5)*600;
+        fpos[i*3+1] = (Math.random()-0.5)*600;
+        fpos[i*3+2] = (Math.random()-0.5)*800;  // 双向分布：-400~+400
+        const c = new THREE.Color().setHSL(0.05+Math.random()*0.15, 1.0, 0.08+Math.random()*0.07);
         fcolors[i*3]   = c.r;
         fcolors[i*3+1] = c.g;
         fcolors[i*3+2] = c.b;
-        fsizes[i] = 1 + Math.random()*3;
       }
       fragGeo.setAttribute('position', new THREE.BufferAttribute(fpos, 3));
       fragGeo.setAttribute('color',    new THREE.BufferAttribute(fcolors, 3));
-      fragGeo.setAttribute('size',      new THREE.BufferAttribute(fsizes, 1));
-      const fragMat = new THREE.PointsMaterial({ size: 2, vertexColors: true, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+      const fragMat = new THREE.PointsMaterial({ size: 8, vertexColors: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
       const frag = new THREE.Points(fragGeo, fragMat);
       group.add(frag);
 
-      // 冲击波球壳
-      const shellGeo = new THREE.SphereGeometry(150, 64, 64);
-      const shellMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.06, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, wireframe: false });
-      const shell = new THREE.Mesh(shellGeo, shellMat);
-      shell.position.set(0, 0, 0);  // 跟随球，不需偏移
-      group.add(shell);
-
-      // 中心白矮星
-      const coreGeo = new THREE.SphereGeometry(8, 32, 32);
-      const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
-      const core = new THREE.Mesh(coreGeo, coreMat);
-      core.position.set(0, 0, 0);  // 跟随球，不需偏移
-      group.add(core);
-
-      // 放射线条
-      const rayGeo = new THREE.BufferGeometry();
-      const rayCount = 200;
-      const raypos = new Float32Array(rayCount*3);
-      for (let i = 0; i < rayCount; i++) {
-        const dir = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
-        raypos[i*3]   = dir.x * (5 + Math.random()*20);
-        raypos[i*3+1] = dir.y * (5 + Math.random()*20);
-        raypos[i*3+2] = dir.z * (5 + Math.random()*20);  // 双向分布
+      // 第2层：密集小粒子（模仿 BG0 的 stars2 层）
+      const sparkGeo = new THREE.BufferGeometry();
+      const sparkCount = 3000;
+      const spos2 = new Float32Array(sparkCount*3);
+      const scolors2 = new Float32Array(sparkCount*3);
+      for (let i = 0; i < sparkCount; i++) {
+        spos2[i*3]   = (Math.random()-0.5)*1200;
+        spos2[i*3+1] = (Math.random()-0.5)*1200;
+        spos2[i*3+2] = (Math.random()-0.5)*1400;  // 双向分布：-700~+700
+        const brightness = 0.3+Math.random()*0.7;
+        scolors2[i*3]   = brightness;
+        scolors2[i*3+1] = brightness;
+        scolors2[i*3+2] = brightness;
       }
-      rayGeo.setAttribute('position', new THREE.BufferAttribute(raypos, 3));
-      const rayMat = new THREE.PointsMaterial({ color: 0xffaa44, size: 3, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
-      const rays = new THREE.Points(rayGeo, rayMat);
-      group.add(rays);
+      sparkGeo.setAttribute('position', new THREE.BufferAttribute(spos2, 3));
+      sparkGeo.setAttribute('color',    new THREE.BufferAttribute(scolors2, 3));
+      const sparkMat = new THREE.PointsMaterial({ size: 1.2, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false });
+      const spark = new THREE.Points(sparkGeo, sparkMat);
+      group.add(spark);
 
-      group.userData = { frag, shell, core, rays, type: 'bg3', time: 0, shellScale: 1.0 };
+      // 第3层：中大尺寸亮粒子（模仿 BG0 的 bStars 层）
+      const brightGeo = new THREE.BufferGeometry();
+      const bCount = 80;
+      const bpos = new Float32Array(bCount*3);
+      const bcolors = new Float32Array(bCount*3);
+      const bsizes = new Float32Array(bCount);
+      for (let i = 0; i < bCount; i++) {
+        bpos[i*3]   = (Math.random()-0.5)*800;
+        bpos[i*3+1] = (Math.random()-0.5)*800;
+        bpos[i*3+2] = (Math.random()-0.5)*600;  // 双向分布：-300~+300
+        const c = new THREE.Color().setHSL(0.05+Math.random()*0.15, 0.6, 0.7);
+        bcolors[i*3]   = c.r;
+        bcolors[i*3+1] = c.g;
+        bcolors[i*3+2] = c.b;
+        bsizes[i] = 2 + Math.random()*4;
+      }
+      brightGeo.setAttribute('position', new THREE.BufferAttribute(bpos, 3));
+      brightGeo.setAttribute('color',    new THREE.BufferAttribute(bcolors, 3));
+      brightGeo.setAttribute('size',      new THREE.BufferAttribute(bsizes, 1));
+      const brightMat = new THREE.PointsMaterial({ size: 3, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+      const bright = new THREE.Points(brightGeo, brightMat);
+      group.add(bright);
+
+      group.userData = { frag, spark, bright, type: 'bg3', time: 0 };
       endlessBgObjects[3] = group.userData;
       scene.add(group);
       endlessBgGroups[3] = group;
-      console.log('[BG3] Supernova Remnant created');
+      console.log('[BG3] Supernova Remnant created (3 layers, bidirectional)');
       return group;
-    }
-
-    // ── 背景4：行星环系统 (3600-4500m, 然后循环) ──────────────────────────────
-    function createEndlessBg4() {
+    }    function createEndlessBg4() {
       if (endlessBgGroups[4]) return endlessBgGroups[4];
       const group = new THREE.Group();
       group.visible = false;
 
-      // 行星环（多个环状带）
-      for (let ri = 0; ri < 3; ri++) {
-        const innerR = 60 + ri*50;
-        const outerR = innerR + 30 + ri*10;
-        const ringGeo = new THREE.RingGeometry(innerR, outerR, 128);
-        const hue = 0.1 + ri*0.15;
-        const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(hue, 0.5, 0.4), transparent: true, opacity: 0.18 - ri*0.04, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.set(0, 0, 0);  // 跟随球，不需偏移
-        ringMesh.rotation.x = Math.PI/2 + (ri-1)*0.15;
-        ringMesh.rotation.z = ri * 0.3;
-        ringMesh.userData = { baseRotationZ: ri*0.3, rotationSpeed: 0.001 + ri*0.0005 };
-        group.add(ringMesh);
-        if (!group.userData.rings) group.userData.rings = [];
-        group.userData.rings.push(ringMesh);
+      // 第1层：大尺寸行星环粒子（模仿 BG0 的 nebula 层）
+      const ringGeo = new THREE.BufferGeometry();
+      const ringCount = 600;
+      const rpos = new Float32Array(ringCount*3);
+      const rcolors = new Float32Array(ringCount*3);
+      for (let i = 0; i < ringCount; i++) {
+        rpos[i*3]   = (Math.random()-0.5)*600;
+        rpos[i*3+1] = (Math.random()-0.5)*600;
+        rpos[i*3+2] = (Math.random()-0.5)*800;  // 双向分布：-400~+400
+        const c = new THREE.Color().setHSL(0.08+Math.random()*0.12, 0.6, 0.08+Math.random()*0.07);
+        rcolors[i*3]   = c.r;
+        rcolors[i*3+1] = c.g;
+        rcolors[i*3+2] = c.b;
       }
+      ringGeo.setAttribute('position', new THREE.BufferAttribute(rpos, 3));
+      ringGeo.setAttribute('color',    new THREE.BufferAttribute(rcolors, 3));
+      const ringMat = new THREE.PointsMaterial({ size: 8, vertexColors: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
+      const ring = new THREE.Points(ringGeo, ringMat);
+      group.add(ring);
 
-      // 环中碎石粒子
-      const debrisGeo = new THREE.BufferGeometry();
-      const dCount = 2000;
-      const dpos = new Float32Array(dCount*3);
-      const dcolors = new Float32Array(dCount*3);
-      for (let i = 0; i < dCount; i++) {
-        const angle = Math.random()*Math.PI*2;
-        const r = 65 + Math.random()*120;
-        dpos[i*3]   = Math.cos(angle)*r;
-        dpos[i*3+1] = (Math.random()-0.5)*8;
-        dpos[i*3+2] = Math.sin(angle)*r;  // 双向分布：-r~+r
-        const c = new THREE.Color().setHSL(0.08, 0.3, 0.5+Math.random()*0.3);
-        dcolors[i*3]   = c.r;
-        dcolors[i*3+1] = c.g;
-        dcolors[i*3+2] = c.b;
+      // 第2层：密集小粒子（模仿 BG0 的 stars2 层）
+      const dustGeo = new THREE.BufferGeometry();
+      const dustCount = 3000;
+      const dpos2 = new Float32Array(dustCount*3);
+      const dcolors2 = new Float32Array(dustCount*3);
+      for (let i = 0; i < dustCount; i++) {
+        dpos2[i*3]   = (Math.random()-0.5)*1200;
+        dpos2[i*3+1] = (Math.random()-0.5)*1200;
+        dpos2[i*3+2] = (Math.random()-0.5)*1400;  // 双向分布：-700~+700
+        const brightness = 0.3+Math.random()*0.7;
+        dcolors2[i*3]   = brightness;
+        dcolors2[i*3+1] = brightness;
+        dcolors2[i*3+2] = brightness;
       }
-      debrisGeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3));
-      debrisGeo.setAttribute('color',    new THREE.BufferAttribute(dcolors, 3));
-      const debrisMat = new THREE.PointsMaterial({ size: 1.8, vertexColors: true, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false });
-      const debris = new THREE.Points(debrisGeo, debrisMat);
-      group.add(debris);
+      dustGeo.setAttribute('position', new THREE.BufferAttribute(dpos2, 3));
+      dustGeo.setAttribute('color',    new THREE.BufferAttribute(dcolors2, 3));
+      const dustMat = new THREE.PointsMaterial({ size: 1.2, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false });
+      const dust = new THREE.Points(dustGeo, dustMat);
+      group.add(dust);
 
-      // 远处行星（大气球）
-      const planetGeo = new THREE.SphereGeometry(40, 32, 32);
-      const planetMat = new THREE.MeshBasicMaterial({ color: 0xcc6633, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false });
-      const planet = new THREE.Mesh(planetGeo, planetMat);
-      planet.position.set(200, 80, -800);  // 远景行星，在球后方
-      group.add(planet);
+      // 第3层：中大尺寸亮粒子（模仿 BG0 的 bStars 层）
+      const brightGeo = new THREE.BufferGeometry();
+      const bCount = 80;
+      const bpos = new Float32Array(bCount*3);
+      const bcolors = new Float32Array(bCount*3);
+      const bsizes = new Float32Array(bCount);
+      for (let i = 0; i < bCount; i++) {
+        bpos[i*3]   = (Math.random()-0.5)*800;
+        bpos[i*3+1] = (Math.random()-0.5)*800;
+        bpos[i*3+2] = (Math.random()-0.5)*600;  // 双向分布：-300~+300
+        const c = new THREE.Color().setHSL(0.08+Math.random()*0.12, 0.6, 0.7);
+        bcolors[i*3]   = c.r;
+        bcolors[i*3+1] = c.g;
+        bcolors[i*3+2] = c.b;
+        bsizes[i] = 2 + Math.random()*4;
+      }
+      brightGeo.setAttribute('position', new THREE.BufferAttribute(bpos, 3));
+      brightGeo.setAttribute('color',    new THREE.BufferAttribute(bcolors, 3));
+      brightGeo.setAttribute('size',      new THREE.BufferAttribute(bsizes, 1));
+      const brightMat = new THREE.PointsMaterial({ size: 3, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+      const bright = new THREE.Points(brightGeo, brightMat);
+      group.add(bright);
 
-      group.userData = { debris, planet, rings: group.userData.rings || [], type: 'bg4', time: 0 };
+      group.userData = { ring, dust, bright, type: 'bg4', time: 0 };
       endlessBgObjects[4] = group.userData;
       scene.add(group);
       endlessBgGroups[4] = group;
-      console.log('[BG4] Planetary Ring System created');
+      console.log('[BG4] Planetary Ring System created (3 layers, bidirectional)');
       return group;
     }
-
-    // ── 切换背景 ────────────────────────────────────────────────────────────────
     function switchEndlessBg(newIndex) {
       if (newIndex < 0 || newIndex > 4) return;
       if (newIndex === currentEndlessBgIndex) return;
@@ -3192,23 +3212,16 @@ function hidePluto() {
           if (obj.ice) obj.ice.rotation.y = t * 0.02;
           break;
         }
-        case 3: { // 超新星残骸：碎片扩散 + 球壳膨胀
-          if (obj.frag) obj.frag.rotation.y = t * 0.04;
-          if (obj.shell) {
-            obj.shellScale = 1.0 + Math.sin(t*0.5)*0.15;
-            obj.shell.scale.setScalar(obj.shellScale);
-            obj.shell.material.opacity = 0.06 + Math.sin(t*1.2)*0.03;
-          }
-          if (obj.core) obj.core.material.opacity = 0.7 + Math.sin(t*3.0)*0.2;
+        case 3: { // 超新星残骸：三层粒子缓慢旋转
+          if (obj.frag)  obj.frag.rotation.y  = t * 0.008;
+          if (obj.spark) obj.spark.rotation.y = t * 0.012;
+          if (obj.bright) obj.bright.rotation.y = t * 0.015;
           break;
         }
-        case 4: { // 行星环：环旋转 + 碎石公转
-          if (obj.rings) {
-            obj.rings.forEach(ring => {
-              ring.rotation.z += (ring.userData.rotationSpeed || 0.001) * 60 * dt;
-            });
-          }
-          if (obj.debris) obj.debris.rotation.y = t * 0.015;
+        case 4: { // 行星环系统：三层粒子缓慢旋转
+          if (obj.ring)  obj.ring.rotation.y  = t * 0.008;
+          if (obj.dust)  obj.dust.rotation.y  = t * 0.012;
+          if (obj.bright) obj.bright.rotation.y = t * 0.015;
           break;
         }
       }
