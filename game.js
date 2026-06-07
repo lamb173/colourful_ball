@@ -2938,7 +2938,7 @@ function hidePluto() {
       for (let i = 0; i < iceCount; i++) {
         ipos[i*3]   = (Math.random()-0.5)*700;
         ipos[i*3+1] = (Math.random()-0.5)*700;
-        ipos[i*3+2] = -Math.random()*1000;  // 只生成在球后方，不挡视线
+        ipos[i*3+2] = -100 - Math.random()*900;  // 只在球后方100~1000单位，避开相机视野
         const b = 0.7+Math.random()*0.3;
         icolors[i*3]   = b*0.7;
         icolors[i*3+1] = b*0.85;
@@ -2961,21 +2961,21 @@ function hidePluto() {
         const dist = 100+Math.random()*200;
         tpos[i*3]   = Math.cos(angle)*dist;
         tpos[i*3+1] = (Math.random()-0.5)*200;
-        tpos[i*3+2] = -Math.random()*500;  // 只生成在球后方，不挡视线
+        tpos[i*3+2] = -200 - Math.random()*300;  // 只在球后方200~500单位，避开相机视野
       }
       trailGeo.setAttribute('position', new THREE.BufferAttribute(tpos, 3));
       const trailMat = new THREE.PointsMaterial({ color: 0xaaddff, size: 1.5, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false });
       const trails = new THREE.Points(trailGeo, trailMat);
       group.add(trails);
 
-      // 冰盘（扁平环状，固定在球后方远处，不挡视线）
-      const diskZ = -600;  // 固定在球后方 600 单位，不跟随球
-      const diskGeo = new THREE.RingGeometry(80, 200, 64);
-      const diskMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.05, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
-      const disk = new THREE.Mesh(diskGeo, diskMat);
-      disk.position.set(0, 0, diskZ);
-      disk.rotation.x = Math.PI/2;
-      group.add(disk);
+      // 冰盘（暂注释，排查是否导致 BG2 一圈光挡视线）
+      // const diskZ = -600;
+      // const diskGeo = new THREE.RingGeometry(80, 200, 64);
+      // const diskMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.05, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+      // const disk = new THREE.Mesh(diskGeo, diskMat);
+      // disk.position.set(0, 0, diskZ);
+      // disk.rotation.x = Math.PI/2;
+      // group.add(disk);
 
       group.userData = { ice, trails, disk, type: 'bg2', time: 0 };
       endlessBgObjects[2] = group.userData;
@@ -3172,9 +3172,8 @@ function hidePluto() {
           if (obj.scat) obj.scat.rotation.y = t * 0.05;
           break;
         }
-        case 2: { // 冰冻彗星带：冰晶旋转 + 彗星移动
+        case 2: { // 冰冻彗星带：冰晶旋转（冰盘已移除）
           if (obj.ice) obj.ice.rotation.y = t * 0.02;
-          if (obj.disk) obj.disk.rotation.z = t * 0.01;
           break;
         }
         case 3: { // 超新星残骸：碎片扩散 + 球壳膨胀
@@ -8446,13 +8445,14 @@ function hidePluto() {
       pathChoiceActive = false;
       hidePathChoice();
       // isPaused 保持 true — 等倒计时结束再由回调恢复
-      // 设置下一个检查点
-      nextPathCheckpoint = nextPathCheckpoint + 900;
       // 切换无尽模式背景（每900m换一个，5个循环）
+      // 注意：必须先算 bgIndex，再更新 nextPathCheckpoint，否则会跳过 BG1
       {
         const newBgIndex = Math.floor(nextPathCheckpoint / 900) % 5;
         switchEndlessBg(newBgIndex);
       }
+      // 设置下一个检查点（必须在 bgIndex 计算之后）
+      nextPathCheckpoint = nextPathCheckpoint + 900;
       // 重置本段相位计数（每个900m段独立计算）
       const phaseBase = getCurrentPhase(ballZ);
       currentPhase = phaseBase;
