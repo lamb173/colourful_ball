@@ -236,26 +236,22 @@
           loader.load(glbPath,
             function(gltf) {
               var model = gltf.scene;
-              // 强制所有 Mesh 使用明亮自发光材质，确保绝对可见
-              var visibleMat = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(color),
-                metalness: 0.3,
-                roughness: 0.4,
-                emissive: new THREE.Color(color),
-                emissiveIntensity: 0.8,
-              });
+
+              // 保留 GLB 原始材质，只给暗色材质加一点微弱自发光辅助可见
               model.traverse(function(child) {
-                if (child.isMesh) {
-                  // 处理 material 可能是数组的情况
-                  if (Array.isArray(child.material)) {
-                    for (var mi = 0; mi < child.material.length; mi++) {
-                      child.material[mi].dispose();
+                if (child.isMesh && child.material) {
+                  var mats = Array.isArray(child.material) ? child.material : [child.material];
+                  for (var mi = 0; mi < mats.length; mi++) {
+                    var m = mats[mi];
+                    if (m.emissive) {
+                      m.emissive.set(new THREE.Color(color));
+                      m.emissiveIntensity = Math.max(m.emissiveIntensity || 0, 0.25);
+                    } else if (m.color) {
+                      m.emissive = new THREE.Color(color);
+                      m.emissiveIntensity = 0.25;
                     }
-                  } else if (child.material) {
-                    child.material.dispose();
+                    m.side = THREE.DoubleSide;
                   }
-                  child.material = visibleMat;
-                  child.material.side = THREE.DoubleSide; // 双面渲染，防止背面不可见
                 }
               });
 
@@ -274,13 +270,6 @@
               // 居中：避免原地修改向量导致意外
               var center = box.getCenter(new THREE.Vector3());
               model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
-
-              // 加一个测试小方块，确认场景在渲染
-              var testGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
-              var testMat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
-              var testCube = new THREE.Mesh(testGeo, testMat);
-              testCube.position.set(0.8, 0.8, 0);
-              model.add(testCube);
 
               scene2.add(model);
               console.log('[SHOP] GLB loaded for ' + id + ' scale=' + scale.toFixed(4) + ' pos=(' + model.position.x.toFixed(2) + ',' + model.position.y.toFixed(2) + ',' + model.position.z.toFixed(2) + ')');
