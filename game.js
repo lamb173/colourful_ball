@@ -5971,8 +5971,9 @@ function hidePluto() {
     }, { passive: true });
 
     // ════════════════════════════════════════════════════
-    //  F键激活飞行器
-    // ════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════
+    //  F键/手机触摸 激活飞行器
+    // ═══════════════════════════════════════════════════════
     document.addEventListener('keydown', (e) => {
       // 调试日志：检查所有条件
       if (e.code === 'KeyF') {
@@ -5989,8 +5990,38 @@ function hidePluto() {
       }
     });
 
+    // 手机触摸：点击飞行器道具栏等效于按 F 键
+    function setupMobileItemTouch() {
+      const flightSlot = document.getElementById('item-flight-slot');
+      if (flightSlot) {
+        flightSlot.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (itemFlightCount > 0 && !flightActive && !gameOver && gameStarted) {
+            consumeItem("flight");
+            flightActive = true;
+            flightDistance = 0;
+            flightStartZ = ballZ;
+            updateItemUI();
+            showItemNotification('飞行器激活！飞行150米！');
+            console.log('[ITEM] Flight suit activated via touch');
+          }
+        }, { passive: false });
+        flightSlot.addEventListener('click', (e) => {
+          if (itemFlightCount > 0 && !flightActive && !gameOver && gameStarted) {
+            consumeItem("flight");
+            flightActive = true;
+            flightDistance = 0;
+            flightStartZ = ballZ;
+            updateItemUI();
+            showItemNotification('飞行器激活！飞行150米！');
+            console.log('[ITEM] Flight suit activated via click');
+          }
+        });
+      }
+    }
+    setTimeout(setupMobileItemTouch, 500);
 
-    // ═══════════════════════════════════════════════════════
     //  动画辅助
     // ═══════════════════════════════════════════════════════
     const _v3 = new THREE.Vector3();

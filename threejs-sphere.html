@@ -138,6 +138,13 @@
     </div>
   </div>
 
+  <!-- 横屏提示（手机竖屏时显示） -->
+  <div id="landscape-hint">
+    <div class="hint-icon">📱</div>
+    <div class="hint-text">请横屏游玩</div>
+    <div class="hint-sub">将手机旋转至横屏方向以获得最佳体验</div>
+  </div>
+
   <!-- 左上角距离显示 -->
   <div id="distance-board">
     <div id="dist-current">0<span class="dist-unit">m</span></div>
@@ -240,8 +247,8 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="three.min.js"></script>
+  <script src="GLTFLoader_local.js"></script>
   <script src="game.js?v=20.39"></script>
   <!-- 调试：错误显示 -->
 </body>

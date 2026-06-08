@@ -1547,9 +1547,98 @@
     }
     .shop-card-model { height: 110px; }
     .shop-title { margin-top: 60px; }
+
+    /* 手机：道具栏移到右下角，加大尺寸 */
+    #items-bar {
+      left: auto;
+      right: 16px;
+      bottom: 16px;
+      flex-direction: row;
+      gap: 8px;
+    }
+    .item-slot {
+      width: 56px;
+      height: 56px;
+      pointer-events: auto;  /* 手机允许点击 */
+    }
+    .item-icon {
+      font-size: 1.8rem;
+    }
+    .item-count {
+      min-width: 22px;
+      height: 22px;
+      font-size: 0.8rem;
+      top: -8px;
+      right: -8px;
+    }
+
+    /* 三分路卡片加大 */
+    .path-card {
+      min-width: 90px;
+      padding: 14px 10px;
+      font-size: 0.85rem;
+    }
+
+    /* Game Over / Victory 按钮加大 */
+    .go-btn, .victory-btn {
+      min-height: 48px;
+      font-size: 1.1rem;
+      padding: 12px 28px;
+    }
   }
   @media (max-width: 460px) {
     .shop-cards-grid {
       grid-template-columns: 1fr;
     }
+
+    /* 更窄的手机：道具栏进一步适配 */
+    #items-bar {
+      right: 10px;
+      bottom: 10px;
+      gap: 6px;
+    }
+    .item-slot {
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  /* 横屏提示（竖屏时显示） */
+  @media (max-width: 900px) and (orientation: portrait) {
+    #landscape-hint {
+      display: flex !important;
+    }
+  }
+  #landscape-hint {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.2rem;
+    padding: 24px;
+  }
+  #landscape-hint .hint-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: rotateHint 2s ease-in-out infinite;
+  }
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+  }
+  #landscape-hint .hint-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #00ff88;
+  }
+  #landscape-hint .hint-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.6);
   }
