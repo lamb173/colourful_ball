@@ -1479,6 +1479,39 @@ function hidePluto() {
       }
     }
     // ─── 预加载所有关卡3D模型（游戏启动时调用，切关零等待） ───
+    // ─── v20.42 按需加载：只加载指定关卡的模型，替代一次性全量预加载 ───
+    function loadStageModelLazy(stageId) {
+      if (typeof THREE === "undefined" || typeof THREE.GLTFLoader === "undefined") return;
+      var url = null, scale = 1, getter = null, setter = null, failer = null;
+      switch (stageId) {
+        case 1:  url = earthModelUrl;    scale = earthModelScale;    getter = function(){return earthModel;};    setter = function(m){earthModel = m;};    failer = function(){earthLoadError = true;}; break;
+        case 2:  url = moonBaseModelUrl; scale = moonBaseModelScale; getter = function(){return moonBaseModel;}; setter = function(m){moonBaseModel = m;}; failer = function(){moonBaseLoadError = true;}; break;
+        case 3:  url = marsModelUrl;     scale = marsModelScale;     getter = function(){return marsModel;};     setter = function(m){marsModel = m;};     failer = function(){marsLoadError = true;}; break;
+        case 4:  url = jupiterModelUrl;  scale = jupiterModelScale;  getter = function(){return jupiterModel;};  setter = function(m){jupiterModel = m;};  failer = function(){jupiterLoadError = true;}; break;
+        case 5:  url = saturnModelUrl;   scale = saturnModelScale;   getter = function(){return saturnModel;};   setter = function(m){saturnModel = m;};   failer = function(){saturnLoadError = true;}; break;
+        case 6:  url = uranusModelUrl;    scale = uranusModelScale;    getter = function(){return uranusModel;};    setter = function(m){uranusModel = m;};    failer = function(){uranusLoadError = true;}; break;
+        case 7:  url = neptuneModelUrl;  scale = neptuneModelScale;  getter = function(){return neptuneModel;};  setter = function(m){neptuneModel = m;};  failer = function(){neptuneLoadError = true;}; break;
+        case 8:  url = plutoModelUrl;    scale = plutoModelScale;    getter = function(){return plutoModel;};    setter = function(m){plutoModel = m;};    failer = function(){plutoLoadError = true;}; break;
+        case 9:  url = stage9ModelUrl;   scale = stage9ModelScale;   getter = function(){return stage9Model;};   setter = function(m){stage9Model = m;};   failer = function(){stage9LoadError = true;}; break;
+        case 10: url = stage10ModelUrl;  scale = stage10ModelScale;  getter = function(){return stage10Model;};  setter = function(m){stage10Model = m;};  failer = function(){stage10LoadError = true;}; break;
+        default: return;
+      }
+      if (getter()) return; // 已加载则跳过
+      new THREE.GLTFLoader().load(
+        url,
+        function (gltf) {
+          var m = gltf.scene;
+          m.scale.set(scale, scale, scale);
+          m.position.set(0, 0, 0);
+          m.traverse(function (c) { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+          setter(m);
+          console.log("[LAZY] stage " + stageId + " model loaded");
+        },
+        null,
+        function (e) { failer(); console.error("[LAZY] stage " + stageId + " model load failed", e); }
+      );
+    }
+
     function preloadAllStageModels() {
       console.log('[PRELOAD] 开始预加载关卡3D模型...');
       // 第1关 地球
@@ -7454,7 +7487,11 @@ function hidePluto() {
     // ═══════════════════════════════════════════════════════
     function animate() {
       // 预加载关卡3D模型（仅首次执行）
-      if (!preloadStarted && gameMode === 'stages') { preloadAllStageModels(); preloadStarted = true; }
+      if (!preloadStarted && gameMode === 'stages') {
+        preloadStarted = true;
+        var _sid = (_currentStage && _currentStage.id) ? _currentStage.id : 1;
+        loadStageModelLazy(_sid);
+      }
       if (!preloadStarted && gameMode !== 'stages') { 
         // 无尽模式：只预加载道具模型
         preloadItemModels();
