@@ -8972,6 +8972,52 @@ function hidePluto() {
 
   console.log('[MUSIC] 背景音乐控制器已初始化');
 
+
+  /* ── 页面隐藏/关闭时自动停止 BGM（修复：关掉网页后仍有声音）── */
+  let _wasPlayingBeforeHide = false;
+
+  function pauseBgmForHidden() {
+    try {
+      if (!audio.paused) {
+        _wasPlayingBeforeHide = true;
+        audio.pause();
+        console.log('[MUSIC] 页面隐藏/离开，BGM 已暂停');
+      } else {
+        _wasPlayingBeforeHide = false;
+      }
+    } catch (e) {}
+  }
+
+  function resumeBgmIfNeeded() {
+    try {
+      if (_wasPlayingBeforeHide && audio.paused && !audio.muted) {
+        audio.play().then(function () {
+          console.log('[MUSIC] 页面恢复可见，BGM 继续播放');
+        }).catch(function (err) {
+          console.warn('[MUSIC] 恢复 BGM 失败', err);
+        });
+      }
+    } catch (e) {}
+    _wasPlayingBeforeHide = false;
+  }
+
+  function stopBgmCompletely() {
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      console.log('[MUSIC] 页面卸载，BGM 已彻底停止');
+    } catch (e) {}
+  }
+
+  /* 切换标签页/最小化 → 暂停；页面关闭/导航离开 → 彻底停止 */
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { pauseBgmForHidden(); } else { resumeBgmIfNeeded(); }
+  });
+  window.addEventListener('pagehide', stopBgmCompletely);
+  window.addEventListener('beforeunload', stopBgmCompletely);
+  window.addEventListener('blur', pauseBgmForHidden);
+  window.addEventListener('focus', resumeBgmIfNeeded);
+
   /* 暴露 audio 对象，供广告模块控制 BGM 暂停/恢复 */
   window.__bgmAudio = audio;
 })();
