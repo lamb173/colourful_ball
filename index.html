@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- v2026-05-23-split -->
+  <title>弹跳小球 · 星际穿越</title>
+  <link rel="stylesheet" href="styles.css?v=20.27">
+</head>
+<body>
+  <!-- ① 欢迎页 -->
+  <div id="welcome-page" class="intro-page active">
+    <canvas class="intro-particles" id="welcome-particles"></canvas>
+    <div class="welcome-balls" id="welcome-balls"></div>
+    <h1>欢迎来到弹跳小球游戏</h1>
+    <p class="welcome-hint">点击任意位置跳过</p>
+  </div>
+
+  <!-- 模式选择页 -->
+  <div id="mode-page" class="intro-page">
+    <canvas class="intro-particles" id="mode-particles"></canvas>
+    <div class="mode-ball-wrap">
+      <div class="mode-deco-ball"></div>
+    </div>
+    <div class="mode-form">
+      <div class="mode-stars" id="mode-stars">★ 0</div>
+      <h2>选择游戏模式</h2>
+      <div class="mode-options">
+        <button class="mode-btn endless" id="mode-endless">∞ 无尽模式</button>
+        <button class="mode-btn stages" id="mode-stages">★ 闯关模式</button>
+      </div>
+      <div class="mode-desc">跳上同色轨道，跳得越远分数越高</div>
+      <div class="mode-extra-btns">
+        <button class="mode-btn shop" id="mode-shop">🛒 道具商城</button>
+        <button class="mode-btn help" id="mode-help">📖 游玩说明</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游玩说明页 -->
+  <div id="help-page" class="intro-page">
+    <canvas class="intro-particles" id="help-particles"></canvas>
+    <button class="stage-back-btn" id="help-back">← 返回模式选择</button>
+    <div class="help-title">📖 游玩说明</div>
+    <div class="help-content" id="help-content">
+      <div class="help-section">
+        <h3>🎮 基本操作</h3>
+        <div class="help-item"><span class="help-key">鼠标移动</span>控制小球左右方向</div>
+        <div class="help-item"><span class="help-key">点击 / 触摸</span>开始游戏、选择路径</div>
+        <div class="help-item"><span class="help-key">F 键</span>激活飞行器道具（若已拥有）</div>
+      </div>
+      <div class="help-section">
+        <h3>🎯 游戏目标</h3>
+        <div class="help-item">操纵小球跳上同色轨道，避免因未落在轨道上、跳上错误颜色轨道、从冰面滑落、被侧风吹落而死亡</div>
+      </div>
+      <div class="help-section">
+        <h3>♾️ 无尽模式</h3>
+        <div class="help-item">操纵小球前进，每累计前进 300m 获得一颗星星</div>
+        <div class="help-item">每 900m 进行一次路径选择，选择后继续前进</div>
+        <div class="help-item">死亡后可选择太空舱道具、观看广告、使用当局累积星星复活</div>
+      </div>
+      <div class="help-section">
+        <h3>★ 闯关模式</h3>
+        <div class="help-item">10 关星际穿越：地球轨道 → 月球 → 火星 → 木星 → 土星 → 天王星 → 海王星 → 冥王星 → 黑洞视界 → 奇点彼岸</div>
+        <div class="help-item">每关有目标距离，达成即可通关，根据完美率评定星级</div>
+        <div class="help-item"><span class="help-star">★★★</span> 完美率 ≥70%　<span class="help-star">★★</span> ≥40%　<span class="help-star">★</span> 其余</div>
+        <div class="help-item">通关后自动解锁下一关，收集星星可在道具商城购买道具</div>
+      </div>
+      <div class="help-section">
+        <h3>🛒 道具系统</h3>
+        <div class="help-item"><span class="help-icon">🛸</span><b>复活太空舱</b> — 球死亡时可选消耗1个，在掉落点复活</div>
+        <div class="help-item"><span class="help-icon">🧤</span><b>防滑外套</b> — 经过冰面时自动触发，免疫一次冰面滑行</div>
+        <div class="help-item"><span class="help-icon">🧥</span><b>防风外套</b> — 经过侧风区时自动触发，免疫一次侧风偏移</div>
+        <div class="help-item"><span class="help-icon">🚀</span><b>飞行器</b> — 按 F 键激活，向前飞行 150 米，无视所有地形</div>
+      </div>
+      <div class="help-section">
+        <h3>⚠️ 特殊地形</h3>
+        <div class="help-item"><b>冰霜段</b> — 小球会滑行不弹跳，受到随机横向推力（可用防滑外套免疫）</div>
+        <div class="help-item"><b>加速轨道</b> — 小球速度大幅加快，持续 8 秒</div>
+        <div class="help-item"><b>侧风区</b> — 小球会被持续吹向一侧偏移（可用防风外套免疫）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 道具商城页 -->
+  <div id="shop-page" class="intro-page">
+    <canvas class="intro-particles" id="shop-particles"></canvas>
+    <button class="stage-back-btn" id="shop-back">← 返回模式选择</button>
+    <div class="shop-title">🛒 道具商城</div>
+    <div class="shop-stars-display">★ <span id="shop-stars-count">0</span></div>
+    <div id="shop-cards-grid" class="shop-cards-grid"></div>
+  </div>
+
+  <!-- 开始界面 -->
+  <div id="start-screen">
+    <div class="start-mode-badge endless-badge" id="start-mode-badge">无尽模式</div>
+    <div id="start-stage-name"></div>
+    <h1 id="start-title">弹跳小球</h1>
+    <p class="start-subtitle">移动鼠标控制方向，跳上同色轨道</p>
+    <div class="start-buttons">
+      <button id="start-btn">开始游戏</button>
+      <button id="exit-stage-btn" class="exit-btn" style="display:none">退出游戏</button>
+    </div>
+  </div>
+
+  <!-- 倒计时 -->
+  <div id="countdown">
+    <div id="countdown-num">3</div>
+  </div>
+
+  <!-- 关卡选择页 -->
+  <div id="stage-select-page" class="intro-page">
+    <canvas class="intro-particles" id="stage-select-particles"></canvas>
+    <h2>星际穿越 · 选择关卡</h2>
+    <div id="stage-cards-grid" class="stage-cards-grid"></div>
+    <button id="stage-select-back" class="stage-back-btn">← 返回模式选择</button>
+  </div>
+
+  <div id="info">🏀 跳跳跳…</div>
+
+  <!-- 道具栏（左下角） -->
+  <div id="items-bar">
+    <div class="item-slot" id="item-revive-slot" title="复活太空舱">
+      <span class="item-icon">🛸</span>
+      <span class="item-count" id="item-revive-count">0</span>
+    </div>
+    <div class="item-slot" id="item-anti-slip-slot" title="防滑外套">
+      <span class="item-icon">🧤</span>
+      <span class="item-count" id="item-anti-slip-count">0</span>
+    </div>
+    <div class="item-slot" id="item-windproof-slot" title="防风外套">
+      <span class="item-icon">🧥</span>
+      <span class="item-count" id="item-windproof-count">0</span>
+    </div>
+    <div class="item-slot" id="item-flight-slot" title="飞行器">
+      <span class="item-icon">🚀</span>
+      <span class="item-count" id="item-flight-count">0</span>
+    </div>
+  </div>
+
+  <!-- 横屏提示（手机竖屏时显示） -->
+  <div id="landscape-hint">
+    <div class="hint-icon">📱</div>
+    <div class="hint-text">请横屏游玩</div>
+    <div class="hint-sub">将手机旋转至横屏方向以获得最佳体验</div>
+  </div>
+
+  <!-- 左上角距离显示 -->
+  <div id="distance-board">
+    <div id="dist-current">0<span class="dist-unit">m</span></div>
+    <div id="dist-stars-row"><span class="star-icon">★</span> <span id="dist-stars-count">0</span></div>
+    <div id="dist-target-row">目标 <span class="dist-arrow">›</span> <span id="dist-target-val">???m</span></div>
+  </div>
+
+  <!-- 连击鼓励 -->
+  <div id="combo-container">
+    <div id="combo-text">PERFECT</div>
+    <div id="combo-count">x1</div>
+  </div>
+
+  <!-- 加速提示 -->
+  <div id="boost-hint">⚡ BOOST!</div>
+
+  <!-- 右上角计分板 -->
+  <div id="score-board">
+    <div class="score-row" id="perfect-row">
+      <span class="score-label">PERFECT</span>
+      <span class="score-value" id="perfect-count">0</span>
+    </div>
+    <div class="score-row" id="great-row">
+      <span class="score-label">GREAT</span>
+      <span class="score-value" id="great-count">0</span>
+    </div>
+  </div>
+
+  <!-- 三分路选择覆盖层（无尽模式 每900m） -->
+  <div id="path-choice-overlay">
+    <div class="path-choice-inner">
+      <h2>前方三条路线</h2>
+      <p class="path-choice-hint">点击选择一条路线继续</p>
+      <div class="path-cards">
+        <button class="path-card path-left" data-style="0">
+          <div class="path-icon">←</div>
+          <div class="path-name">左路 · 宽广</div>
+          <div class="path-desc">宽平台、多长直、舒适</div>
+        </button>
+        <button class="path-card path-center" data-style="1">
+          <div class="path-icon">↑</div>
+          <div class="path-name">中路 · 均衡</div>
+          <div class="path-desc">标准配置、经典体验</div>
+        </button>
+        <button class="path-card path-right" data-style="2">
+          <div class="path-icon">→</div>
+          <div class="path-name">右路 · 精炼</div>
+          <div class="path-desc">窄平台、紧凑间距、精准</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over 覆盖层 -->
+  <div id="gameover">
+    <h1>GAME OVER</h1>
+    <p id="gameover-msg">颜色不匹配，球碎了！</p>
+    <div class="go-stars" id="go-stars-earned">★ 0</div>
+    <div class="go-buttons">
+      <button class="go-btn exit-btn" id="exit-endless-btn">退出无尽模式</button>
+      <button class="go-btn ad-btn" id="ad-revive-btn">观看广告复活</button>
+      <button class="go-btn star-btn" id="star-revive-btn">使用 0 ★ 复活</button>
+      <button class="go-btn item-revive-btn" id="item-revive-btn" style="display:none">
+        🛸 使用复活太空舱 (<span id="revive-capsule-count">0</span>)
+      </button>
+    </div>
+  </div>
+
+  <!-- 广告覆盖层 -->
+  <div id="ad-overlay">
+    <video id="ad-video" src="workbuddy_advertizement.mp4" playsinline></video>
+    <div id="ad-top-right">
+      <button id="ad-audio-btn" title="静音/取消静音">🔊</button>
+      <div id="ad-timer">10s</div>
+    </div>
+    <button id="ad-skip">跳过广告 ›</button>
+  </div>
+
+  <!-- 胜利覆盖层 -->
+  <div id="victory">
+    <h1>VICTORY!</h1>
+    <p id="victory-msg">成功穿越黑洞，你赢了！</p>
+    <div class="go-stars" id="go-stars-earned" style="display:none">★ 0</div>
+    <div class="victory-buttons">
+      <button id="victory-btn">再开一局 ↺</button>
+      <button id="victory-exit-btn" class="victory-btn-secondary" style="display:none">返回关卡选择</button>
+    </div>
+  </div>
+
+  <!-- 背景音乐控制器 -->
+  <div id="music-ctrl" class="music-ctrl">
+    <button id="music-btn" class="music-btn" title="背景音乐">
+      <span id="music-icon" class="music-icon-text">🔊</span>
+      <span class="music-bars" id="music-bars">
+        <i class="mbar"></i><i class="mbar"></i><i class="mbar"></i><i class="mbar"></i>
+      </span>
+    </button>
+    <div id="music-popup" class="music-popup">
+      <input type="range" id="music-vol" class="music-vol" min="0" max="100" value="50" title="音量">
+    </div>
+  </div>
+
+  <script src="three.min.js"></script>
+  <script src="GLTFLoader_local.js"></script>
+  <script src="game.js?v=20.39"></script>
+  <!-- 调试：错误显示 -->
+</body>
+</html>
